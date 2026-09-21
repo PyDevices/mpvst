@@ -49,7 +49,7 @@ static uint32_t vstaudio_source_offset;
 // Host input audio, effect instances only. The run loop converts each work
 // slot's float32 block to interleaved int16 into this ring, and the script
 // reads it through the audiosample object vstaudio.input() returns, so the
-// whole audioif effect library can chain from the host bus. When a chain's
+// whole audiodsp effect library can chain from the host bus. When a chain's
 // internal buffering pulls ahead of what the host has delivered, the source
 // hands out silence instead - self-priming to exactly the chain's depth.
 #define VSTAUDIO_INPUT_FIFO_FRAMES 8192u
@@ -785,8 +785,8 @@ static mp_obj_t vstaudio_run(size_t n_args, const mp_obj_t *args) {
 static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(vstaudio_run_obj, 1, 2, vstaudio_run);
 
 // Dynamics and Splitter used to live here, in vstaudio_dsp.c. They are
-// audioif's `audiodynamics.Dynamics` and `audioroute.Splitter` now - the
-// same DSP, compiled from audioif/src/shared/ into every target it
+// audiodsp's `audiodynamics.Dynamics` and `audioroute.Splitter` now - the
+// same DSP, compiled from audiodsp/src/shared/ into every target it
 // supports rather than into this plug-in alone. What is left here is the
 // host binding, which is all a VST3 sidecar ever had to provide.
 static const mp_rom_map_elem_t vstaudio_module_globals_table[] = {

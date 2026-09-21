@@ -4,7 +4,7 @@
     song.render("song.wav", OfflineRenderer)
 
 The Reaper backend writes a project for a host to play. This one plays it,
-through the same DSP: `audiorender` is audioif's offline renderer, and it
+through the same DSP: `audiorender` is audiodsp's offline renderer, and it
 drives the very `audioinstruments` and `audioeffects` packages the sidecar
 imports. Same notes, same components, same arithmetic, on a machine with
 nothing installed on it.
@@ -81,7 +81,7 @@ def _interpolate(points, beat, default):
 class _Composition:
     """A `Project` wearing the shape `audiorender` reads a composition in.
 
-    audioif's renderer takes a module of module-level constants and three
+    audiodsp's renderer takes a module of module-level constants and three
     lookup methods; a Project is an object graph. This is the translation,
     and it is the only place that knows both.
     """

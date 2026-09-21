@@ -53,8 +53,8 @@ if [[ ! -f "$mp_dir/ports/$port/Makefile" ]]; then
         "or point CMODS_DIR/MICROPYTHON_DIR at an existing checkout." >&2
     exit 1
 fi
-if [[ ! -f "$workspace_dir/audioif/micropython.mk" ]]; then
-    echo "error: no micropython.mk at $workspace_dir/audioif - the sibling audioif" \
+if [[ ! -f "$workspace_dir/audiodsp/micropython.mk" ]]; then
+    echo "error: no micropython.mk at $workspace_dir/audiodsp - the sibling audiodsp" \
         "checkout is missing or incomplete. Run scripts/fetch-sibling-repos.sh." >&2
     exit 1
 fi

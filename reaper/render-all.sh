@@ -13,13 +13,13 @@ set -euo pipefail
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 repo_dir=$(cd "$script_dir/.." && pwd)
 soundtrack_dir="$repo_dir/examples/soundtrack"
-# render_preview.py and verify_song.py need numpy plus the audioif
+# render_preview.py and verify_song.py need numpy plus the audiodsp
 # wheel - this repo's own .venv (pydevices-audioif from TestPyPI) if
-# it's been set up, else the sibling audioif checkout's.
+# it's been set up, else the sibling audiodsp checkout's.
 if [[ -x "$repo_dir/.venv/bin/python" ]]; then
     venv_python="$repo_dir/.venv/bin/python"
 else
-    venv_python="$repo_dir/../audioif/.venv/bin/python"
+    venv_python="$repo_dir/../audiodsp/.venv/bin/python"
 fi
 
 pieces=()
@@ -31,7 +31,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -x "$venv_python" ]] || {
-    echo "error: no audioif venv python at $venv_python" >&2
+    echo "error: no audiodsp venv python at $venv_python" >&2
     exit 1
 }
 

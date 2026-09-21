@@ -1,5 +1,5 @@
 [flake8]
-# Defect checks only, not formatting opinions. Same selection audioif
+# Defect checks only, not formatting opinions. Same selection audiodsp
 # uses, and for the same reason: the instrument and effect scripts are
 # compact on purpose, and a generated shim puts its macro-label comment
 # above everything else because that is where the plug-in reads it.

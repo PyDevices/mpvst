@@ -6,7 +6,7 @@ about this plug-in: an instrument is constructed through
 `note_on`/`note_off`/`set_macro`/`program_change` and an `output` to pull PCM
 from. This module is the one place that knows both halves. It binds that
 factory to `vstaudio`, so a script here shrinks to two lines. This is the
-instrument side of audioif's component factory boundary:
+instrument side of audiodsp's component factory boundary:
 
     import mpvst_instrument_adapter
     mpvst_instrument_adapter.run("audioinstruments.tr808")

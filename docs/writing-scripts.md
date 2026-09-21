@@ -14,7 +14,7 @@ If you want to change MPVST itself rather than write for it, that is
 
 ## Writing a script
 
-A script registers a callback and an output. For a cataloged audioif
+A script registers a callback and an output. For a cataloged audiodsp
 component, the provider metadata is mandatory; a consumer such as this
 plug-in remains tolerant of missing optional fields.
 The bundled `lib/default_instrument.py` is the working reference - it
@@ -44,7 +44,7 @@ PATCHES = {0: ("Default", (64, 64, 64, 64))}
 ```
 
 A bare script without those declarations is still accepted by this consumer
-for compatibility and the editor draws no macros or patches. Audioif
+for compatibility and the editor draws no macros or patches. Audiodsp
 providers must declare the empty forms explicitly when they expose no
 controls. Renaming a label does not change parameter IDs or detach
 automation.
@@ -59,7 +59,7 @@ block by measuring the instrument rather than guessing.
 
 The fifty-three instruments and the effects library are audiocomponents'
 `audioinstruments` and `audioeffects` packages - host-neutral Python built
-on audioif's audio nodes, that any application can import, not just this
+on audiodsp's audio nodes, that any application can import, not just this
 plug-in. They are staged beside the engine from a sibling audiocomponents
 checkout (`MPVST_COMPONENTS_LIB` if it is somewhere else).
 
@@ -71,7 +71,7 @@ Two lines, synthesized in `CatalogEntry::scriptSource`. That is what lets
 the library be the single source of truth for a plug-in's name, category
 and macro labels: there is no generated copy to drift from it.
 
-An audioif provider declares `NAME`, `MACRO_LABELS`, `MACRO_MODES`, and
+An audiodsp provider declares `NAME`, `MACRO_LABELS`, `MACRO_MODES`, and
 `PATCHES`; percussion instruments also declare `NOTE_MAP`. `CATEGORIES`,
 `VERSION`, `VENDOR`, and `DISPLAY_NAME` are optional. This consumer requires
 only `NAME` when it discovers a component, and uses `DISPLAY_NAME` when
@@ -108,7 +108,7 @@ modulation, drive, pitch and stereo) importable from any effect script. Build
 them through `audioeffects.create(name, source, sample_rate, **options)` so
 the construction boundary stays portable across CPython, MicroPython and
 CircuitPython; direct class constructors remain an implementation convenience.
-It compensates for two CircuitPython biquad quirks that audioif
+It compensates for two CircuitPython biquad quirks that audiodsp
 reproduces deliberately: filters in a stereo `audiofilters.Filter` centre
 at twice the requested frequency, so the library halves what it asks for;
 and peaking EQ's `b2` sign is wrong upstream, so bells are built from

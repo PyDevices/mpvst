@@ -13,7 +13,7 @@ repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 log() { printf 'bootstrap: %s\n' "$*"; }
 die() { log "ERROR: $*"; exit 1; }
 
-log "fetching sibling repos (cmods, audioif, audiocomponents)"
+log "fetching sibling repos (cmods, audiodsp, audiocomponents)"
 "$repo_dir/scripts/fetch-sibling-repos.sh" || die "fetch-sibling-repos.sh failed"
 
 log "fetching VST3 SDK"
@@ -45,7 +45,7 @@ if [[ ! -d "$repo_dir/.venv" ]]; then
 fi
 # The three PyDevices distributions live on TestPyPI; the extra index
 # resolves their ordinary dependencies. The two component distributions
-# keep their names across the audioif -> audiocomponents split
+# keep their names across the audiodsp -> audiocomponents split
 # (audiocomponents#2): after it they are published from audiocomponents,
 # still as pydevices-audioinstruments and pydevices-audioeffects, so this
 # line does not change with the flip.

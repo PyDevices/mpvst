@@ -8,7 +8,7 @@ of those you can go two ways:
     python -m composer.preview Perihelion    a WAV, without Reaper
 
 `preview` renders offline through the same DSP the plug-in runs, using the
-CPython build of audioif, so you can hear a change without opening a DAW.
+CPython build of audiodsp, so you can hear a change without opening a DAW.
 `reaper` writes the project you then hand to `../bounce.py`.
 
 This is not the composer in `../../reaper-composer/`. That one is a framework

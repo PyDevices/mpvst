@@ -5,13 +5,13 @@ add_subdirectory(smoke_host)
 
 # The Python that runs the test scripts. The repository's own .venv is
 # searched first, for the same reason flake8 is found there below: these
-# scripts import audioif, which is a dependency installed from PyPI (or as an
+# scripts import audiodsp, which is a dependency installed from PyPI (or as an
 # editable install of a sibling checkout), and a distribution Python is
 # usually externally managed and cannot have it installed into it.
 #
 # This used to fall to whatever python3 was on PATH, and worked only because
-# The composer's harness.py put a sibling audioif checkout on sys.path itself. That
-# hid which copy of audioif was under test -- it beat both the installed
+# The composer's harness.py put a sibling audiodsp checkout on sys.path itself. That
+# hid which copy of audiodsp was under test -- it beat both the installed
 # package and PYTHONPATH -- so the scripts now just import it.
 find_program(MPVST_PYTHON
     NAMES python3 python
@@ -146,7 +146,7 @@ if(TARGET mpvst-stage-micropython-engine)
     endif()
 endif()
 
-# The same instrument scripts against the audioif CPython wheel directly
+# The same instrument scripts against the audiodsp CPython wheel directly
 # (no compiled engine needed) -- fast enough to run on every configure.
 if(MPVST_PYTHON)
     add_test(NAME mpvst_instruments_library COMMAND ${MPVST_PYTHON}

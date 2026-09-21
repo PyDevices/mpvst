@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Compare the REAPER bounce of Perihelion against the offline preview.
 
-The preview (audioif CPython wheel) and the bounce (real plug-in, real
+The preview (audiodsp CPython wheel) and the bounce (real plug-in, real
 MicroPython sidecars, real automation) should agree on the shape of the
 piece: same sections loud, same sections quiet, sane peaks, no dead air.
 Exact PCM equality is not expected - pan law, envelope timing, and event
@@ -118,7 +118,7 @@ def main():
     # Measured up to the last note-off, not to the end of the song: after
     # that there is nothing but the release tail, and a tail is allowed to
     # reach silence. It does so sooner in the bounce than in the preview
-    # because every audioif node carries int16 samples, so a decay stops at
+    # because every audiodsp node carries int16 samples, so a decay stops at
     # the last bit rather than asymptotically - Automata ends 2.5 s of tail
     # after its last note-off and truncates there. Judging a decay against a
     # fixed floor tests the arithmetic of silence, not the render.

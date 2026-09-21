@@ -54,7 +54,7 @@ used by the audio thread.
 
 ### Engine process
 
-The engine owns MicroPython, audioif graph construction and rendering, garbage
+The engine owns MicroPython, audiodsp graph construction and rendering, garbage
 collection, script I/O, and all unrestricted desktop capabilities. It consumes
 timestamped work and publishes completed output slots. Audio work takes
 priority over optional housekeeping.
@@ -65,7 +65,7 @@ priority over optional housekeeping.
 - No VST audio input bus in the instrument MVP.
 - One stereo VST audio output bus.
 - Float32 planar host buffers initially; float64 is rejected.
-- Audioif remains interleaved signed int16 internally for the first engine.
+- Audiodsp remains interleaved signed int16 internally for the first engine.
 - Conversion to planar float32 happens in the engine before publication when
   practical, keeping the VST callback to bounded copies.
 
@@ -143,7 +143,7 @@ framebuffer or LVGL scheduling requirement is imposed on the audio milestones.
 
 ## Workspace dependency rule
 
-The sibling `audioif` repository is read-only during this implementation
+The sibling `audiodsp` repository is read-only during this implementation
 campaign because another agent is modifying it. This project may inspect and
 consume committed/public interfaces, but must not edit, format, clean, or place
 build products in that repository.
