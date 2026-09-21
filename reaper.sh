@@ -36,7 +36,7 @@ soundtrack_dir=$(cd "$repo_dir/examples/soundtrack" && pwd)
 composition_dir="$soundtrack_dir/composer"
 reaper_dir="$repo_dir/reaper"
 # verify_song.py needs numpy plus the audiodsp wheel - this repo's own
-# .venv (pydevices-audioif from TestPyPI) if set up, else the sibling
+# .venv (pydevices-audiodsp from TestPyPI) if set up, else the sibling
 # audiodsp checkout's.
 if [[ -x "$repo_dir/.venv/bin/python" ]]; then
     venv_python="$repo_dir/.venv/bin/python"

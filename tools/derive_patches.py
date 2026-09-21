@@ -66,7 +66,7 @@ from pieces import COMPONENTS_LIB  # noqa: E402
 # writes into - ahead of any installed copy, or the audit would read one
 # tree and run another. The CPython twins of the native modules they
 # import (synthio, audiocore, ...) are audiodsp's, and come from wherever
-# pydevices-audioif is installed, the same as harness.py.
+# pydevices-audiodsp is installed, the same as harness.py.
 sys.path.insert(0, str(COMPONENTS_LIB))
 
 from audioinstruments._support import Instrument, static_transport  # noqa: E402

@@ -14,7 +14,7 @@ script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 repo_dir=$(cd "$script_dir/.." && pwd)
 soundtrack_dir="$repo_dir/examples/soundtrack"
 # render_preview.py and verify_song.py need numpy plus the audiodsp
-# wheel - this repo's own .venv (pydevices-audioif from TestPyPI) if
+# wheel - this repo's own .venv (pydevices-audiodsp from TestPyPI) if
 # it's been set up, else the sibling audiodsp checkout's.
 if [[ -x "$repo_dir/.venv/bin/python" ]]; then
     venv_python="$repo_dir/.venv/bin/python"

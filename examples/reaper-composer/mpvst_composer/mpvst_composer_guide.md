@@ -339,7 +339,7 @@ from mpvst_composer.backends.offline import OfflineRenderer
 song.render("my_song.wav", OfflineRenderer)
 ```
 
-It needs `pydevices-audioif`, `pydevices-audioinstruments` and
+It needs `pydevices-audiodsp`, `pydevices-audioinstruments` and
 `pydevices-audioeffects` from pip.
 
 **Before you believe it**, bounce it through Reaper:
