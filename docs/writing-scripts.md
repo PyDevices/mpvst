@@ -61,8 +61,7 @@ The fifty-three instruments and the effects library are audiocomponents'
 `audioinstruments` and `audioeffects` packages - host-neutral Python built
 on audioif's audio nodes, that any application can import, not just this
 plug-in. They are staged beside the engine from a sibling audiocomponents
-checkout (`MPVST_COMPONENTS_LIB` if it is somewhere else; `MPVST_AUDIOIF_LIB`,
-the name from when they lived in audioif, is still honoured for one release).
+checkout (`MPVST_COMPONENTS_LIB` if it is somewhere else).
 
 There is no file per instrument. The unit the plug-in deals in is still a
 script - the controller parses macro labels out of the embedded source,

@@ -42,15 +42,7 @@ SOUNDTRACK_DIR = Path(__file__).resolve().parent.parent
 
 #: Where audioinstruments lives. Same workspace-sibling rule the engine
 #: build and the plug-in's staging step use; the environment variable is
-#: the escape hatch for a checkout somewhere else. MPVST_AUDIOIF_LIB is
-#: the name this had while the packages lived in audioif, honoured for
-#: one release when the new one is unset - the same alias, and the same
-#: warning, as the plug-in's CMake.
-_COMPONENTS_LIB_ALIAS = os.environ.get("MPVST_AUDIOIF_LIB")
-if "MPVST_COMPONENTS_LIB" not in os.environ and _COMPONENTS_LIB_ALIAS:
-    sys.stderr.write(
-        "composer: MPVST_AUDIOIF_LIB is deprecated (the packages moved to "
-        "audiocomponents); using it as MPVST_COMPONENTS_LIB\n")
+#: the escape hatch for a checkout somewhere else.
 #: Failing an override, the copy inside the installed plug-in, which is the
 #: one a user has. MPVST_BUNDLE moves the search.
 _BUNDLE = os.environ.get("MPVST_BUNDLE") or os.path.join(
@@ -58,7 +50,6 @@ _BUNDLE = os.environ.get("MPVST_BUNDLE") or os.path.join(
     "Programs", "Common", "VST3", "MPVST.vst3")
 COMPONENTS_LIB = Path(
     os.environ.get("MPVST_COMPONENTS_LIB")
-    or _COMPONENTS_LIB_ALIAS
     or os.path.join(_BUNDLE, "Contents", "x86_64-win"))
 
 #: How a generated loader names the instrument module it runs. Anything

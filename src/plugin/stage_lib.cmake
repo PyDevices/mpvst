@@ -44,25 +44,6 @@ get_filename_component(mpvst_stage_name "${MPVST_LIB_SRC}" ABSOLUTE)
 string(MD5 mpvst_stage_id "${mpvst_stage_name}")
 set(mpvst_stamp "${MPVST_LIB_DST}/.staged-${mpvst_stage_id}")
 
-# The stamp is keyed on the source path, so a source that *moves* leaves
-# its stamp - and whatever only it staged - behind: when the packages went
-# from audioif/lib to audiocomponents/lib, audiorender/ stayed in every
-# bundle built before the move. A caller that knows the old path names it
-# in MPVST_LIB_RETIRED, and its leftovers go the way a deleted package
-# does. A fresh build directory has nothing to retire.
-foreach(retired IN LISTS MPVST_LIB_RETIRED)
-    get_filename_component(retired "${retired}" ABSOLUTE)
-    string(MD5 retired_id "${retired}")
-    set(retired_stamp "${MPVST_LIB_DST}/.staged-${retired_id}")
-    if(NOT retired_stamp STREQUAL mpvst_stamp AND EXISTS "${retired_stamp}")
-        file(STRINGS "${retired_stamp}" retired_entries)
-        foreach(entry IN LISTS retired_entries)
-            file(REMOVE_RECURSE "${MPVST_LIB_DST}/${entry}")
-        endforeach()
-        file(REMOVE "${retired_stamp}")
-    endif()
-endforeach()
-
 file(GLOB top_level RELATIVE "${MPVST_LIB_SRC}" "${MPVST_LIB_SRC}/*")
 if(EXISTS "${mpvst_stamp}")
     file(STRINGS "${mpvst_stamp}" mpvst_previous)

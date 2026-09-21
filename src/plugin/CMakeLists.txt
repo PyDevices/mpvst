@@ -80,21 +80,6 @@ set(MPVST_MICROPYTHON_ENGINE "${MPVST_ENGINE_DEFAULT}"
 set(MPVST_COMPONENTS_LIB_DEFAULT "${CMAKE_SOURCE_DIR}/../audiocomponents/lib")
 set(MPVST_COMPONENTS_LIB "${MPVST_COMPONENTS_LIB_DEFAULT}"
     CACHE PATH "audiocomponents' pure-Python packages (audioinstruments, audioeffects)")
-# MPVST_AUDIOIF_LIB was this variable's name while the packages lived in
-# audioif. Honoured for one release when it is set and the new name is
-# not, so an existing cache or build script keeps working - loudly. The
-# cache remembers the old name too, so a build directory configured
-# before the move keeps staging from audioif until it is told otherwise:
-# `-U MPVST_AUDIOIF_LIB` drops the stale entry.
-if(MPVST_AUDIOIF_LIB AND MPVST_COMPONENTS_LIB STREQUAL MPVST_COMPONENTS_LIB_DEFAULT)
-    message(WARNING
-        "MPVST_AUDIOIF_LIB is deprecated and goes away after this release: "
-        "the instruments and effects moved from audioif to audiocomponents. "
-        "Using it as MPVST_COMPONENTS_LIB (${MPVST_AUDIOIF_LIB}). Set "
-        "MPVST_COMPONENTS_LIB instead, or reconfigure with "
-        "-U MPVST_AUDIOIF_LIB to drop a cached value.")
-    set(MPVST_COMPONENTS_LIB "${MPVST_AUDIOIF_LIB}")
-endif()
 if(NOT IS_DIRECTORY "${MPVST_COMPONENTS_LIB}")
     message(FATAL_ERROR
         "audiocomponents' lib/ is not at ${MPVST_COMPONENTS_LIB}.\n"
@@ -115,14 +100,9 @@ if(EXISTS "${MPVST_MICROPYTHON_ENGINE}")
             -DMPVST_LIB_SRC=${CMAKE_SOURCE_DIR}/lib
             -DMPVST_LIB_DST=$<TARGET_FILE_DIR:${MPVST_PLUGIN_TARGET}>
             -P "${CMAKE_CURRENT_SOURCE_DIR}/stage_lib.cmake"
-        # MPVST_LIB_RETIRED names the path this source had before the move,
-        # so a build directory that staged from audioif drops what only
-        # that stage put in the bundle (audiorender/, which nothing in the
-        # sidecar imports) instead of shipping it forever.
         COMMAND ${CMAKE_COMMAND}
             -DMPVST_LIB_SRC=${MPVST_COMPONENTS_LIB}
             -DMPVST_LIB_DST=$<TARGET_FILE_DIR:${MPVST_PLUGIN_TARGET}>
-            -DMPVST_LIB_RETIRED=${CMAKE_SOURCE_DIR}/../audioif/lib
             -P "${CMAKE_CURRENT_SOURCE_DIR}/stage_lib.cmake"
         # Same command the install instructions give a user, run here so a
         # fresh build has a moduleinfo.json describing the library rather than

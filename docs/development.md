@@ -164,11 +164,7 @@ source scripts/windows-paths.sh && mpvst_load_windows_paths
 
 The Linux CMake cache remembers the engine path. After switching engines,
 reconfigure with
-`cmake -S . -B .build-linux -U MPVST_MICROPYTHON_ENGINE`. It remembers
-`MPVST_AUDIOIF_LIB` the same way - the name the components path had while
-the packages lived in audioif, still honoured for one release with a
-warning - so a build directory configured before the move keeps staging
-from audioif until you reconfigure with `-U MPVST_AUDIOIF_LIB`.
+`cmake -S . -B .build-linux -U MPVST_MICROPYTHON_ENGINE`.
 
 Steinberg hosting tools are off by default so a plug-in-only build does
 not pull in editor-host dependencies. Enable them in a dedicated validator
