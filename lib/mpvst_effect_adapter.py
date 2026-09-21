@@ -15,7 +15,7 @@ That line is what the plug-in builds for a named effect class, from the entry
 
 The adapter calls `audioeffects.create(name, source, sample_rate, **kwargs)`;
 it does not instantiate an effect class directly. That package factory is the
-audioif component factory boundary.
+audiodsp component factory boundary.
 
 Macros work the same way they do for instruments - normalized 0.0-1.0 on the
 wire, MIDI 0-127 to the library. The provider declares an empty macro surface

@@ -3,7 +3,7 @@
 The score's instrument scripts run unmodified in two places: inside the
 MicroPython sidecar (where the real vstaudio usermod exists) and inside the
 offline preview renderer, where this shim provides the same names on top of
-the audioif CPython wheel. The preview harness drives a script by calling
+the audiodsp CPython wheel. The preview harness drives a script by calling
 _reset() before exec'ing it, then _deliver()/_pull() per block.
 
 Event type values mirror protocol.h exactly.

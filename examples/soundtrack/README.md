@@ -2,7 +2,7 @@
 
 Example audio performed entirely by the MPVST instrument - no
 third-party plug-ins, no samples. Every sound is a MicroPython script
-running synthio and the audioif effects inside its own sidecar process.
+running synthio and the audiodsp effects inside its own sidecar process.
 
 Each piece is a subdirectory holding its own `composition.py`. Historical
 pieces also own private `instruments/`; newer compositions can opt into the

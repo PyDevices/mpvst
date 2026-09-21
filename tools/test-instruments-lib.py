@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run every instrument script through the real synthio DSP.
 
-Uses the soundtrack composer's harness (the audioif CPython wheel, no compiled engine or
+Uses the soundtrack composer's harness (the audiodsp CPython wheel, no compiled engine or
 VST3 host needed) to catch exactly the class of bug that py_compile can't:
 API misuse that only raises once a note is actually played (e.g. an
 invalid kwarg to synthio.Note/Math), and macros that are read but never
@@ -10,7 +10,7 @@ reach the audio graph.
 Two sets of scripts, driven the same way. lib/instruments/*.py are
 generated loaders, so running them covers the whole sidecar path bar the
 engine: shim -> mpvst_instrument_adapter -> audioinstruments. That is deliberate.
-audioif holds the instruments themselves to byte-exact parity goldens,
+audiodsp holds the instruments themselves to byte-exact parity goldens,
 which is a far stronger check than anything here; what is untested
 without this is the seam - the adapter, the staged import, the generated
 label line.
@@ -54,7 +54,7 @@ SOUNDTRACK_DIR = REPO_DIR / "examples" / "soundtrack"
 _SYNTHESISED = None
 sys.path.insert(0, str(REPO_DIR / "examples" / "soundtrack"))
 
-from composer import harness  # noqa: E402  (also puts audioif and audioif/lib on the path)
+from composer import harness  # noqa: E402  (also puts audiodsp and audiodsp/lib on the path)
 from composer import vstaudio  # noqa: E402
 from composer.pieces import module_of  # noqa: E402
 

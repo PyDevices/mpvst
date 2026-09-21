@@ -71,11 +71,11 @@ endif()
 set(MPVST_MICROPYTHON_ENGINE "${MPVST_ENGINE_DEFAULT}"
     CACHE FILEPATH "Optional prebuilt MicroPython VST engine for this platform")
 # The instruments and the effects library live in audiocomponents, as
-# ordinary pure-Python packages (audioif keeps the DSP nodes they are built
+# ordinary pure-Python packages (audiodsp keeps the DSP nodes they are built
 # on, and the C usermod the engine build links). They are staged beside
 # this repository's own lib/ so `import audioinstruments` resolves in the
 # sidecar, which puts the bootstrap's directory on sys.path and nothing
-# else. Same layout rule as the engine build, which expects audioif as a
+# else. Same layout rule as the engine build, which expects audiodsp as a
 # workspace sibling: audiocomponents sits beside it.
 set(MPVST_COMPONENTS_LIB_DEFAULT "${CMAKE_SOURCE_DIR}/../audiocomponents/lib")
 set(MPVST_COMPONENTS_LIB "${MPVST_COMPONENTS_LIB_DEFAULT}"

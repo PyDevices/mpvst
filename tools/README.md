@@ -15,7 +15,7 @@ that only serve it now live beside it in
 `pieces.py` resolves a piece name to its `composition.py` and `instruments/`,
 and `preview.py [--piece NAME] [out.wav] [--stems DIR]` renders one offline.
 
-Both need the `audioif` wheel's venv - this repo's own `.venv` if you have set
+Both need the `audiodsp` wheel's venv - this repo's own `.venv` if you have set
 one up:
 
 ```bash
@@ -40,12 +40,12 @@ see [`../reaper/README.md`](../reaper/README.md) and the root
 
 - **`../examples/soundtrack/composer/harness.py`** and **`vstaudio.py`**
   beside it - a CPython stand-in for the
-  sidecar, built on the `audioif` wheel (the same `synthio`/`audiocore`
+  sidecar, built on the `audiodsp` wheel (the same `synthio`/`audiocore`
   DSP the real engine runs). Lets any instrument or effect script run
   without the compiled engine or a VST3 host, in milliseconds instead of
   the seconds a full plug-in load takes. `harness.py` provides
   `InstrumentRun` and `EffectRun`; `vstaudio.py` is the shim module
-  scripts see as `import vstaudio`. `audioif` itself comes from the
+  scripts see as `import vstaudio`. `audiodsp` itself comes from the
   installed `pydevices-audioif` package (`harness.py` no longer puts a
   sibling checkout on `sys.path`, which used to win silently over the
   wheel); the components come from `MPVST_COMPONENTS_LIB`.
@@ -56,7 +56,7 @@ see [`../reaper/README.md`](../reaper/README.md) and the root
   `0.0/0.5/1.0` under held notes, then checks a fresh instance produces
   audible output at default settings. Driving the shims covers the whole
   sidecar path bar the engine (shim to adapter to `audioinstruments`),
-  which is the part audioif's own parity goldens cannot see. No engine or
+  which is the part audiodsp's own parity goldens cannot see. No engine or
   VST3 host needed; a full pass over all 93 takes about ten seconds.
   Registered as the `mpvst_instruments_library` ctest.
 - **`smoke_host --expect-all-named`** - every plug-in the moduleinfo

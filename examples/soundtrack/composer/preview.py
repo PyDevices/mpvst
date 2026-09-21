@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Render a piece offline through the audioif CPython wheel.
+"""Render a piece offline through the audiodsp CPython wheel.
 
 The render loop, the tempo math, the mixing and the level report all live
-in audioif's `audiorender`. What stays here is the part that is about this
+in audiodsp's `audiorender`. What stays here is the part that is about this
 plug-in: instruments are loaded the way the sidecar loads them - a script
 exec'd against the vstaudio shim - rather than imported as
 `audioinstruments` modules. That keeps the preview a check on the same
@@ -21,7 +21,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 SOUNDTRACK = SCRIPT_DIR.parent
 # piece.py and harness.py are both siblings now, so one entry covers both.
-# harness puts audioif's lib/ on the path, which is where audiorender is.
+# harness puts audiodsp's lib/ on the path, which is where audiorender is.
 sys.path.insert(0, str(SOUNDTRACK))
 
 from composer.harness import EffectRun, InstrumentRun  # noqa: E402

@@ -1,6 +1,6 @@
 """Offline runner for MPVST instrument/effect scripts.
 
-Runs a script against the vstaudio shim on top of the audioif CPython
+Runs a script against the vstaudio shim on top of the audiodsp CPython
 wheel - the same DSP code (synthio, audiocore, ...) the real MicroPython
 sidecar runs - and pulls PCM block by block. No compiled engine and no
 VST3 host involved, so a script loads and runs in milliseconds instead of
@@ -22,7 +22,7 @@ from pathlib import Path
 
 COMPOSER_DIR = Path(__file__).resolve().parent
 
-# audioif is a dependency, imported from wherever it is installed --
+# audiodsp is a dependency, imported from wherever it is installed --
 # pydevices-audioif, from TestPyPI or as an editable install of a sibling
 # checkout. It used to be put on sys.path from a sibling directory instead,
 # which silently won over the installed wheel and, because this ran at

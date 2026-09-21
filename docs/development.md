@@ -64,7 +64,7 @@ what ships today. The canonical structure sizes and offsets live in
   `scripts/bootstrap.sh` creates a repo-local `.venv` with these.
 - The Steinberg VST3 SDK, fetched by `scripts/fetch-vst3-sdk.sh` into the
   gitignored `.deps/vst3sdk` (see [the licence note](../README.md#license) for its terms).
-- The sibling `audioif` checkout and the org's optional build-aggregator
+- The sibling `audiodsp` checkout and the org's optional build-aggregator
   workspace the MicroPython engine build depends on, and the sibling
   `audiocomponents` checkout whose `audioinstruments` and `audioeffects`
   packages the plug-in build stages into the bundle - all three fetched
@@ -78,7 +78,7 @@ what ships today. The canonical structure sizes and offsets live in
 ## Getting started
 
 A fresh clone has none of the external dependencies this repo needs - the
-VST3 SDK, the sibling `audioif` and build-aggregator repos the engine build
+VST3 SDK, the sibling `audiodsp` and build-aggregator repos the engine build
 depends on, the sibling `audiocomponents` repo the plug-in build stages its
 instruments and effects from, or REAPER for the DAW-driven tooling. `.deps/`
 and those sibling checkouts are all gitignored. One command sets all of it
@@ -95,7 +95,7 @@ each step individually.
 
 The MicroPython sidecar is built separately from the plug-in, and only
 needs rebuilding when `usermods/vstaudio`, `usermods/vstui`, or the
-sibling audioif checkout's C sources change. It lands in the ignored
+sibling audiodsp checkout's C sources change. It lands in the ignored
 `.deps/engine/`, and the plug-in build stages it into the bundle. CMake
 never detects a stale engine on its own - it only re-stages the file at
 `MPVST_MICROPYTHON_ENGINE` if that path's mtime changes, so after any of
@@ -233,7 +233,7 @@ SHA-256 - the platforms agree exactly, not within a tolerance.
 
 ## Workspace isolation
 
-The sibling `audioif` and `audiocomponents` repositories are consumed
+The sibling `audiodsp` and `audiocomponents` repositories are consumed
 read-only - no build or formatting command here writes into either. The
 engine builder likewise leaves
 the sibling MicroPython checkout unchanged: it uses the build workspace's
@@ -243,7 +243,7 @@ link on exit, including after a failed build.
 ## Deferred
 
 - Effect extras: a wet/dry mix parameter and sidechain input buses.
-- Float64 host processing and a native floating-point audioif graph.
+- Float64 host processing and a native floating-point audiodsp graph.
 - macOS bundles, signing, notarisation, and universal binaries.
 - Coverage-guided fuzzing. `tests/fuzz` exposes libFuzzer entry points;
   configure with `-DMPVST_ENABLE_LIBFUZZER=ON` on a clang toolchain and

@@ -396,7 +396,7 @@ bool processLifecycle(const PluginFactory& factory, const ClassInfo& classInfo,
     // Python synthio graph.
     //
     // The third 64 is synthio's zero-crossing loudness gate, taken from
-    // CircuitPython 10.3.0 in audioif 4ec5718: the level a voice actually
+    // CircuitPython 10.3.0 in audiodsp 4ec5718: the level a voice actually
     // renders at is state, it starts at zero on a fresh voice, and it is
     // forced to the pending value at the next block boundary. A pressed
     // note is therefore silent for exactly one block before it sounds. The
@@ -2169,7 +2169,7 @@ bool namedPluginPlays(const PluginFactory& factory, const std::string& wanted,
     }
     (void)controller->terminate();
     controller = nullptr;
-    // A library label has to survive the whole way: MACRO_LABELS in audioif,
+    // A library label has to survive the whole way: MACRO_LABELS in audiodsp,
     // through the scanner into a moduleinfo comment, back out as the
     // assignment the built script carries, and out of that into the title the
     // host shows. Every link is silent when it breaks - the parameter still

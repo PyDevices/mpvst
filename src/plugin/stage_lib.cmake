@@ -32,7 +32,7 @@ endif()
 # Without that record a deleted package would sit in the bundle forever:
 # the glob below only sees what still exists, so it could clear what it
 # was about to rewrite but never what had gone away. That mattered when
-# effects/ and midi_cc.py moved out to audioif - the plug-in kept loading
+# effects/ and midi_cc.py moved out to audiodsp - the plug-in kept loading
 # a stale copy of both, and the bootstrap's docstring has the story of
 # what a stray bare directory on sys.path does to an import.
 #

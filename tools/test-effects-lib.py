@@ -63,7 +63,7 @@ CASES = {
     # Below a few hundred hertz the engine's biquad coefficients used to
     # quantize into nonsense, and this one returned silence in the host -
     # so the case is here as much for the "does it render at all" check as
-    # for the corner. audioif's biquads are wider now; see its
+    # for the corner. audiodsp's biquads are wider now; see its
     # docs/upstream-diff.md, "The biquads are Q15, so they cannot go low".
     "LowPass-100Hz": ("audioeffects.LowPass(src, frequency=100)", "pass"),
     "GraphicEQ-low": ("audioeffects.GraphicEQ(src,"
@@ -102,12 +102,12 @@ CASES = {
     "Tremolo": ("audioeffects.Tremolo(src)", "pass"),
     "AutoPan": ("audioeffects.AutoPan(src)", "pass"),
     "Vibrato": ("audioeffects.Vibrato(src)", "pass"),
-    # audioif's audiomath module, which the engine did not have before -
+    # audiodsp's audiomath module, which the engine did not have before -
     # this case is as much "does the new native module reach the sidecar at
     # all" as it is a check on the effect.
     "RingMod": ("audioeffects.RingMod(src, frequency=220)", "pass"),
     # Driven by patch rather than by argument, so the patch surface itself
-    # is exercised in a real host and not only in audioif's own tests.
+    # is exercised in a real host and not only in audiodsp's own tests.
     "RingMod-patch": ("audioeffects.RingMod(src, patch=1)", "pass"),
     "Overdrive": ("audioeffects.Overdrive(src, drive=0.5)", "pass"),
     "Distortion": ("audioeffects.Distortion(src)", "pass"),

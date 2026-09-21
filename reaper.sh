@@ -35,13 +35,13 @@ soundtrack_dir=$(cd "$repo_dir/examples/soundtrack" && pwd)
 # "No module named piece" before REAPER was even launched.
 composition_dir="$soundtrack_dir/composer"
 reaper_dir="$repo_dir/reaper"
-# verify_song.py needs numpy plus the audioif wheel - this repo's own
+# verify_song.py needs numpy plus the audiodsp wheel - this repo's own
 # .venv (pydevices-audioif from TestPyPI) if set up, else the sibling
-# audioif checkout's.
+# audiodsp checkout's.
 if [[ -x "$repo_dir/.venv/bin/python" ]]; then
     venv_python="$repo_dir/.venv/bin/python"
 else
-    venv_python="$repo_dir/../audioif/.venv/bin/python"
+    venv_python="$repo_dir/../audiodsp/.venv/bin/python"
 fi
 # Windows folder locations are queried, never assembled from a username:
 # a profile need not live under C:\Users, and Roaming AppData is often

@@ -218,7 +218,7 @@ namespace {
 // The library declares its macros as MACRO_LABELS, so the script this builds
 // declares them the same way. The controller reads the assignment straight
 // back out of the source it embeds, which is how a label written once in
-// audioif ends up titling a parameter in the host - with one convention for
+// audiodsp ends up titling a parameter in the host - with one convention for
 // declaring a macro rather than a variable for the library and a comment for
 // everyone else.
 std::string macroLabelsAssignment (const std::string& barSeparated)

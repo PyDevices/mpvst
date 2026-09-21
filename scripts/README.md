@@ -8,7 +8,7 @@ for that). Every script here is idempotent: safe to rerun.
   script below in order, then configures, builds, and runs the test
   suite as a final verification. Start here.
 - **`fetch-sibling-repos.sh`** - clones/updates the three sibling repos
-  the builds depend on: `audioif` and the org's MicroPython
+  the builds depend on: `audiodsp` and the org's MicroPython
   [build-aggregator workspace](https://github.com/PyDevices/cmods) for
   the engine, and `audiocomponents` for the `audioinstruments` and
   `audioeffects` packages the plug-in build stages into the bundle
