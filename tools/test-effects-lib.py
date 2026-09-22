@@ -115,13 +115,18 @@ CASES = {
     "Saturation": ("audioeffects.Saturation(src)", "pass"),
     # The three characters are different curves, not one curve with
     # presets, so each gets its own trip through the host.
+    # `amount` was the pre-Phase-4 knob; the rebuilt class takes its drive in
+    # dB (`drive_db`, MACRO_LABELS[0] "Drive"). Calling it by the old name
+    # raised inside the sidecar and the probe read the silence as dead DSP.
     "Saturation-tape": (
-        "audioeffects.Saturation(src, amount=0.6, character='tape')",
+        "audioeffects.Saturation(src, drive_db=6.0, character='tape')",
         "pass"),
     "Saturation-console": (
-        "audioeffects.Saturation(src, amount=0.6, character='console')",
+        "audioeffects.Saturation(src, drive_db=6.0, character='console')",
         "pass"),
-    "Bitcrusher": ("audioeffects.Bitcrusher(src, crush=0.5)", "pass"),
+    # Bits and Rate are the two architectural knobs of the Phase-4 class, and
+    # `crush` -- one knob for both -- no longer exists. A case each.
+    "Bitcrusher": ("audioeffects.Bitcrusher(src, rate_hz=8000.0)", "pass"),
     "Bitcrusher-bits": ("audioeffects.Bitcrusher(src, bits=6)", "pass"),
     "Exciter": ("audioeffects.Exciter(src)", "pass"),
     # The microcontroller-scale use of the convolver: four partitions, and an
@@ -180,11 +185,22 @@ def main():
                 [smoke, bundle, "--effect-script", str(script)],
                 capture_output=True, text=True, timeout=300)
             match = re.search(
-                r"EFFECT_RMS \S+ \S+ quiet_out=(\S+) loud_out=(\S+)",
+                r"EFFECT_RMS \S+ \S+ quiet_out=(\S+) loud_out=(\S+)"
+                r"(?: error=(\d+))?",
                 result.stdout)
             if result.returncode != 0 or match is None:
                 failures.append(name)
                 print("%-22s FAIL (probe: rc=%d)" % (name, result.returncode))
+                continue
+            # A script that raised in the sidecar produces silence, and silence
+            # alone cannot be told from an effect that really outputs nothing.
+            # Say which it is (mpvst#12).
+            error = int(match.group(3) or 0)
+            if error:
+                failures.append(name)
+                print("%-22s FAIL (the sidecar raised: engine error %d -- the "
+                      "script did not build, so this is not a DSP result)"
+                      % (name, error))
                 continue
             quiet = float(match.group(1))
             loud = float(match.group(2))

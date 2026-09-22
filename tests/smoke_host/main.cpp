@@ -1004,6 +1004,14 @@ bool effectScriptProbe(const PluginFactory& factory,
     data.inputs = &inputBus;
     data.numOutputs = 1;
     data.outputs = &outputBus;
+    // Watch the engine-error parameter the processor publishes. Without this
+    // the probe cannot tell "the effect is silent" from "the script raised and
+    // there is no effect at all" -- a wrong constructor kwarg read as
+    // quiet_out=0 loud_out=0, which is what made four of these cases look like
+    // dead DSP for weeks (mpvst#12).
+    ParameterChanges outputChanges {4};
+    data.outputParameterChanges = &outputChanges;
+    int engineErrorCode = 0;
 
     constexpr double twoPi = 6.283185307179586476925286766559;
     for (int block = 0; block < kBlockCount; ++block)
@@ -1020,6 +1028,23 @@ bool effectScriptProbe(const PluginFactory& factory,
         }
         if (!ok(processor->process(data)))
             return false;
+        for (int32 queueIndex = 0;
+             queueIndex < outputChanges.getParameterCount(); ++queueIndex)
+        {
+            auto* queue = outputChanges.getParameterData(queueIndex);
+            if (queue == nullptr || queue->getPointCount() == 0 ||
+                queue->getParameterId() != 3U)
+                continue;
+            int32 sampleOffset = 0;
+            ParamValue value = 0.0;
+            if (queue->getPoint(queue->getPointCount() - 1, sampleOffset,
+                                 value) != kResultTrue)
+                continue;
+            const auto code = static_cast<int>(value * 255.0 + 0.5);
+            if (code != 0)
+                engineErrorCode = code;
+        }
+        outputChanges.clearQueue();
         heard.insert(heard.end(), outLeft.begin(), outLeft.end());
     }
 
@@ -1043,7 +1068,8 @@ bool effectScriptProbe(const PluginFactory& factory,
     const auto quiet = rmsOf(8192U, kHalf);
     const auto loud = rmsOf(kHalf + 8192U, kFrames * kBlockCount);
     std::cout << "EFFECT_RMS quiet_in=0.014142 loud_in=0.353553 quiet_out="
-              << quiet << " loud_out=" << loud << '\n';
+              << quiet << " loud_out=" << loud << " error=" << engineErrorCode
+              << '\n';
     return true;
 }
 
