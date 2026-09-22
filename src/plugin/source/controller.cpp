@@ -205,7 +205,7 @@ tresult PLUGIN_API Controller::setComponentState (IBStream* state)
     int32 version = 0;
     int32 bypass = 0;
     if (!stream.readInt32 (version) ||
-        (version != kLegacyStateVersion && version != kStateVersion) ||
+        version < kLegacyStateVersion || version > kStateVersion ||
         !stream.readInt32 (bypass))
         return kResultFalse;
 
@@ -217,7 +217,7 @@ tresult PLUGIN_API Controller::setComponentState (IBStream* state)
     }
 
     std::string scriptSource;
-    if (version >= kStateVersion)
+    if (version >= kScriptStateVersion)
     {
         int32 pipelineBlocks = 0;
         int32 scriptBytes = 0;
