@@ -100,4 +100,21 @@ install -m 755 \
     "$mp_dir/ports/$port/build-vst-engine/$engine_name" \
     "$output_dir/$engine_name"
 
+# Stamp it with what it was built from. The engine is a PREBUILT artifact:
+# every later `cmake --build` copies whatever is sitting in .deps/engine into
+# the bundle without asking how old it is, so the whole ctest suite can run
+# green against a core that no longer exists (mpvst#12, four days of it). The
+# stamp records every usermod that was linked -- audiodsp, and this repo's own
+# vstaudio/vstui -- so tools/check-engine-provenance.py can refuse it
+# (cmods#27). No stamp at all means an engine from before this line, which is
+# certainly older than the tree, and the check says so.
+provenance="$cmods_dir/scripts/provenance.py"
+if [[ -f "$provenance" ]]; then
+    python3 "$provenance" write "$output_dir/$engine_name" \
+        --target "mpvst-engine-$port" --port "$port"
+else
+    echo "warning: no $provenance, so $engine_name goes out unstamped and" \
+         "nothing downstream can tell how old it is" >&2
+fi
+
 echo "Built $output_dir/$engine_name"

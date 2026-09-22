@@ -23,6 +23,18 @@ module the engine carries is stamped with `__revision__`, the `git describe` of
 the tree it was compiled from. Compare its sha against the sibling checkout's
 HEAD. One comparison, no list to maintain, and it cannot be fooled by a change
 that adds no new module name.
+
+**And the other half of the engine is ours.** `__revision__` says nothing
+about `vstaudio` and `vstui`, the C++ usermods in this repository that the
+engine is linked with -- so a change to our own transport or UI bindings went
+into a stale engine exactly as silently as an audiodsp change did. Since
+cmods#27, `build-micropython-engine.sh` writes a provenance stamp beside the
+engine naming every usermod that was linked, and this script refuses an engine
+whose stamp is behind any of them. An engine with no stamp beside it predates
+that line, so it is older than the tree by construction and is refused too.
+
+The stamp asks whether each module's OWN files moved, not whether its
+repository did, so a docs commit here does not redden the suite.
 """
 
 from __future__ import annotations
@@ -62,6 +74,46 @@ def engine_revisions(engine: Path) -> dict[str, str]:
     return found
 
 
+#: The usermods this repository puts into the engine. `__revision__` cannot
+#: see them: they are C++ with no Python module to carry a stamp.
+OUR_USERMODS = ("vstaudio", "vstui")
+
+
+def check_cmods_stamp(engine: Path) -> int:
+    """Refuse an engine behind any usermod that was linked into it.
+
+    Returns 0 when it is current (or when there is no cmods to ask), 1 when
+    it is behind. Complements the `__revision__` check above rather than
+    replacing it: that one asks the RUNNING binary what it thinks it is, this
+    one asks the build what went in. A disagreement between them is its own
+    finding.
+    """
+    provenance = Path(__file__).resolve().parents[2] / "cmods" / "scripts" / "provenance.py"
+    if not provenance.is_file():
+        # Building from a tarball, without the workspace. Say so rather than
+        # passing quietly -- a skip that looks like a pass is this file's whole
+        # subject.
+        print(f"SKIP: no {provenance}, so which usermods went into the engine "
+              f"cannot be established. It may be any age.")
+        return 0
+    stamp = engine.with_name(engine.name + ".provenance")
+    if not stamp.is_file():
+        print(f"no provenance stamp beside {engine.name}. An engine without one "
+              f"predates the stamp itself, so it is older than the tree by "
+              f"construction and what it contains cannot be established.")
+        print("    scripts/build-micropython-engine.sh --port unix")
+        return 1
+    argv = [sys.executable, str(provenance), "check", str(engine)]
+    for source in OUR_USERMODS + ("audiodsp",):
+        argv += ["--source", source]
+    done = subprocess.run(argv, capture_output=True, text=True)
+    print((done.stdout + done.stderr).rstrip())
+    if done.returncode:
+        print("Rebuild it:")
+        print("    scripts/build-micropython-engine.sh --port unix")
+    return done.returncode
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("engine", help="the engine binary the bundle carries")
@@ -71,6 +123,8 @@ def main() -> int:
     engine = Path(args.engine)
     if not engine.exists():
         print(f"no engine at {engine}", file=sys.stderr)
+        return 1
+    if check_cmods_stamp(engine):
         return 1
 
     checkout = Path(args.audiodsp)
