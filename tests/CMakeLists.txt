@@ -71,6 +71,18 @@ if(TARGET mpvst-stage-micropython-engine)
         $<TARGET_FILE_DIR:MPVST>/${mpvst_engine_name}
         -c "import lvgl, vstaudio, vstui, displaydev, appdev, multimer, events")
 
+    # The engine is prebuilt and every later build copies it in without asking
+    # how old it is, so the suites below can certify a DSP core that is not the
+    # one on disk. That is what mpvst#12 turned out to be: four days of drift
+    # reading as one plug-in that would not import and two effects that
+    # rendered silence. Compare the audiodsp revision the engine is stamped
+    # with against the sibling checkout's HEAD.
+    add_test(NAME mpvst_engine_provenance COMMAND
+        ${MPVST_PYTHON}
+        ${CMAKE_SOURCE_DIR}/tools/check-engine-provenance.py
+        $<TARGET_FILE_DIR:MPVST>/${mpvst_engine_name}
+        ${CMAKE_SOURCE_DIR}/../audiodsp)
+
     add_executable(mpvst_reload_tests reload_tests.cpp)
     target_link_libraries(mpvst_reload_tests PRIVATE mpvst_sidecar_transport)
     target_compile_features(mpvst_reload_tests PRIVATE cxx_std_17)
