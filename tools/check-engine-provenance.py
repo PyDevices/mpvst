@@ -103,7 +103,8 @@ def check_cmods_stamp(engine: Path) -> int:
               f"construction and what it contains cannot be established.")
         print("    scripts/build-micropython-engine.sh --port unix")
         return 1
-    argv = [sys.executable, str(provenance), "check", str(engine)]
+    argv = [sys.executable, str(provenance), "check", str(engine),
+            "--rebuild-hint", "scripts/build-micropython-engine.sh --port unix"]
     for source in OUR_USERMODS + ("audiodsp",):
         argv += ["--source", source]
     done = subprocess.run(argv, capture_output=True, text=True)
