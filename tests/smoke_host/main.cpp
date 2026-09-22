@@ -134,6 +134,24 @@ const ClassInfo* findAudioClassNamed(const PluginFactory& factory,
     return nullptr;
 }
 
+// The known-macro mask is the last int32 of a version 3 chunk. Read from the
+// tail rather than by re-walking the layout, so this stays true whatever the
+// embedded script's length turns out to be.
+bool readKnownMask(const MemoryStream& chunk, Steinberg::uint32& mask)
+{
+    const auto size = chunk.getSize();
+    if (size < 4)
+        return false;
+    const auto* bytes =
+        reinterpret_cast<const unsigned char*>(chunk.getData());
+    const auto tail = static_cast<std::size_t>(size) - 4U;
+    mask = static_cast<Steinberg::uint32>(bytes[tail]) |
+           (static_cast<Steinberg::uint32>(bytes[tail + 1U]) << 8) |
+           (static_cast<Steinberg::uint32>(bytes[tail + 2U]) << 16) |
+           (static_cast<Steinberg::uint32>(bytes[tail + 3U]) << 24);
+    return true;
+}
+
 bool stateRoundTrip(const PluginFactory& factory, const ClassInfo& classInfo,
                     FUnknown* host)
 {
@@ -142,6 +160,13 @@ bool stateRoundTrip(const PluginFactory& factory, const ClassInfo& classInfo,
         return false;
     MemoryStream snapshot;
     if (!ok(original->getState(&snapshot)) || snapshot.getSize() == 0U)
+        return false;
+    // A component nobody has touched must say so. The whole bug was a chunk
+    // that recorded sixteen 0.5s with no way to tell them from values somebody
+    // chose, so the reload replayed all sixteen over the script's own
+    // defaults. An empty mask here is what makes the reload keep quiet.
+    Steinberg::uint32 freshMask = ~static_cast<Steinberg::uint32>(0);
+    if (!readKnownMask(snapshot, freshMask) || freshMask != 0U)
         return false;
     const auto snapshotSize = snapshot.getSize();
     std::string expected(snapshot.getData(), snapshot.getData() + snapshotSize);
@@ -172,6 +197,16 @@ bool stateRoundTrip(const PluginFactory& factory, const ClassInfo& classInfo,
     }
     legacyState.seek(0, IBStream::kIBSeekSet, nullptr);
     if (!ok(restored->setState(&legacyState)))
+        return false;
+    // A chunk older than version 3 cannot say which macros were chosen, so
+    // every one counts as known and an already-saved project reloads sounding
+    // exactly as it does today. Changing that on the reader's behalf would
+    // silently move how an old mix plays back.
+    MemoryStream afterLegacy;
+    Steinberg::uint32 legacyMask = 0U;
+    if (!ok(restored->getState(&afterLegacy)) ||
+        !readKnownMask(afterLegacy, legacyMask) ||
+        legacyMask != ~static_cast<Steinberg::uint32>(0))
         return false;
 
     MemoryStream emptyState;
@@ -224,6 +259,34 @@ bool stateRoundTrip(const PluginFactory& factory, const ClassInfo& classInfo,
     truncatedScript.seek(0, IBStream::kIBSeekSet, nullptr);
     if (ok(restored->setState(&truncatedScript)))
         return false;
+
+    // A version 3 chunk that says only macro 3 was ever set must reload that
+    // way. This is the case the whole change exists for: the other fifteen
+    // slots hold 0.5 because nothing touched them, and the script's own
+    // defaults are the only values in the system anybody chose on purpose.
+    constexpr Steinberg::uint32 kOnlyMacroThree = 1U << 3;
+    MemoryStream partialState;
+    IBStreamer partialWriter(&partialState, kLittleEndian);
+    if (!partialWriter.writeInt32(3) || !partialWriter.writeInt32(0))
+        return false;
+    for (int index = 0; index < 16; ++index)
+    {
+        if (!partialWriter.writeFloat(index == 3 ? 0.25F : 0.5F))
+            return false;
+    }
+    if (!partialWriter.writeInt32(4) || !partialWriter.writeInt32(0) ||
+        !partialWriter.writeInt32(static_cast<Steinberg::int32>(kOnlyMacroThree)))
+        return false;
+    partialState.seek(0, IBStream::kIBSeekSet, nullptr);
+    if (!ok(restored->setState(&partialState)))
+        return false;
+    MemoryStream afterPartial;
+    Steinberg::uint32 partialMask = 0U;
+    if (!ok(restored->getState(&afterPartial)) ||
+        !readKnownMask(afterPartial, partialMask) ||
+        partialMask != kOnlyMacroThree)
+        return false;
+
     restored->terminate();
     return true;
 }
@@ -2580,7 +2643,7 @@ int main(int argc, char** argv)
                                   !editorMode && !windowCapture &&
                                   !namedMode && !sweepMode;
         if (defaultSuite)
-            std::cout << "HOOK state.roundtrip OK: legacy_v1=1 malformed=4\n";
+            std::cout << "HOOK state.roundtrip OK: legacy_v1=1 malformed=4 fresh_known=0 legacy_known=all partial_known=macro3\n";
 
         if (defaultSuite &&
             !processLifecycle(factory, classInfo, host))

@@ -687,7 +687,7 @@ tresult PLUGIN_API Processor::setState (IBStream* state)
     int32 version = 0;
     int32 bypass = 0;
     if (!stream.readInt32 (version) ||
-        (version != kLegacyStateVersion && version != kStateVersion) ||
+        version < kLegacyStateVersion || version > kStateVersion ||
         !stream.readInt32 (bypass))
         return kResultFalse;
 
@@ -700,7 +700,7 @@ tresult PLUGIN_API Processor::setState (IBStream* state)
 
     int32 pipelineBlocks = kDefaultPipelineBlocks;
     std::string scriptSource = scriptSource_;
-    if (version >= kStateVersion)
+    if (version >= kScriptStateVersion)
     {
         int32 scriptBytes = 0;
         if (!stream.readInt32 (pipelineBlocks) ||
@@ -714,14 +714,31 @@ tresult PLUGIN_API Processor::setState (IBStream* state)
             return kResultFalse;
     }
 
+    // Which of the saved values anybody actually chose. A chunk older than
+    // version 3 cannot say, so every macro counts as known and the project
+    // reloads sounding exactly as it does today -- the alternative would
+    // silently change how an already-saved mix plays back, which is not a
+    // thing to do on the reader's behalf. Re-saving such a project once
+    // records the truth and it starts honouring the script's own defaults.
+    Steinberg::uint32 known = ~static_cast<Steinberg::uint32> (0);
+    if (version >= kStateVersion)
+    {
+        int32 rawKnown = 0;
+        if (!stream.readInt32 (rawKnown))
+            return kResultFalse;
+        known = static_cast<Steinberg::uint32> (rawKnown);
+    }
+
     bypass_.store (bypass != 0 ? 1U : 0U, std::memory_order_relaxed);
     for (std::size_t index = 0; index < values.size (); ++index)
         macros_[index].store (std::clamp (values[index], 0.0f, 1.0f),
                               std::memory_order_relaxed);
-    // A restored chunk is authoritative for every macro: these are the values
-    // the project was saved with, and replaying them is the whole point.
-    macrosKnown_.store (~static_cast<Steinberg::uint32> (0),
-                        std::memory_order_relaxed);
+    // A restored chunk is authoritative for the macros it says were set --
+    // those are the values the project was saved with, and replaying them is
+    // the whole point. It is deliberately not authoritative for the rest:
+    // 0.5 in that slot means "nobody chose", and the script's own default is
+    // the only value in the system anybody chose on purpose.
+    macrosKnown_.store (known, std::memory_order_relaxed);
     pipelineBlocks_ = pipelineBlocks;
     scriptSource_ = std::move (scriptSource);
     macroResyncPending_.store (1U, std::memory_order_relaxed);
@@ -761,6 +778,13 @@ tresult PLUGIN_API Processor::getState (IBStream* state)
          stream.writeRaw (scriptSource_.data (),
                           static_cast<TSize> (scriptSource_.size ())) !=
              static_cast<TSize> (scriptSource_.size ())))
+        return kResultFalse;
+    // Last, so that a version 2 reader stops cleanly before it: which macros
+    // somebody actually set. Saving the values without saving this was the
+    // whole bug -- sixteen floats, fifteen of them 0.5 because nothing had
+    // touched them, and a reload with no way to tell which was which.
+    if (!stream.writeInt32 (static_cast<int32> (
+            macrosKnown_.load (std::memory_order_relaxed))))
         return kResultFalse;
     return kResultOk;
 }

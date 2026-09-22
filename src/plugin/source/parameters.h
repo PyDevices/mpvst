@@ -23,7 +23,12 @@ constexpr Steinberg::Vst::ParamID kFirstMidiParameter = 0x10000;
 constexpr std::size_t kMidiChannelCount = 16;
 constexpr std::size_t kMidiControllerCount = 130;
 constexpr Steinberg::int32 kLegacyStateVersion = 1;
-constexpr Steinberg::int32 kStateVersion = 2;
+// Version 2 added the embedded script. Version 3 added the known-macro mask:
+// without it a reload could not tell a macro the user had set to 0.5 from one
+// nobody had touched, so it replayed all sixteen and overwrote whatever the
+// script had chosen for itself.
+constexpr Steinberg::int32 kScriptStateVersion = 2;
+constexpr Steinberg::int32 kStateVersion = 3;
 constexpr Steinberg::int32 kDefaultPipelineBlocks = 4;
 constexpr Steinberg::int32 kMaximumPipelineBlocks = 16;
 constexpr Steinberg::int32 kMaximumEmbeddedScriptBytes = 1024 * 1024;
