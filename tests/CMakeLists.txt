@@ -21,7 +21,7 @@ if(NOT MPVST_PYTHON)
     find_package(Python3 COMPONENTS Interpreter)
     set(MPVST_PYTHON "${Python3_EXECUTABLE}")
     message(STATUS "no .venv Python; falling back to ${MPVST_PYTHON}. The "
-        "Python tests need pydevices-audioif installed into it.")
+        "Python tests need pydevices-audiodsp installed into it.")
 endif()
 
 add_executable(mpvst_protocol_tests protocol_tests.cpp)

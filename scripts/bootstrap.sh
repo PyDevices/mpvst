@@ -38,7 +38,7 @@ if ! "$repo_dir/reaper/install-reaper-portable.sh"; then
         "reaper.sh need it, the core build/test does not."
 fi
 
-log "creating .venv (pydevices-audioif, pydevices-audioinstruments," \
+log "creating .venv (pydevices-audiodsp, pydevices-audioinstruments," \
     "pydevices-audioeffects from TestPyPI; numpy, flake8)"
 if [[ ! -d "$repo_dir/.venv" ]]; then
     python3 -m venv "$repo_dir/.venv" || die "python3 -m venv failed"
@@ -52,7 +52,7 @@ fi
 "$repo_dir/.venv/bin/pip" install -q \
     -i https://test.pypi.org/simple/ \
     --extra-index-url https://pypi.org/simple/ \
-    pydevices-audioif pydevices-audioinstruments pydevices-audioeffects \
+    pydevices-audiodsp pydevices-audioinstruments pydevices-audioeffects \
     numpy flake8 \
     pyloudnorm soundfile scipy pyyaml \
     || die "installing the PyDevices audio packages/numpy/flake8 into .venv failed"

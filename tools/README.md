@@ -21,7 +21,7 @@ one up:
 ```bash
 pip install -i https://test.pypi.org/simple/ \
   --extra-index-url https://pypi.org/simple/ \
-  pydevices-audioif pydevices-audioinstruments pydevices-audioeffects numpy
+  pydevices-audiodsp pydevices-audioinstruments pydevices-audioeffects numpy
 ```
 
 TestPyPI is the only index carrying those three; the extra index resolves
@@ -46,7 +46,7 @@ see [`../reaper/README.md`](../reaper/README.md) and the root
   the seconds a full plug-in load takes. `harness.py` provides
   `InstrumentRun` and `EffectRun`; `vstaudio.py` is the shim module
   scripts see as `import vstaudio`. `audiodsp` itself comes from the
-  installed `pydevices-audioif` package (`harness.py` no longer puts a
+  installed `pydevices-audiodsp` package (`harness.py` no longer puts a
   sibling checkout on `sys.path`, which used to win silently over the
   wheel); the components come from `MPVST_COMPONENTS_LIB`.
 - **`test-instruments-lib.py [name ...]`** - runs every instrument

@@ -57,7 +57,7 @@ what ships today. The canonical structure sizes and offsets live in
   `find_package(X11 REQUIRED)` for the editor's native window) - e.g.
   `libx11-dev` on Debian/Ubuntu.
 - Python 3.x for `tools/`, `scripts/`, and the `ctest`-registered Python
-  suites; `numpy`, `pydevices-audioif`, `pydevices-audioinstruments` and
+  suites; `numpy`, `pydevices-audiodsp`, `pydevices-audioinstruments` and
   `pydevices-audioeffects` (all from TestPyPI - see
   [`tools/README.md`](../tools/README.md)) for the instrument/effect tests
   and preview renders, and `flake8` for the `mpvst_lint` ctest.

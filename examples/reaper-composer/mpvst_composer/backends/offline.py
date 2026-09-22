@@ -37,7 +37,7 @@ writing; render through Reaper before you believe it.
 Not yet mixed here: pan automation (the pan is static, as in `apply_mix`)
 and sidechain keys.
 
-Needs `pydevices-audioif`, `pydevices-audioinstruments` and
+Needs `pydevices-audiodsp`, `pydevices-audioinstruments` and
 `pydevices-audioeffects`.
 """
 

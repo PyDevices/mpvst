@@ -23,7 +23,7 @@ from pathlib import Path
 COMPOSER_DIR = Path(__file__).resolve().parent
 
 # audiodsp is a dependency, imported from wherever it is installed --
-# pydevices-audioif, from TestPyPI or as an editable install of a sibling
+# pydevices-audiodsp, from TestPyPI or as an editable install of a sibling
 # checkout. It used to be put on sys.path from a sibling directory instead,
 # which silently won over the installed wheel and, because this ran at
 # sys.path[0], over PYTHONPATH as well: an A/B done by pointing PYTHONPATH at
