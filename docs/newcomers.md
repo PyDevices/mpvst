@@ -257,7 +257,9 @@ dependencies, including:
 
 - the Steinberg VST3 SDK under `.deps/vst3sdk`;
 - sibling `audiodsp` and `audiocomponents` checkouts;
-- the build-aggregator workspace used to build the engine; and
+- a sibling `micropython-pydevices` checkout (the `vst3-engine` variant and
+  patch series), the module repositories its preset names, and an upstream
+  MicroPython clone at the pinned tag, all used to build the engine; and
 - optionally REAPER for the DAW integration harnesses.
 
 The supported setup command is:
