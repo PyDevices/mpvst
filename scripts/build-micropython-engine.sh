@@ -5,6 +5,20 @@
 #
 # Defaults to the Windows engine, which is the shipping product. The unix port
 # builds the same module set for the Linux bundle.
+#
+# The build is upstream MicroPython's own make with the vst3-engine variant
+# and preset that micropython-pydevices carries: the variant turns sockets,
+# SSL and FFI off (the engine is a deliberately narrow scripting core -
+# compositions and racks are code, and mpvst_scan_plugins.py runs at DAW scan
+# time, so the shipped interpreter must not reach the network or arbitrary
+# native code), and the preset names every module the workspace builds plus
+# this repository's vstaudio and vstui. Nothing here is copied or linked into
+# the MicroPython checkout.
+#
+# Layout: this repository, micropython-pydevices, audiodsp (and the other
+# module repositories the preset names) and a MicroPython checkout are
+# siblings under one directory. scripts/fetch-sibling-repos.sh lays that out
+# and readies the checkout. MICROPYTHON_DIR overrides where the checkout is.
 set -euo pipefail
 
 port=windows
@@ -15,42 +29,37 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# The engine is a deliberately narrow scripting core: compositions and racks
-# are code, and mpvst_scan_plugins.py runs at DAW scan time, so the shipped
-# interpreter must not reach the network (sockets/SSL) or arbitrary native
-# code (FFI). On windows those arrive as cmods overlay patches 0001/0003 —
-# skipped here; on unix they are port defaults — forced off on the make
-# command line. Overlay source of truth: micropython-pydevices
-# profiles/vst3-engine.series. Rebuilding with them enabled is possible but
-# is then the builder's own informed choice, not the shipped default.
-engine_overlay_skip=""
-engine_make_extra=""
+repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+workspace_dir=$(cd "$repo_dir/.." && pwd)
+mp_dir=${MICROPYTHON_DIR:-"$workspace_dir/micropython"}
+pyd_dir="$workspace_dir/micropython-pydevices"
+output_dir="$repo_dir/.deps/engine"
+jobs=${JOBS:-$(nproc)}
+
 # The windows executable wears our icon rather than MicroPython's. One .ico
 # serves both Windows surfaces: this, and the bundle folder icon the VST3 SDK
 # would otherwise fill with Steinberg's logo (see src/plugin/CMakeLists.txt).
 # Placeholder art - installer/art/README.md says what it is and how to replace it.
-engine_icon=""
+make_extra=()
 case "$port" in
-    # mkrules.mk appends .exe itself for mingw targets, so PROG must be the
-    # bare name; the installed artifact still carries the extension.
-    windows) prog_name=mpvst-engine; engine_name=mpvst-engine.exe; variant=dev
-             engine_overlay_skip="0001 0003"
-             engine_icon="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/installer/art/mpvst.ico" ;;
-    unix)    prog_name=mpvst-engine; engine_name=mpvst-engine; variant=standard
-             engine_make_extra="MICROPY_PY_SOCKET=0 MICROPY_PY_SSL=0 MICROPY_PY_FFI=0" ;;
+    # mkrules.mk appends .exe itself for mingw targets, so the variant's PROG is
+    # the bare name; the installed artifact still carries the extension.
+    windows) engine_name=mpvst-engine.exe
+             make_extra+=(CROSS_COMPILE=x86_64-w64-mingw32- ENGINE_ICON="$repo_dir/installer/art/mpvst.ico") ;;
+    unix)    engine_name=mpvst-engine ;;
     *) echo "error: unsupported port '$port'" >&2; exit 2 ;;
 esac
 
-repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-workspace_dir=$(cd "$repo_dir/.." && pwd)
-cmods_dir=${CMODS_DIR:-"$workspace_dir/cmods"}
-mp_dir=${MICROPYTHON_DIR:-"$cmods_dir/micropython"}
-output_dir="$repo_dir/.deps/engine"
-
+variant_dir="$pyd_dir/variants/$port/vst3-engine"
 if [[ ! -f "$mp_dir/ports/$port/Makefile" ]]; then
-    echo "error: no Makefile at $mp_dir/ports/$port - the sibling cmods/micropython" \
-        "checkout is missing or incomplete. Run scripts/fetch-sibling-repos.sh," \
-        "or point CMODS_DIR/MICROPYTHON_DIR at an existing checkout." >&2
+    echo "error: no Makefile at $mp_dir/ports/$port - the sibling micropython checkout" \
+        "is missing or incomplete. Run scripts/fetch-sibling-repos.sh, or point" \
+        "MICROPYTHON_DIR at an existing checkout." >&2
+    exit 1
+fi
+if [[ ! -f "$variant_dir/mpconfigvariant.mk" ]]; then
+    echo "error: no vst3-engine variant at $variant_dir - the sibling" \
+        "micropython-pydevices checkout is missing or old. Run scripts/fetch-sibling-repos.sh." >&2
     exit 1
 fi
 if [[ ! -f "$workspace_dir/audiodsp/micropython.mk" ]]; then
@@ -58,46 +67,23 @@ if [[ ! -f "$workspace_dir/audiodsp/micropython.mk" ]]; then
         "checkout is missing or incomplete. Run scripts/fetch-sibling-repos.sh." >&2
     exit 1
 fi
+overlay_mark="The PyDevices overlay applied to $(tr -d '[:space:]' < "$pyd_dir/UPSTREAM")"
+if [[ "$(git -C "$mp_dir" log -1 --format=%s 2>/dev/null)" != "$overlay_mark"* ]]; then
+    echo "error: $mp_dir does not carry the PyDevices overlay; run" \
+        "$pyd_dir/tools/prepare-micropython.sh $mp_dir" >&2
+    exit 1
+fi
 
 mkdir -p "$output_dir"
 
-# cmods applies its mailbox overlays transactionally and reverses them on
-# exit; the engine build skips the networking/FFI ones (see above). Add only
-# this repository's modules to its ignored discovery root for the duration
-# of the build.
-links=()
-for module in vstaudio vstui; do
-    link="$cmods_dir/$module"
-    if [[ -e "$link" && ! -L "$link" ]]; then
-        echo "error: $link already exists and is not a symlink" >&2
-        exit 1
-    fi
-    ln -sfn "$repo_dir/usermods/$module" "$link"
-    links+=("$link")
-done
-cleanup() {
-    local link
-    for link in "${links[@]}"; do
-        if [[ -L "$link" && "$(readlink "$link")" == "$repo_dir/usermods/$(basename "$link")" ]]; then
-            unlink "$link"
-        fi
-    done
-}
-trap cleanup EXIT
-
-build_args=(--port "$port" --variant "$variant")
-# Only the windows port has anywhere to put an icon; build_mp.sh refuses the
-# flag on the others rather than ignoring it, so it is passed only here.
-[[ -n "$engine_icon" ]] && build_args+=(--icon "$engine_icon")
-
-BUILD=build-vst-engine \
-PROG="$prog_name" \
-MP_OVERLAY_SKIP="$engine_overlay_skip" \
-MP_MAKE_EXTRA="$engine_make_extra" \
-    "$cmods_dir/build_mp.sh" "${build_args[@]}"
+make -C "$mp_dir/mpy-cross" -j "$jobs"
+# VARIANT_DIR is taken relative to the port directory; the build lands in
+# build-vst3-engine (the variant's own name), beside the port's other builds.
+make -C "$mp_dir/ports/$port" -j "$jobs" \
+    VARIANT_DIR="$variant_dir" "${make_extra[@]}"
 
 install -m 755 \
-    "$mp_dir/ports/$port/build-vst-engine/$engine_name" \
+    "$mp_dir/ports/$port/build-vst3-engine/$engine_name" \
     "$output_dir/$engine_name"
 
 # Stamp it with what it was built from. The engine is a PREBUILT artifact:
@@ -105,13 +91,14 @@ install -m 755 \
 # the bundle without asking how old it is, so the whole ctest suite can run
 # green against a core that no longer exists (mpvst#12, four days of it). The
 # stamp records every usermod that was linked -- audiodsp, and this repo's own
-# vstaudio/vstui -- so tools/check-engine-provenance.py can refuse it
-# (cmods#27). No stamp at all means an engine from before this line, which is
-# certainly older than the tree, and the check says so.
-provenance="$cmods_dir/scripts/provenance.py"
+# vstaudio/vstui -- so tools/check-engine-provenance.py can refuse it. No
+# stamp at all means an engine from before this line, which is certainly
+# older than the tree, and the check says so.
+provenance="$workspace_dir/tools/provenance.py"
 if [[ -f "$provenance" ]]; then
     python3 "$provenance" write "$output_dir/$engine_name" \
-        --target "mpvst-engine-$port" --port "$port"
+        --target "mpvst-engine-$port" --port "$port" \
+        --source "vstaudio=$repo_dir/usermods/vstaudio" --source "vstui=$repo_dir/usermods/vstui"
 else
     echo "warning: no $provenance, so $engine_name goes out unstamped and" \
          "nothing downstream can tell how old it is" >&2

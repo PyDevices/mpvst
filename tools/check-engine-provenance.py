@@ -79,16 +79,16 @@ def engine_revisions(engine: Path) -> dict[str, str]:
 OUR_USERMODS = ("vstaudio", "vstui")
 
 
-def check_cmods_stamp(engine: Path) -> int:
+def check_workspace_stamp(engine: Path) -> int:
     """Refuse an engine behind any usermod that was linked into it.
 
-    Returns 0 when it is current (or when there is no cmods to ask), 1 when
+    Returns 0 when it is current (or when there is no workspace to ask), 1 when
     it is behind. Complements the `__revision__` check above rather than
     replacing it: that one asks the RUNNING binary what it thinks it is, this
     one asks the build what went in. A disagreement between them is its own
     finding.
     """
-    provenance = Path(__file__).resolve().parents[2] / "cmods" / "scripts" / "provenance.py"
+    provenance = Path(__file__).resolve().parents[2] / "tools" / "provenance.py"
     if not provenance.is_file():
         # Building from a tarball, without the workspace. Say so rather than
         # passing quietly -- a skip that looks like a pass is this file's whole
@@ -125,7 +125,7 @@ def main() -> int:
     if not engine.exists():
         print(f"no engine at {engine}", file=sys.stderr)
         return 1
-    if check_cmods_stamp(engine):
+    if check_workspace_stamp(engine):
         return 1
 
     checkout = Path(args.audiodsp)

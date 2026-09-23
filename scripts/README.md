@@ -7,13 +7,13 @@ for that). Every script here is idempotent: safe to rerun.
 - **`bootstrap.sh`** - one-shot setup for a fresh clone: runs every
   script below in order, then configures, builds, and runs the test
   suite as a final verification. Start here.
-- **`fetch-sibling-repos.sh`** - clones/updates the three sibling repos
-  the builds depend on: `audiodsp` and the org's MicroPython
-  [build-aggregator workspace](https://github.com/PyDevices/cmods) for
-  the engine, and `audiocomponents` for the `audioinstruments` and
-  `audioeffects` packages the plug-in build stages into the bundle
-  (private until it is flipped public, so that clone fails for anyone
-  outside the org until then).
+- **`fetch-sibling-repos.sh`** - clones/updates the sibling repos the
+  builds depend on: for the engine, `micropython-pydevices` (the
+  vst3-engine variant, the preset and the patch series), `audiodsp` and
+  the other module repositories the preset names, plus a MicroPython
+  checkout at the pinned tag with the patch series applied once; for the
+  plug-in build, `audiocomponents` (the `audioinstruments` and
+  `audioeffects` packages it stages into the bundle).
 - **`fetch-vst3-sdk.sh`** - downloads the pinned VST3 SDK into `.deps/vst3sdk`.
 - **`build-micropython-engine.sh [--port windows|unix]`** - builds the
   MicroPython sidecar engine (defaults to the Windows engine, the

@@ -13,7 +13,7 @@ repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 log() { printf 'bootstrap: %s\n' "$*"; }
 die() { log "ERROR: $*"; exit 1; }
 
-log "fetching sibling repos (cmods, audiodsp, audiocomponents)"
+log "fetching sibling repos (micropython-pydevices, audiodsp and the module repos, a MicroPython checkout, audiocomponents)"
 "$repo_dir/scripts/fetch-sibling-repos.sh" || die "fetch-sibling-repos.sh failed"
 
 log "fetching VST3 SDK"

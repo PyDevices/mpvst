@@ -10,10 +10,11 @@ where the `.ico` came from. Replacing it is one file.
 Two Windows surfaces read this one file, and both of them used to carry
 somebody else's mark:
 
-- **The sidecar executable.** `scripts/build-micropython-engine.sh` passes it to
-  `build_mp.sh --icon`, which rewrites `ports/windows/micropython.rc` for the
-  build and restores it afterwards. Without it the engine wears MicroPython's
-  logo.
+- **The sidecar executable.** `scripts/build-micropython-engine.sh` passes it as
+  `ENGINE_ICON=` to MicroPython's make; the windows vst3-engine variant in
+  micropython-pydevices swaps the port's resource rule for one that compiles
+  this file, so the checkout is never edited. Without it the engine wears
+  MicroPython's logo.
 - **The bundle folder in Explorer.** `src/plugin/CMakeLists.txt` sets
   `SMTG_PACKAGE_ICON_PATH`, which the VST3 SDK copies into the bundle root as
   `PlugIn.ico` with a `desktop.ini` beside it. Without it the SDK defaults to
