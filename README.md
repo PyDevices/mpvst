@@ -77,6 +77,9 @@ after you install.
 
 ## Going further
 
+- [**Newcomer's guide to the codebase**](docs/newcomers.md) - the repository
+  map, the plug-in/sidecar execution path, key invariants, and suggested
+  learning paths for each part of the system.
 - [**Getting started**](docs/getting-started.md) - what MPVST is, installing
   it, and finding your first instrument in the FX browser.
 - [**Generating projects**](docs/generating-projects.md) - building `.RPP`
