@@ -64,11 +64,12 @@ what ships today. The canonical structure sizes and offsets live in
   `scripts/bootstrap.sh` creates a repo-local `.venv` with these.
 - The Steinberg VST3 SDK, fetched by `scripts/fetch-vst3-sdk.sh` into the
   gitignored `.deps/vst3sdk` (see [the licence note](../README.md#license) for its terms).
-- The sibling `audiodsp` checkout and the org's optional build-aggregator
-  workspace the MicroPython engine build depends on, and the sibling
-  `audiocomponents` checkout whose `audioinstruments` and `audioeffects`
-  packages the plug-in build stages into the bundle - all three fetched
-  by `scripts/fetch-sibling-repos.sh`.
+- The sibling `audiodsp` and `micropython-pydevices` checkouts, the other
+  module repositories the engine preset names, and an upstream MicroPython
+  clone at the pinned tag, which the MicroPython engine build depends on; and
+  the sibling `audiocomponents` checkout whose `audioinstruments` and
+  `audioeffects` packages the plug-in build stages into the bundle - all
+  fetched by `scripts/fetch-sibling-repos.sh`.
 - On WSL, building the Windows engine/plugin needs a reachable Windows
   host: `scripts/build-micropython-engine.sh --port windows` and
   `scripts/install-plugin-windows.sh` both shell out to `powershell.exe`,
@@ -78,8 +79,8 @@ what ships today. The canonical structure sizes and offsets live in
 ## Getting started
 
 A fresh clone has none of the external dependencies this repo needs - the
-VST3 SDK, the sibling `audiodsp` and build-aggregator repos the engine build
-depends on, the sibling `audiocomponents` repo the plug-in build stages its
+VST3 SDK, the sibling `audiodsp`, `micropython-pydevices` and MicroPython
+checkouts the engine build depends on, the sibling `audiocomponents` repo the plug-in build stages its
 instruments and effects from, or REAPER for the DAW-driven tooling. `.deps/`
 and those sibling checkouts are all gitignored. One command sets all of it
 up:
@@ -235,10 +236,10 @@ SHA-256 - the platforms agree exactly, not within a tolerance.
 
 The sibling `audiodsp` and `audiocomponents` repositories are consumed
 read-only - no build or formatting command here writes into either. The
-engine builder likewise leaves
-the sibling MicroPython checkout unchanged: it uses the build workspace's
-existing transactional overlay, and removes the temporary `vstaudio` module
-link on exit, including after a failed build.
+engine builder does not patch
+the sibling MicroPython checkout either: it refuses one that does not already
+carry the PyDevices overlay (`scripts/fetch-sibling-repos.sh` applies it once),
+and its output lands in the port's own `build-vst3-engine` directory.
 
 ## Deferred
 
