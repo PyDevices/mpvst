@@ -76,11 +76,14 @@ if(TARGET mpvst-stage-micropython-engine)
     # one on disk. That is what mpvst#12 turned out to be: four days of drift
     # reading as one plug-in that would not import and two effects that
     # rendered silence. Compare the audiodsp revision the engine is stamped
-    # with against the sibling checkout's HEAD.
+    # with against the sibling checkout's HEAD. It checks the engine the
+    # bundle stages from, because that is where the build script writes the
+    # provenance stamp; the staged copy carries no stamp, and must not, since
+    # the stamp names this machine's paths and would ship in the archive.
     add_test(NAME mpvst_engine_provenance COMMAND
         ${MPVST_PYTHON}
         ${CMAKE_SOURCE_DIR}/tools/check-engine-provenance.py
-        $<TARGET_FILE_DIR:MPVST>/${mpvst_engine_name}
+        ${MPVST_MICROPYTHON_ENGINE}
         ${CMAKE_SOURCE_DIR}/../audiodsp)
 
     add_executable(mpvst_reload_tests reload_tests.cpp)

@@ -9,6 +9,13 @@
 # W6  deprecated or removed language features.
 select = F,E9,W6
 
+# The usermods' manifest.py files are run by MicroPython's makemanifest.py,
+# which injects c_module() and friends as globals. flake8's `builtins` option
+# would name them, but flake8 7.4.0 crashes on it (audiodsp's .flake8 has the
+# detail), so the undefined-name check is off for those files alone.
+per-file-ignores =
+    usermods/*/manifest.py:F821
+
 # sdk/ is Steinberg's, .deps/ and .build-*/ are build output - which
 # includes a staged copy of the whole script library.
 extend-exclude =
