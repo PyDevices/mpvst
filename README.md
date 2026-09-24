@@ -21,9 +21,11 @@ stays native and real-time safe.
 ## Install it
 
 Nothing has to be built to use the plug-in - the archives carry everything,
-including the sidecar engine. There is no published release yet; until there
-is, `scripts/package-linux.sh` and `scripts/package-windows.sh` build the
-same artifacts into the ignored `dist/`.
+including the sidecar engine. Download them from the
+[latest release](https://github.com/PyDevices/mpvst/releases/latest); each
+comes with a `.sha256` to check it against. To build the same artifacts
+yourself, `scripts/package-linux.sh` and `scripts/package-windows.sh` write
+them into the ignored `dist/`.
 
 - **Windows:** run `MPVST-<version>-windows-x86_64-setup.exe`.
   It installs for the current user, so there is no UAC prompt. That also
