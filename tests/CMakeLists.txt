@@ -86,6 +86,23 @@ if(TARGET mpvst-stage-micropython-engine)
         ${MPVST_MICROPYTHON_ENGINE}
         ${CMAKE_SOURCE_DIR}/../audiodsp)
 
+    # docs/security.md promises the engine has no sockets, TLS or FFI. The
+    # Windows engine for 0.3.0 and 0.3.1 could import socket anyway while
+    # every test on Linux passed, so ask each engine in .deps/engine: this
+    # platform's must run and refuse all of them, and the other port's is
+    # checked too wherever it can run (the .exe does under WSL).
+    if(WIN32)
+        set(mpvst_other_engine mpvst-engine)
+    else()
+        set(mpvst_other_engine mpvst-engine.exe)
+    endif()
+    get_filename_component(mpvst_engine_dir "${MPVST_MICROPYTHON_ENGINE}" DIRECTORY)
+    add_test(NAME mpvst_engine_capabilities COMMAND
+        ${MPVST_PYTHON}
+        ${CMAKE_SOURCE_DIR}/tools/check-engine-capabilities.py
+        ${MPVST_MICROPYTHON_ENGINE}
+        --also ${mpvst_engine_dir}/${mpvst_other_engine})
+
     add_executable(mpvst_reload_tests reload_tests.cpp)
     target_link_libraries(mpvst_reload_tests PRIVATE mpvst_sidecar_transport)
     target_compile_features(mpvst_reload_tests PRIVATE cxx_std_17)

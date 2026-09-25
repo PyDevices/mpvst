@@ -11,7 +11,8 @@
 # SSL and FFI off (the engine is a deliberately narrow scripting core -
 # compositions and racks are code, and mpvst_scan_plugins.py runs at DAW scan
 # time, so the shipped interpreter must not reach the network or arbitrary
-# native code), and the preset names every module the workspace builds plus
+# native code; the mpvst_engine_capabilities ctest checks it held, on each
+# port's engine), and the preset names every module the workspace builds plus
 # this repository's vstaudio and vstui. Nothing here is copied or linked into
 # the MicroPython checkout.
 #
