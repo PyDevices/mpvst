@@ -61,6 +61,14 @@ if [[ ! -d "$mp_dir/.git" ]]; then
     git clone --branch "$upstream" https://github.com/micropython/micropython.git "$mp_dir"
 fi
 "$workspace_dir/micropython-pydevices/tools/prepare-micropython.sh" "$mp_dir"
+# The submodules each engine build needs (berkeley-db for btree, and the rest
+# the port names), fetched the upstream way. prepare-micropython.sh brings
+# only micropython-lib, and without these a fresh clone's engine build stops
+# at "berkeley-db/db.h: No such file or directory".
+for port in unix windows; do
+    make -C "$mp_dir/ports/$port" submodules \
+        VARIANT_DIR="$workspace_dir/micropython-pydevices/variants/$port/vst3-engine"
+done
 
 clone_or_report audiocomponents "https://github.com/PyDevices/audiocomponents.git" "$workspace_dir/audiocomponents"
 echo "micropython:      $mp_dir"
