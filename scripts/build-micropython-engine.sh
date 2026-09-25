@@ -91,18 +91,11 @@ install -m 755 \
 # every later `cmake --build` copies whatever is sitting in .deps/engine into
 # the bundle without asking how old it is, so the whole ctest suite can run
 # green against a core that no longer exists (mpvst#12, four days of it). The
-# stamp records every usermod that was linked -- audiodsp, and this repo's own
-# vstaudio/vstui -- so tools/check-engine-provenance.py can refuse it. No
-# stamp at all means an engine from before this line, which is certainly
-# older than the tree, and the check says so.
-provenance="$workspace_dir/tools/provenance.py"
-if [[ -f "$provenance" ]]; then
-    python3 "$provenance" write "$output_dir/$engine_name" \
-        --target "mpvst-engine-$port" --port "$port" \
-        --source "vstaudio=$repo_dir/usermods/vstaudio" --source "vstui=$repo_dir/usermods/vstui"
-else
-    echo "warning: no $provenance, so $engine_name goes out unstamped and" \
-         "nothing downstream can tell how old it is" >&2
-fi
+# stamp records the commits of this repo's own vstaudio/vstui and of audiodsp,
+# so tools/engine-provenance.py can refuse an engine once the code that goes
+# into it moves. The stamper is this repository's own, so a public clone gets
+# a stamped engine too (mpvst#16).
+python3 "$repo_dir/tools/engine-provenance.py" write "$output_dir/$engine_name" \
+    --port "$port" --audiodsp "$workspace_dir/audiodsp" --micropython "$mp_dir"
 
 echo "Built $output_dir/$engine_name"
