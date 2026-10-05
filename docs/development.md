@@ -92,14 +92,15 @@ The MicroPython sidecar is a MicroPython build like any other:
 micropython-pydevices' `build_mp.py` with the `vst3-engine` variant (no
 sockets, SSL or FFI; see [security.md](security.md)) and this repository
 among its modules, by path. It carries audiocomponents' instruments and
-effects frozen in, audiodsp's DSP, audioif, LVGL and ulab:
+effects frozen in, pydevices (the editor's `appdev` and `multimer`),
+audiodsp's DSP, audioif, LVGL and ulab:
 
 ```bash
 ../micropython-pydevices/build_mp.py --port windows --variant vst3-engine \
-    --modules audiocomponents,audiodsp,audioif,lvgl-micropython,ulab,$PWD \
+    --modules audiocomponents,audiodsp,audioif,lvgl-micropython,pydevices,ulab,$PWD \
     ENGINE_ICON=$PWD/installer/art/mpvst.ico
 ../micropython-pydevices/build_mp.py --port unix --variant vst3-engine \
-    --modules audiocomponents,audiodsp,audioif,lvgl-micropython,ulab,$PWD
+    --modules audiocomponents,audiodsp,audioif,lvgl-micropython,pydevices,ulab,$PWD
 ```
 
 It lands in `../micropython-pydevices/builds/<port>/vst3-engine/`, and the

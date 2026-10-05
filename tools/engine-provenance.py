@@ -59,19 +59,21 @@ REPO = Path(__file__).resolve().parents[1]
 #: freeze manifest and VERSION (compiled in as __version__) and
 #: DEPENDENCIES.lock (the mp3 decoder's pin); not its docs, tests, workflows,
 #: Python lib/ or CircuitPython patches. mpvst: the two usermods and the
-#: manifest that names them. audiocomponents: the packages it freezes.
+#: manifest that names them. audiocomponents and pydevices: the packages they
+#: freeze.
 ENGINE_PATHS = {
     "mpvst": ("usermods/vstaudio", "usermods/vstui", "manifest.py"),
     "audiodsp": ("src", "micropython.mk", "micropython.cmake", "manifest.py",
                  "VERSION", "DEPENDENCIES.lock"),
     "audiocomponents": ("lib", "manifest.py"),
+    "pydevices": ("lib", "manifest.py"),
 }
 
 #: The record build_mp.py writes beside every build.
 RECORD = "pydevices-build.json"
 
 REBUILD = ("../micropython-pydevices/build_mp.py --port {port} --variant vst3-engine "
-           "--modules audiocomponents,audiodsp,audioif,lvgl-micropython,ulab,{repo}{extra}")
+           "--modules audiocomponents,audiodsp,audioif,lvgl-micropython,pydevices,ulab,{repo}{extra}")
 
 # Any audiodsp module carries the stamp; ask three, and require that they
 # agree. They are all compiled from one tree, so a disagreement is its own
@@ -125,7 +127,8 @@ def record_problems(engine: Path) -> tuple[list[str], dict[str, Path]]:
     by_path = {Path(m["path"]).resolve(): m for m in modules.values()}
     entries = {"mpvst": by_path.get(REPO),
                "audiodsp": modules.get("audiodsp"),
-               "audiocomponents": modules.get("audiocomponents")}
+               "audiocomponents": modules.get("audiocomponents"),
+               "pydevices": modules.get("pydevices")}
     problems, sources = [], {}
     for name, entry in entries.items():
         if entry is None:

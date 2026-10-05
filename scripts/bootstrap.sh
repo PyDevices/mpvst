@@ -17,7 +17,7 @@ die() { log "ERROR: $*"; exit 1; }
 build_mp="$repo_dir/../micropython-pydevices/build_mp.py"
 [[ -x "$build_mp" ]] || die "no micropython-pydevices checkout beside this one (clone PyDevices/micropython-pydevices next to it)"
 # The engine's modules: docs/development.md says what each one is for.
-engine_modules="audiocomponents,audiodsp,audioif,lvgl-micropython,ulab,$repo_dir"
+engine_modules="audiocomponents,audiodsp,audioif,lvgl-micropython,pydevices,ulab,$repo_dir"
 
 log "fetching VST3 SDK"
 "$repo_dir/scripts/fetch-vst3-sdk.sh" || die "fetch-vst3-sdk.sh failed"
