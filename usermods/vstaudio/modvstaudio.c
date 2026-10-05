@@ -784,6 +784,23 @@ static mp_obj_t vstaudio_run(size_t n_args, const mp_obj_t *args) {
 }
 static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(vstaudio_run_obj, 1, 2, vstaudio_run);
 
+// vstaudio.frozen_files(): every module frozen into this engine, as the
+// paths the freezer recorded ("audioinstruments/tr808.py"). The plug-in scan
+// uses it to find instruments and effects that are frozen in rather than
+// staged beside it as files; MicroPython has no Python-level listing of
+// frozen modules, only help('modules') printing the same table.
+static mp_obj_t vstaudio_frozen_files(void) {
+    mp_obj_t list = mp_obj_new_list(0, NULL);
+    #if MICROPY_MODULE_FROZEN
+    extern const char mp_frozen_names[];
+    for (const char *name = mp_frozen_names; *name; name += strlen(name) + 1) {
+        mp_obj_list_append(list, mp_obj_new_str(name, strlen(name)));
+    }
+    #endif
+    return list;
+}
+static MP_DEFINE_CONST_FUN_OBJ_0(vstaudio_frozen_files_obj, vstaudio_frozen_files);
+
 // Dynamics and Splitter used to live here, in vstaudio_dsp.c. They are
 // audiodsp's `audiodynamics.Dynamics` and `audioroute.Splitter` now - the
 // same DSP, compiled from audiodsp/src/shared/ into every target it
@@ -811,6 +828,7 @@ static const mp_rom_map_elem_t vstaudio_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_EVENT_TRANSPORT), MP_ROM_INT(MPVST_EVENT_TRANSPORT) },
     { MP_ROM_QSTR(MP_QSTR_EVENT_PROGRAM_CHANGE), MP_ROM_INT(MPVST_EVENT_PROGRAM_CHANGE) },
     { MP_ROM_QSTR(MP_QSTR_transport), MP_ROM_PTR(&vstaudio_transport_obj) },
+    { MP_ROM_QSTR(MP_QSTR_frozen_files), MP_ROM_PTR(&vstaudio_frozen_files_obj) },
 };
 static MP_DEFINE_CONST_DICT(vstaudio_module_globals, vstaudio_module_globals_table);
 

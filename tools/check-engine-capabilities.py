@@ -95,7 +95,7 @@ def check(engine: Path, required: bool) -> int:
         print(f"FAIL {engine}: {summary}")
         print("    The engine must refuse all of these (docs/security.md). "
               "The vst3-engine variant in micropython-pydevices switches them "
-              "off; rebuild with scripts/build-micropython-engine.sh.")
+              "off; rebuild it (docs/development.md).")
         return 1
     print(f"ok {engine}: {summary}")
     return 0

@@ -20,7 +20,12 @@ nothing for a second one to disagree with.
 
 Reads the files as text rather than importing them - what is wanted is what
 each module *declares*, and text gives the same answer without paying for a
-synth's import or caring whether one is importable at all.
+synth's import or caring whether one is importable at all. A package frozen
+into the engine has no files to read, so when one is not beside this script
+the engine's own list of frozen modules (`vstaudio.frozen_files()`) stands
+in for the directory, and each module is imported and its declarations read
+from it instead: same files, same fields, so the same class IDs. Files beside
+the script win, as they do on the sidecar's import path.
 
 Where the fields live differs by package, and that is deliberate: an
 instrument is one plug-in per file, so its fields sit at module level; an
@@ -205,20 +210,72 @@ def read_metadata(path):
     return module, classes
 
 
+def frozen_names(package):
+    """The package's top-level .py files frozen into the engine, the way
+    listdir would give them, or None when none are."""
+    try:
+        import vstaudio
+        files = vstaudio.frozen_files()
+    except (ImportError, AttributeError):
+        return None
+    prefix = package + "/"
+    names = sorted(f[len(prefix):] for f in files
+                   if f.startswith(prefix) and f.endswith(".py")
+                   and "/" not in f[len(prefix):])
+    return names or None
+
+
+def declared(value):
+    """A declared field as read_metadata gives it: the strings it holds."""
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, (tuple, list)):
+        return [item for item in value if isinstance(item, str)]
+    return []
+
+
+def import_metadata(package, filename):
+    """What read_metadata reads from a file, read from the imported module.
+
+    A frozen module has no text. Module fields are the module's own; a class
+    counts only if the module defines it (an imported base does not, just as
+    the text reader never sees one), and its fields only if it declares them
+    itself rather than inheriting them."""
+    stem = filename[:-3]
+    loaded = __import__(package + "." + stem, None, None, (stem,))
+    namespace = loaded.__dict__
+    module = {field: declared(value) for field, value in namespace.items()
+              if field in FIELDS}
+    classes = {}
+    for name, value in namespace.items():
+        if isinstance(value, type) and getattr(value, "__module__", None) == loaded.__name__:
+            classes[name] = {field: declared(item)
+                             for field, item in value.__dict__.items()
+                             if field in FIELDS}
+    return module, classes
+
+
 def plugins(root):
     """Every declared plug-in, as a flat list of dicts."""
     found = []
     for package, kind, where in PACKAGES:
         directory = root + "/" + package
+        frozen = False
         try:
             names = sorted(n for n in os.listdir(directory)
                            if n.endswith(".py"))
         except OSError:
-            print("%s: not found beside this script" % package)
-            continue
+            names = frozen_names(package)
+            if names is None:
+                print("%s: not found beside this script or frozen in" % package)
+                continue
+            frozen = True
 
         for filename in names:
-            module, classes = read_metadata(directory + "/" + filename)
+            if frozen:
+                module, classes = import_metadata(package, filename)
+            else:
+                module, classes = read_metadata(directory + "/" + filename)
             sources = ([(None, module)] if where == "module"
                        else sorted(classes.items()))
             for owner, fields in sources:

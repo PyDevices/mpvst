@@ -137,13 +137,12 @@ class Editor:
             adjust_axis="h", adjust_sign=1, navigate=True, navigate_sign=-1
         )
 
-        from multimer import auto as timer
+        import multimer
 
-        self._pump = timer.pump
-        # Anything display_driver queued for "when the loop starts" has to be
-        # armed by hand, because in this process the loop never starts: there
-        # is no run(), no host loop, and no timer that fires by itself.
-        self._app.arm_async_refresh()
+        # In this process nothing fires by itself (there is no run() and no
+        # host loop), so the editor's own tick pumps the timers. They arm at
+        # once on every host, so there is nothing to arm by hand.
+        self._pump = multimer.pump
 
     def _build_panel(self):
         import lvgl as lv

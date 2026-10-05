@@ -4,20 +4,13 @@ Maintainer and bootstrap automation - things a fresh clone or a release
 needs, not day-to-day dev workflow (see [`../tools/`](../tools/README.md)
 for that). Every script here is idempotent: safe to rerun.
 
-- **`bootstrap.sh`** - one-shot setup for a fresh clone: runs every
-  script below in order, then configures, builds, and runs the test
-  suite as a final verification. Start here.
-- **`fetch-sibling-repos.sh`** - clones/updates the sibling repos the
-  builds depend on: for the engine, `micropython-pydevices` (the
-  vst3-engine variant, the preset and the patch series), `audiodsp` and
-  the other module repositories the preset names, plus a MicroPython
-  checkout at the pinned tag with the patch series applied once; for the
-  plug-in build, `audiocomponents` (the `audioinstruments` and
-  `audioeffects` packages it stages into the bundle).
+- **`bootstrap.sh`** - one-shot setup for a fresh clone: fetches the VST3
+  SDK, builds the engine with the micropython-pydevices checkout beside this
+  one (`build_mp.py`; the command is in
+  [`../docs/development.md`](../docs/development.md)), installs REAPER, then
+  configures, builds, and runs the test suite as a final verification.
+  Start here.
 - **`fetch-vst3-sdk.sh`** - downloads the pinned VST3 SDK into `.deps/vst3sdk`.
-- **`build-micropython-engine.sh [--port windows|unix]`** - builds the
-  MicroPython sidecar engine (defaults to the Windows engine, the
-  shipping product; `--port unix` builds the same module set for Linux).
 - **`install-plugin-windows.sh [--no-build]`** - builds the Windows VST3
   bundle and installs it into the per-user VST3 directory any DAW scans.
 - **`package-linux.sh`** / **`package-windows.sh`** - assemble the
