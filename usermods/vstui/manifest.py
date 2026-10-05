@@ -1,3 +1,3 @@
-# The engine build symlinks this directory into cmods; the workspace manifest
-# includes it, and this line is what compiles the C (MicroPython 1.29 c_module()).
-c_module(".")  # this directory holds the micropython.cmake / micropython.mk for the C half
+# Compiles this C module into a MicroPython build (MicroPython 1.29 c_module()).
+# mpvst's root manifest.py includes it.
+c_module(".")  # this directory holds the micropython.mk for the C half

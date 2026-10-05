@@ -100,7 +100,7 @@ def instrument_source(script_path):
     if not source.is_file():
         raise SystemExit(
             "%s loads %s, which is not at %s.\n"
-            "Set MPVST_COMPONENTS_LIB, or run scripts/fetch-sibling-repos.sh."
+            "Set MPVST_COMPONENTS_LIB to audiocomponents' lib/ directory."
             % (Path(script_path).name, name, source))
     return source
 

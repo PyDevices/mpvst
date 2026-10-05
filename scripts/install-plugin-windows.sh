@@ -5,8 +5,8 @@
 #
 #   ./scripts/install-plugin-windows.sh [--no-build]
 #
-# Run from WSL. Needs the Windows engine built first
-# (scripts/build-micropython-engine.sh --port windows) and a configured
+# Run from WSL. Needs the Windows engine built first (docs/development.md,
+# micropython-pydevices' build_mp.py --port windows) and a configured
 # Windows CMake build directory; MPVST_WIN_BUILD overrides where that is.
 set -euo pipefail
 

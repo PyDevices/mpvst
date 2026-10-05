@@ -19,8 +19,8 @@ saying so.
 The engine is built without those three at the source, on both platforms,
 by the `vst3-engine` variant in
 [micropython-pydevices](https://github.com/PyDevices/micropython-pydevices/tree/main/variants)
-that [`scripts/build-micropython-engine.sh`](../scripts/build-micropython-engine.sh)
-builds with. The ctest `mpvst_engine_capabilities`
+that the engine is built with (micropython-pydevices' `build_mp.py`; the
+command is in [development.md](development.md)). The ctest `mpvst_engine_capabilities`
 ([tools/check-engine-capabilities.py](../tools/check-engine-capabilities.py))
 runs each engine and fails if it can import `socket`, `ssl`, `tls`, `ffi` or
 `network`. It exists because the Windows engines shipped in 0.3.0 and 0.3.1

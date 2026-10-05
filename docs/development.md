@@ -64,25 +64,19 @@ what ships today. The canonical structure sizes and offsets live in
   `scripts/bootstrap.sh` creates a repo-local `.venv` with these.
 - The Steinberg VST3 SDK, fetched by `scripts/fetch-vst3-sdk.sh` into the
   gitignored `.deps/vst3sdk` (see [the licence note](../README.md#license) for its terms).
-- The sibling `audiodsp` and `micropython-pydevices` checkouts, the other
-  module repositories the engine preset names, and an upstream MicroPython
-  clone at the pinned tag, which the MicroPython engine build depends on; and
-  the sibling `audiocomponents` checkout whose `audioinstruments` and
-  `audioeffects` packages the plug-in build stages into the bundle - all
-  fetched by `scripts/fetch-sibling-repos.sh`.
-- On WSL, building the Windows engine/plugin needs a reachable Windows
-  host: `scripts/build-micropython-engine.sh --port windows` and
-  `scripts/install-plugin-windows.sh` both shell out to `powershell.exe`,
-  and `scripts/bootstrap.sh` skips the Windows engine port automatically
-  when `/mnt/c/Users` or `powershell.exe` is not available.
+- A `micropython-pydevices` checkout beside this one. Its `build_mp.py`
+  builds the MicroPython engine, fetching MicroPython and the modules it
+  needs, and the plug-in build takes the engine from its `builds/`.
+- On WSL, building the Windows plug-in needs a reachable Windows host:
+  `scripts/install-plugin-windows.sh` shells out to `powershell.exe`, and
+  `scripts/bootstrap.sh` skips the Windows engine automatically when
+  `/mnt/c/Users` or `powershell.exe` is not available.
 
 ## Getting started
 
 A fresh clone has none of the external dependencies this repo needs - the
-VST3 SDK, the sibling `audiodsp`, `micropython-pydevices` and MicroPython
-checkouts the engine build depends on, the sibling `audiocomponents` repo the plug-in build stages its
-instruments and effects from, or REAPER for the DAW-driven tooling. `.deps/`
-and those sibling checkouts are all gitignored. One command sets all of it
+VST3 SDK, the engine, or REAPER for the DAW-driven tooling. With a
+`micropython-pydevices` checkout beside this one, one command sets the rest
 up:
 
 ```bash
@@ -94,19 +88,25 @@ each step individually.
 
 ## Building and testing
 
-The MicroPython sidecar is built separately from the plug-in, and only
-needs rebuilding when `usermods/vstaudio`, `usermods/vstui`, or the
-sibling audiodsp checkout's C sources change. It lands in the ignored
-`.deps/engine/`, and the plug-in build stages it into the bundle. CMake
-never detects a stale engine on its own - it only re-stages the file at
-`MPVST_MICROPYTHON_ENGINE` if that path's mtime changes, so after any of
-those three changes you must rerun the build script yourself before
-reconfiguring/rebuilding the plug-in:
+The MicroPython sidecar is a MicroPython build like any other:
+micropython-pydevices' `build_mp.py` with the `vst3-engine` variant (no
+sockets, SSL or FFI; see [security.md](security.md)) and this repository
+among its modules, by path. It carries audiocomponents' instruments and
+effects frozen in, audiodsp's DSP, audioif, LVGL and ulab:
 
 ```bash
-./scripts/build-micropython-engine.sh --port windows
-./scripts/build-micropython-engine.sh --port unix
+../micropython-pydevices/build_mp.py --port windows --variant vst3-engine \
+    --modules audiocomponents,audiodsp,audioif,lvgl-micropython,ulab,$PWD \
+    ENGINE_ICON=$PWD/installer/art/mpvst.ico
+../micropython-pydevices/build_mp.py --port unix --variant vst3-engine \
+    --modules audiocomponents,audiodsp,audioif,lvgl-micropython,ulab,$PWD
 ```
+
+It lands in `../micropython-pydevices/builds/<port>/vst3-engine/`, and the
+plug-in build stages it from there (`MPVST_ENGINE_BUILDS` moves that). Rebuild
+it when `usermods/`, audiodsp's C or audiocomponents' packages change. CMake
+never notices a stale engine itself, but the `mpvst_engine_provenance` ctest
+refuses one, from the record `build_mp.py` writes beside it.
 
 Linux:
 
@@ -127,11 +127,13 @@ DAW scans:
 ### A Python-only change needs no compiler
 
 Adding an instrument to audiocomponents, editing a script, or changing what
-the catalog says does not touch the plug-in binary. If the Windows build
-directory is gone - it lives under `%LOCALAPPDATA%\Temp`, which Windows
-cleans - you do not have to reconfigure MSVC to get the change into a DAW.
-Stage the packages into the installed bundle and rewrite the two metadata
-files with the bundle's own engine:
+the catalog says does not touch the plug-in binary. audiocomponents is frozen
+into the engine, but the bundle's own directory comes before the frozen
+modules on the sidecar's `sys.path`, so packages staged into an installed
+bundle override the engine's copy. To try a change without rebuilding the
+engine or reconfiguring MSVC, stage the packages and rewrite the two metadata
+files with the bundle's own engine (and delete the staged copies once the
+engine is rebuilt, or they keep shadowing it):
 
 ```bash
 B="$WIN_LOCALAPPDATA/Programs/Common/VST3/MPVST.vst3/Contents/x86_64-win"
@@ -234,12 +236,9 @@ SHA-256 - the platforms agree exactly, not within a tolerance.
 
 ## Workspace isolation
 
-The sibling `audiodsp` and `audiocomponents` repositories are consumed
-read-only - no build or formatting command here writes into either. The
-engine builder does not patch
-the sibling MicroPython checkout either: it refuses one that does not already
-carry the PyDevices overlay (`scripts/fetch-sibling-repos.sh` applies it once),
-and its output lands in the port's own `build-vst3-engine` directory.
+The engine's modules are consumed read-only - no build or formatting command
+here writes into any of them, or into the MicroPython checkout, which
+`build_mp.py` prepares once and builds into its own `builds/`.
 
 ## Deferred
 

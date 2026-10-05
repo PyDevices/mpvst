@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
-"""Stamp the sidecar engine with what it was built from, and refuse a stale one.
+"""Refuse a sidecar engine older than the code that goes into it.
 
-    engine-provenance.py write ENGINE --port unix|windows
-    engine-provenance.py check ENGINE AUDIODSP_CHECKOUT
+    engine-provenance.py check ENGINE
 
-`scripts/build-micropython-engine.sh` runs `write` after every build, and the
-`mpvst_engine_provenance` ctest runs `check`.
+The `mpvst_engine_provenance` ctest runs it on the engine the bundle stages.
 
-The sidecar engine is a *prebuilt* artifact: `scripts/build-micropython-engine.sh`
-writes `.deps/engine/mpvst-engine`, and every later `cmake --build` copies
-whatever is sitting there into the bundle without asking how old it is. So the
-whole ctest suite can run green against a DSP core that no longer exists.
+The engine is built by micropython-pydevices' `build_mp.py` (the command is in
+docs/development.md), into that repository's `builds/<port>/vst3-engine/`,
+and every later `cmake --build` copies whatever is sitting there into the
+bundle without asking how old it is. So the whole ctest suite can run green
+against a DSP core that no longer exists.
 
 It is not hypothetical. On 2026-09-21 the Linux engine was four days stale and
 three suites had been red long enough to stop being a signal (mpvst#12):
@@ -28,29 +27,24 @@ Two questions, asked two ways:
 
 - **audiodsp**: every audiodsp module the engine carries is stamped with
   `__revision__`, the `git describe` of the tree it was compiled from. That is
-  the running binary's own claim, so it cannot be fooled by a stamp file that
-  was copied from somewhere else.
-- **vstaudio and vstui**, the C++ usermods in this repository, carry no Python
-  stamp, so the stamp file beside the engine records which commit of this
-  repository they were linked from. It records audiodsp too, so the engine
-  has to pass both questions.
+  the running binary's own claim, so it cannot be fooled by a record that was
+  copied from somewhere else.
+- **this repository's vstaudio and vstui, and audiocomponents' packages**
+  (frozen into the engine): `build_mp.py` writes `pydevices-build.json`
+  beside every build, naming the commit of each module that went in. The
+  engine has to pass both questions.
 
 Either way the question is whether the code that goes INTO the engine moved,
 not whether the repository did (mpvst#18). audiodsp commits that only touch
 READMEs or a workflow used to refuse the engine and block a release until it
 was rebuilt for nothing; a check that is red for no reason stops being read.
-`ENGINE_PATHS` names what the build reads.
-
-The stamper lives here rather than in the workspace so a public clone gets a
-stamped engine too (mpvst#16). A source that is not a git checkout -- a
-tarball -- is recorded as "unknown", and the check says so out loud.
+`ENGINE_PATHS` names what the build reads. A module recorded as not a git
+checkout -- a tarball -- is said so out loud.
 """
 
 from __future__ import annotations
 
 import argparse
-import datetime
-import hashlib
 import json
 import re
 import subprocess
@@ -58,23 +52,26 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-WORKSPACE = REPO.parent
 
-#: What each checked source contributes to the engine, relative to the
-#: repository it lives in. A commit that touches none of these cannot change
-#: the binary, so it must not refuse it. audiodsp: the C sources, both build
-#: glues, the freeze manifest (it names the C modules and ulab), VERSION
-#: (compiled in as __version__) and DEPENDENCIES.lock (ulab's and the mp3
-#: decoder's pins). Not its docs, tests, workflows, Python lib/ or CircuitPython
-#: patches.
+#: What each checked module contributes to the engine, relative to its
+#: repository. A commit that touches none of these cannot change the binary,
+#: so it must not refuse it. audiodsp: the C sources, both build glues, the
+#: freeze manifest and VERSION (compiled in as __version__) and
+#: DEPENDENCIES.lock (the mp3 decoder's pin); not its docs, tests, workflows,
+#: Python lib/ or CircuitPython patches. mpvst: the two usermods and the
+#: manifest that names them. audiocomponents: the packages it freezes.
 ENGINE_PATHS = {
-    "vstaudio": ("usermods/vstaudio",),
-    "vstui": ("usermods/vstui",),
+    "mpvst": ("usermods/vstaudio", "usermods/vstui", "manifest.py"),
     "audiodsp": ("src", "micropython.mk", "micropython.cmake", "manifest.py",
                  "VERSION", "DEPENDENCIES.lock"),
+    "audiocomponents": ("lib", "manifest.py"),
 }
 
-REBUILD = "scripts/build-micropython-engine.sh --port {port}"
+#: The record build_mp.py writes beside every build.
+RECORD = "pydevices-build.json"
+
+REBUILD = ("../micropython-pydevices/build_mp.py --port {port} --variant vst3-engine "
+           "--modules audiocomponents,audiodsp,audioif,lvgl-micropython,ulab,{repo}{extra}")
 
 # Any audiodsp module carries the stamp; ask three, and require that they
 # agree. They are all compiled from one tree, so a disagreement is its own
@@ -83,9 +80,6 @@ PROBE_MODULES = ("audiobiquad", "audioshaper", "audiodynamics")
 
 # `git describe` output, e.g. v0.0.3-252-g95e58b3 or v0.5.1-1-g95e58b3-dirty.
 DESCRIBE = re.compile(r"-g(?P<sha>[0-9a-f]{7,40})(?P<dirty>-dirty)?$")
-
-FORMAT = 1
-
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess | None:
     try:
@@ -114,128 +108,59 @@ def _some(files: list[str]) -> str:
     return ", ".join(files[:3]) + (f" and {len(files) - 3} more" if len(files) > 3 else "")
 
 
-def describe(repo: Path, paths: tuple[str, ...] = ()) -> dict:
-    """A source's commit, or "unknown" when it is not a git checkout."""
-    head = _out(repo, "rev-parse", "HEAD")
-    if head is None:
-        return {"path": str(repo), "head": None, "describe": "unknown",
-                "dirty": None, "paths": list(paths)}
-    # Dirty means a path that goes into the engine has uncommitted changes. A
-    # scratch file or an edited README beside them does not make the build
-    # any less a commit.
-    status = _out(repo, "status", "--porcelain", "--ignore-submodules=dirty",
-                  "--", *paths) if paths else _out(repo, "status", "--porcelain")
-    return {
-        "path": str(repo),
-        "head": head,
-        "describe": _out(repo, "describe", "--always", "--dirty", "--abbrev=7") or head[:7],
-        "dirty": bool(status),
-        "paths": list(paths),
-    }
+def record_problems(engine: Path) -> tuple[list[str], dict[str, Path]]:
+    """Problems with the build record beside the engine; notes are printed here.
 
-
-def source_repos(audiodsp: Path) -> dict[str, Path]:
-    return {"vstaudio": REPO, "vstui": REPO, "audiodsp": audiodsp}
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1 << 20), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
-def stamp_path(engine: Path) -> Path:
-    return engine.with_name(engine.name + ".provenance")
-
-
-def cmd_write(args: argparse.Namespace) -> int:
-    engine = Path(args.engine).resolve()
-    if not engine.exists():
-        print(f"no such engine: {engine}", file=sys.stderr)
-        return 1
-    sources = {name: describe(repo, ENGINE_PATHS[name])
-               for name, repo in source_repos(Path(args.audiodsp).resolve()).items()}
-    # Recorded for whoever reads the stamp later; not checked, because the
-    # build carries them whole and they have no path list here.
-    sources["micropython"] = describe(Path(args.micropython).resolve())
-    sources["micropython-pydevices"] = describe(WORKSPACE / "micropython-pydevices")
-    record = {
-        "format": FORMAT,
-        "stamper": "mpvst/tools/engine-provenance.py",
-        "target": f"mpvst-engine-{args.port}",
-        "port": args.port,
-        "stamped": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
-        "binary": {"name": engine.name, "sha256": sha256(engine),
-                   "size": engine.stat().st_size},
-        "sources": sources,
-    }
-    out = stamp_path(engine)
-    out.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    unknown = sorted(n for n, s in sources.items() if s["head"] is None)
-    dirty = sorted(n for n, s in sources.items() if s["dirty"])
-    print(f"Stamped {out}"
-          + (f" (dirty: {', '.join(dirty)})" if dirty else "")
-          + (f" (unknown, not git checkouts: {', '.join(unknown)})" if unknown else ""))
-    return 0
-
-
-def check_stamp(engine: Path, audiodsp: Path) -> list[str]:
-    """Problems with the stamp beside the engine; notes are printed here."""
-    stamp = stamp_path(engine)
-    if not stamp.is_file():
-        return [f"no provenance stamp beside {engine.name}. An engine without one "
-                f"predates the stamp itself, so what it contains cannot be "
-                f"established."]
-    record = json.loads(stamp.read_text(encoding="utf-8"))
-    if record.get("format") != FORMAT:
-        return [f"{stamp.name} is format {record.get('format')!r}; this script "
-                f"reads {FORMAT}."]
-    problems = []
-    if sha256(engine) != record["binary"]["sha256"]:
-        problems.append(f"{engine.name} is not the binary that was stamped: "
-                        f"something replaced it without stamping it.")
-    # audiodsp is asked of the running binary instead (check_revision): the
-    # stamp records it, but asking twice would only say the same thing twice.
-    for name in ("vstaudio", "vstui"):
-        repo = source_repos(audiodsp)[name]
-        paths = ENGINE_PATHS[name]
-        stamped = record["sources"].get(name)
-        if stamped is None:
-            problems.append(f"the stamp says nothing about {name}.")
+    Also returns where each checked module was read from, so the audiodsp
+    question asks the same checkout the build did."""
+    record_path = engine.with_name(RECORD)
+    if not record_path.is_file():
+        return [f"no {RECORD} beside {engine.name}, so what it was built from "
+                f"cannot be established."], {}
+    record = json.loads(record_path.read_text(encoding="utf-8"))
+    if not record.get("complete"):
+        return [f"{RECORD} says the build that made {engine.name} did not finish."], {}
+    modules = record.get("module_revisions", {})
+    # mpvst is named by its path, so find it by path, not by name.
+    by_path = {Path(m["path"]).resolve(): m for m in modules.values()}
+    entries = {"mpvst": by_path.get(REPO),
+               "audiodsp": modules.get("audiodsp"),
+               "audiocomponents": modules.get("audiocomponents")}
+    problems, sources = [], {}
+    for name, entry in entries.items():
+        if entry is None:
+            problems.append(f"the engine was built without {name}"
+                            + (f" (this checkout, {REPO})" if name == "mpvst" else "") + ".")
             continue
+        repo = Path(entry["path"])
+        sources[name] = repo
+        paths = ENGINE_PATHS[name]
         head = _out(repo, "rev-parse", "HEAD")
-        if stamped["head"] is None:
-            if head is None:
-                print(f"SKIP: {name} was not a git checkout when the engine was "
-                      f"built and is not one now, so its age is unknown.")
-            else:
-                problems.append(f"{name} was recorded as unknown (not a git "
-                                f"checkout) when the engine was built, so "
-                                f"whether it holds {repo}'s code cannot be told.")
+        built = entry.get("commit")
+        if built is None:
+            print(f"SKIP: {name} was not a git checkout when the engine was built, "
+                  f"so its age is unknown.")
             continue
         if head is None:
-            print(f"SKIP: {repo} is not a git checkout, so {name} cannot be "
+            print(f"SKIP: {repo} is not a git checkout now, so {name} cannot be "
                   f"compared. The engine may be any age.")
             continue
-        if stamped["dirty"]:
-            print(f"  note: {name} was built from uncommitted changes to "
-                  f"{', '.join(paths)} ({stamped['describe']}).")
-        if head == stamped["head"]:
+        if entry.get("dirty"):
+            print(f"  note: {name} was built from uncommitted changes ({entry['revision']}).")
+        if head == built:
             continue
-        change = moved(repo, stamped["head"], head, paths)
+        change = moved(repo, built, head, paths)
         if change is None:
-            problems.append(f"{name}: the engine was built from "
-                            f"{stamped['describe']}, which this checkout does "
-                            f"not know, so what it contains cannot be compared.")
+            problems.append(f"{name}: the engine was built from {entry['revision']}, "
+                            f"which {repo} does not know, so what it contains cannot "
+                            f"be compared.")
         elif change:
-            problems.append(f"{name}: {_some(change)} changed since the engine "
-                            f"was built from {stamped['describe']}.")
+            problems.append(f"{name}: {_some(change)} changed since the engine was "
+                            f"built from {entry['revision']}.")
         else:
-            print(f"  note: {name}: {stamped['head'][:7]} -> {head[:7]} "
-                  f"touched nothing that goes into the engine.")
-    return problems
+            print(f"  note: {name}: {built[:7]} -> {head[:7]} touched nothing that "
+                  f"goes into the engine.")
+    return problems, sources
 
 
 def engine_revisions(engine: Path) -> dict[str, str]:
@@ -247,8 +172,8 @@ def engine_revisions(engine: Path) -> dict[str, str]:
     if proc.returncode != 0:
         raise SystemExit(
             f"the engine could not report its provenance:\n{proc.stderr.strip()}\n"
-            "An engine with no __revision__ predates the stamp and is certainly "
-            "stale; rebuild it with scripts/build-micropython-engine.sh."
+            "An engine with no __revision__ is certainly stale; rebuild it "
+            "(docs/development.md)."
         )
     found = {}
     for line in proc.stdout.split("\n"):
@@ -302,15 +227,17 @@ def check_revision(engine: Path, audiodsp: Path) -> tuple[list[str], str | None]
 
 def cmd_check(args: argparse.Namespace) -> int:
     engine = Path(args.engine)
-    audiodsp = Path(args.audiodsp).resolve()
     if not engine.exists():
         print(f"no engine at {engine}", file=sys.stderr)
         return 1
     port = "windows" if engine.suffix == ".exe" else "unix"
-    hint = REBUILD.format(port=port)
-    problems = check_stamp(engine, audiodsp)
-    revision_problems, ok = check_revision(engine, audiodsp)
-    problems += revision_problems
+    extra = f" ENGINE_ICON={REPO}/installer/art/mpvst.ico" if port == "windows" else ""
+    hint = REBUILD.format(port=port, repo=REPO, extra=extra)
+    problems, sources = record_problems(engine)
+    ok = None
+    if "audiodsp" in sources:
+        revision_problems, ok = check_revision(engine, sources["audiodsp"])
+        problems += revision_problems
     if problems:
         print(f"REFUSED: {engine.name} is older than the code it would certify.")
         for problem in problems:
@@ -324,17 +251,8 @@ def cmd_check(args: argparse.Namespace) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
-    write = sub.add_parser("write", help="stamp an engine that was just built")
-    write.add_argument("engine")
-    write.add_argument("--port", required=True, choices=("unix", "windows"))
-    write.add_argument("--audiodsp", default=str(WORKSPACE / "audiodsp"),
-                       help="the audiodsp checkout the build read (default: the sibling)")
-    write.add_argument("--micropython", default=str(WORKSPACE / "micropython"),
-                       help="the MicroPython checkout the build used (default: the sibling)")
-    write.set_defaults(func=cmd_write)
     check = sub.add_parser("check", help="refuse an engine older than its sources")
-    check.add_argument("engine", help="the engine binary the bundle carries")
-    check.add_argument("audiodsp", help="the sibling audiodsp checkout")
+    check.add_argument("engine", help="the engine binary the bundle stages")
     check.set_defaults(func=cmd_check)
     args = parser.parse_args()
     return args.func(args)

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# One-shot setup for a fresh clone: sibling repos, VST3 SDK, the
-# MicroPython engine, REAPER, then a CMake configure/build/ctest pass as
+# One-shot setup for a fresh clone: VST3 SDK, the MicroPython engine (built
+# by the micropython-pydevices checkout beside this one), REAPER, then a
+# CMake configure/build/ctest pass as
 # the final verification. Idempotent - every step skips work it already
 # did, so it's safe to rerun after a partial failure or just to check the
 # workspace is still healthy.
@@ -13,20 +14,23 @@ repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 log() { printf 'bootstrap: %s\n' "$*"; }
 die() { log "ERROR: $*"; exit 1; }
 
-log "fetching sibling repos (micropython-pydevices, audiodsp and the module repos, a MicroPython checkout, audiocomponents)"
-"$repo_dir/scripts/fetch-sibling-repos.sh" || die "fetch-sibling-repos.sh failed"
+build_mp="$repo_dir/../micropython-pydevices/build_mp.py"
+[[ -x "$build_mp" ]] || die "no micropython-pydevices checkout beside this one (clone PyDevices/micropython-pydevices next to it)"
+# The engine's modules: docs/development.md says what each one is for.
+engine_modules="audiocomponents,audiodsp,audioif,lvgl-micropython,ulab,$repo_dir"
 
 log "fetching VST3 SDK"
 "$repo_dir/scripts/fetch-vst3-sdk.sh" || die "fetch-vst3-sdk.sh failed"
 
 log "building the MicroPython engine (unix port, for Linux/WSL testing)"
-"$repo_dir/scripts/build-micropython-engine.sh" --port unix \
-    || die "build-micropython-engine.sh --port unix failed"
+"$build_mp" --port unix --variant vst3-engine --modules "$engine_modules" \
+    || die "the unix engine build failed"
 
 if [[ -d /mnt/c/Users ]] && command -v powershell.exe >/dev/null 2>&1; then
     log "building the MicroPython engine (windows port, the shipping product)"
-    "$repo_dir/scripts/build-micropython-engine.sh" --port windows \
-        || die "build-micropython-engine.sh --port windows failed"
+    "$build_mp" --port windows --variant vst3-engine --modules "$engine_modules" \
+        ENGINE_ICON="$repo_dir/installer/art/mpvst.ico" \
+        || die "the windows engine build failed"
 else
     log "not running under WSL with a reachable Windows host; skipping the windows engine port"
 fi

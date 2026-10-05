@@ -77,27 +77,26 @@ if(TARGET mpvst-stage-micropython-engine)
     # reading as one plug-in that would not import and two effects that
     # rendered silence. Refuse the engine once anything that goes into it --
     # audiodsp's C sources and build glue, or this repo's vstaudio/vstui --
-    # has moved since it was built. It checks the engine the
-    # bundle stages from, because that is where the build script writes the
-    # provenance stamp; the staged copy carries no stamp, and must not, since
-    # the stamp names this machine's paths and would ship in the archive.
+    # has moved since it was built. It checks the engine the bundle stages
+    # from, because build_mp.py's record (pydevices-build.json) sits beside
+    # it; the staged copy carries none, and must not, since the record names
+    # this machine's paths and would ship in the archive.
     add_test(NAME mpvst_engine_provenance COMMAND
         ${MPVST_PYTHON}
         ${CMAKE_SOURCE_DIR}/tools/engine-provenance.py check
-        ${MPVST_MICROPYTHON_ENGINE}
-        ${CMAKE_SOURCE_DIR}/../audiodsp)
+        ${MPVST_MICROPYTHON_ENGINE})
 
     # docs/security.md promises the engine has no sockets, TLS or FFI. The
     # Windows engine for 0.3.0 and 0.3.1 could import socket anyway while
-    # every test on Linux passed, so ask each engine in .deps/engine: this
+    # every test on Linux passed, so ask each port's engine: this
     # platform's must run and refuse all of them, and the other port's is
     # checked too wherever it can run (the .exe does under WSL).
     if(WIN32)
-        set(mpvst_other_engine mpvst-engine)
+        set(mpvst_other_engine unix/vst3-engine/mpvst-engine)
     else()
-        set(mpvst_other_engine mpvst-engine.exe)
+        set(mpvst_other_engine windows/vst3-engine/mpvst-engine.exe)
     endif()
-    get_filename_component(mpvst_engine_dir "${MPVST_MICROPYTHON_ENGINE}" DIRECTORY)
+    set(mpvst_engine_dir "${MPVST_ENGINE_BUILDS}")
     add_test(NAME mpvst_engine_capabilities COMMAND
         ${MPVST_PYTHON}
         ${CMAKE_SOURCE_DIR}/tools/check-engine-capabilities.py

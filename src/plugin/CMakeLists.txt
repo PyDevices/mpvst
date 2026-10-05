@@ -59,34 +59,24 @@ if(UNIX AND NOT APPLE)
     target_link_libraries(${MPVST_PLUGIN_TARGET} PRIVATE X11::X11)
 endif()
 
+# The engine is a MicroPython build like any other: micropython-pydevices'
+# build_mp.py with the vst3-engine variant and this repository among its
+# modules (docs/development.md has the command). It lands in that
+# repository's builds/<port>/vst3-engine/, and is taken from there. The
+# instruments and effects (audiocomponents) are frozen into it, so nothing
+# here stages them.
+set(MPVST_ENGINE_BUILDS "${CMAKE_SOURCE_DIR}/../micropython-pydevices/builds"
+    CACHE PATH "micropython-pydevices' builds/, where the engine is built")
 if(WIN32)
     set(MPVST_ENGINE_NAME mpvst-engine.exe)
-    set(MPVST_ENGINE_DEFAULT
-        "${CMAKE_SOURCE_DIR}/.deps/engine/mpvst-engine.exe")
+    set(MPVST_ENGINE_PORT windows)
 else()
     set(MPVST_ENGINE_NAME mpvst-engine)
-    set(MPVST_ENGINE_DEFAULT
-        "${CMAKE_SOURCE_DIR}/.deps/engine/mpvst-engine")
+    set(MPVST_ENGINE_PORT unix)
 endif()
-set(MPVST_MICROPYTHON_ENGINE "${MPVST_ENGINE_DEFAULT}"
-    CACHE FILEPATH "Optional prebuilt MicroPython VST engine for this platform")
-# The instruments and the effects library live in audiocomponents, as
-# ordinary pure-Python packages (audiodsp keeps the DSP nodes they are built
-# on, and the C usermod the engine build links). They are staged beside
-# this repository's own lib/ so `import audioinstruments` resolves in the
-# sidecar, which puts the bootstrap's directory on sys.path and nothing
-# else. Same layout rule as the engine build, which expects audiodsp as a
-# workspace sibling: audiocomponents sits beside it.
-set(MPVST_COMPONENTS_LIB_DEFAULT "${CMAKE_SOURCE_DIR}/../audiocomponents/lib")
-set(MPVST_COMPONENTS_LIB "${MPVST_COMPONENTS_LIB_DEFAULT}"
-    CACHE PATH "audiocomponents' pure-Python packages (audioinstruments, audioeffects)")
-if(NOT IS_DIRECTORY "${MPVST_COMPONENTS_LIB}")
-    message(FATAL_ERROR
-        "audiocomponents' lib/ is not at ${MPVST_COMPONENTS_LIB}.\n"
-        "Every instrument script loads audioinstruments from there. Run "
-        "scripts/fetch-sibling-repos.sh, or point MPVST_COMPONENTS_LIB at a "
-        "checkout.")
-endif()
+set(MPVST_MICROPYTHON_ENGINE
+    "${MPVST_ENGINE_BUILDS}/${MPVST_ENGINE_PORT}/vst3-engine/${MPVST_ENGINE_NAME}"
+    CACHE FILEPATH "The MicroPython VST engine for this platform")
 
 if(EXISTS "${MPVST_MICROPYTHON_ENGINE}")
     # stage_lib.cmake clears only the top-level entries its own source
@@ -98,10 +88,6 @@ if(EXISTS "${MPVST_MICROPYTHON_ENGINE}")
             $<TARGET_FILE_DIR:${MPVST_PLUGIN_TARGET}>
         COMMAND ${CMAKE_COMMAND}
             -DMPVST_LIB_SRC=${CMAKE_SOURCE_DIR}/lib
-            -DMPVST_LIB_DST=$<TARGET_FILE_DIR:${MPVST_PLUGIN_TARGET}>
-            -P "${CMAKE_CURRENT_SOURCE_DIR}/stage_lib.cmake"
-        COMMAND ${CMAKE_COMMAND}
-            -DMPVST_LIB_SRC=${MPVST_COMPONENTS_LIB}
             -DMPVST_LIB_DST=$<TARGET_FILE_DIR:${MPVST_PLUGIN_TARGET}>
             -P "${CMAKE_CURRENT_SOURCE_DIR}/stage_lib.cmake"
         # Same command the install instructions give a user, run here so a
@@ -128,7 +114,7 @@ if(EXISTS "${MPVST_MICROPYTHON_ENGINE}")
             "${CMAKE_SOURCE_DIR}/lib/mpvst_instrument_adapter.py"
         COMMENT "Bundling the headless MicroPython engine and script library")
 else()
-    # Unlike MPVST_COMPONENTS_LIB above, a missing engine is not fatal: the
+    # A missing engine is not fatal: the
     # plug-in target still builds and links without it. But tests/CMakeLists.txt
     # gates its entire engine-dependent suite (mpvst_engine_modules,
     # mpvst_reload_tests, every mpvst_smoke_host test, mpvst_effects_library,
@@ -142,10 +128,9 @@ else()
         "every engine-dependent ctest (mpvst_engine_modules, "
         "mpvst_reload_tests, the mpvst_smoke_host tests, "
         "mpvst_effects_library, mpvst_named_plugins) will be silently "
-        "absent from the suite rather than failing. Run "
-        "scripts/build-micropython-engine.sh (--port windows or --port "
-        "unix) to build one, or set MPVST_MICROPYTHON_ENGINE to point at "
-        "an existing build.")
+        "absent from the suite rather than failing. Build one with "
+        "micropython-pydevices' build_mp.py (docs/development.md), or set "
+        "MPVST_MICROPYTHON_ENGINE to point at an existing build.")
 endif()
 
 target_compile_features(${MPVST_PLUGIN_TARGET} PRIVATE cxx_std_17)
