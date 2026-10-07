@@ -77,6 +77,8 @@ after you install.
   Real-time playback on Linux hardware has not been exercised.
 - REAPER is the only DAW tested.
 
+What's planned next is in [ROADMAP.md](ROADMAP.md).
+
 ## Going further
 
 - [**Newcomer's guide to the codebase**](docs/newcomers.md) - the repository
