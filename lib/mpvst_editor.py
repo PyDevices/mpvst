@@ -109,11 +109,11 @@ class Editor:
     # ---- construction ---------------------------------------------------
 
     def _setup(self):
-        import displaydev
+        from boarddev import env_set
 
         # Must be set before anything imports multimer: `polling` is the only
         # backend that never delivers a callback on its own.
-        displaydev.env_set("MULTIMER_BACKEND", "polling")
+        env_set("MULTIMER_BACKEND", "polling")
 
         import appdev
 
