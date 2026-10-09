@@ -64,8 +64,10 @@ typedef enum mpvst_event_type
     MPVST_EVENT_CONTROL_CHANGE = 5,
     MPVST_EVENT_PARAMETER = 6,
     MPVST_EVENT_CHANNEL_PRESSURE = 7,
-    /* Transport discontinuity. data0 is non-zero while the host is playing,
-       value0 carries the new project position in seconds. */
+    /* The host's transport changed: a locate, a loop wrap, a start or stop,
+       a tempo or time-signature change, or a script that has just loaded.
+       data0 is non-zero while the host is playing, value0 carries the
+       project position in seconds; vstaudio.transport() has the rest. */
     MPVST_EVENT_TRANSPORT = 8,
     /* Patch select. data0 is the program index 0-127; value0 is the same
        value normalized to 0.0-1.0. VST3 has no native "program change"

@@ -2443,6 +2443,189 @@ bool patchSelectDeliversProgramChange(const PluginFactory& factory,
           std::abs(actualRatio - expectedRatio) < expectedRatio * 0.25;
 }
 
+// A tempo-synced delay in a named-effect script follows the host's tempo:
+// the tempo it starts at, and a change in the middle of the stream, in the
+// block the change happens in, with no control moving. DigitalDelay with Sync
+// on at an eighth note (Division index 6, half a beat), wet only, one repeat,
+// no glide, so each input click comes back exactly half a beat later. At 100
+// BPM that is 300 ms (14 400 frames); the host moves to 150 BPM and a click
+// sent in that same block must come back 200 ms (9 600 frames) later. An
+// effect that is not told about the change keeps repeating at 300 ms until a
+// control moves.
+bool effectFollowsHostTempo(const PluginFactory& factory,
+                            const ClassInfo& classInfo, FUnknown* host)
+{
+    constexpr const char* source =
+        "import mpvst_effect_adapter\n"
+        "mpvst_effect_adapter.run('DigitalDelay', sync=True, division=6,\n"
+        "                         feedback=0.0, mix=2.0, glide_ms=0.0,\n"
+        "                         tone_hz=0.0, cut_hz=0.0)\n";
+    const auto sourcePath = std::filesystem::temp_directory_path() /
+        "mpvst-tempo-follow.py";
+    {
+        std::ofstream out(sourcePath, std::ios::binary | std::ios::trunc);
+        if (!out || !out.write(source, static_cast<std::streamsize>(
+                                           std::strlen(source))))
+            return false;
+    }
+    setScriptPath(sourcePath.string());
+    auto component = createComponent(factory, classInfo, host);
+    auto processor = getProcessor(component);
+    if (!component || !processor)
+    {
+        setScriptPath({});
+        return false;
+    }
+
+    SpeakerArrangement stereo = SpeakerArr::kStereo;
+    ProcessSetup setup {};
+    setup.processMode = kOffline;
+    setup.symbolicSampleSize = kSample32;
+    setup.maxSamplesPerBlock = 512;
+    setup.sampleRate = 48000.0;
+    if (!ok(processor->setBusArrangements(&stereo, 1, &stereo, 1)) ||
+        !ok(component->activateBus(kAudio, kInput, 0, true)) ||
+        !ok(component->activateBus(kAudio, kOutput, 0, true)) ||
+        !ok(component->activateBus(kEvent, kInput, 0, true)) ||
+        !ok(processor->setupProcessing(setup)) ||
+        !ok(component->setActive(true)) ||
+        !ok(processor->setProcessing(true)))
+    {
+        setScriptPath({});
+        return false;
+    }
+
+    constexpr std::uint32_t kFrames = 512U;
+    constexpr int kBlockCount = 160;
+    constexpr int kChangeBlock = 100;
+    constexpr std::uint32_t kClickBefore = 60U * kFrames;
+    constexpr std::uint32_t kClickAfter = kChangeBlock * kFrames + 100U;
+    constexpr double kTempoBefore = 100.0;
+    constexpr double kTempoAfter = 150.0;
+    constexpr std::uint32_t kRepeatBefore = 14400U;   // half a beat at 100
+    constexpr std::uint32_t kRepeatAfter = 9600U;     // half a beat at 150
+
+    std::vector<float> inLeft(kFrames);
+    std::vector<float> inRight(kFrames);
+    std::vector<float> outLeft(kFrames);
+    std::vector<float> outRight(kFrames);
+    Sample32* inChannels[] = {inLeft.data(), inRight.data()};
+    Sample32* outChannels[] = {outLeft.data(), outRight.data()};
+    AudioBusBuffers inputBus {};
+    inputBus.numChannels = 2;
+    inputBus.channelBuffers32 = inChannels;
+    AudioBusBuffers outputBus {};
+    outputBus.numChannels = 2;
+    outputBus.channelBuffers32 = outChannels;
+    ProcessContext context {};
+    context.state = ProcessContext::kPlaying | ProcessContext::kTempoValid |
+                    ProcessContext::kTimeSigValid;
+    context.sampleRate = 48000.0;
+    context.tempo = kTempoBefore;
+    context.timeSigNumerator = 4;
+    context.timeSigDenominator = 4;
+    ProcessData data {};
+    data.processMode = kOffline;
+    data.symbolicSampleSize = kSample32;
+    data.numSamples = static_cast<int32>(kFrames);
+    data.numInputs = 1;
+    data.inputs = &inputBus;
+    data.numOutputs = 1;
+    data.outputs = &outputBus;
+    data.processContext = &context;
+    ParameterChanges outputChanges {4};
+    data.outputParameterChanges = &outputChanges;
+
+    int engineErrorCode = 0;
+    std::vector<float> heard;
+    heard.reserve(kFrames * kBlockCount);
+    for (int block = 0; block < kBlockCount; ++block)
+    {
+        if (block == kChangeBlock)
+            context.tempo = kTempoAfter;
+        for (std::uint32_t frame = 0U; frame < kFrames; ++frame)
+        {
+            const auto sample =
+                static_cast<std::uint32_t>(block) * kFrames + frame;
+            const float value =
+                sample == kClickBefore || sample == kClickAfter ? 0.5F : 0.0F;
+            inLeft[frame] = value;
+            inRight[frame] = value;
+        }
+        if (!ok(processor->process(data)))
+        {
+            engineErrorCode = -1;
+            break;
+        }
+        for (int32 queueIndex = 0;
+             queueIndex < outputChanges.getParameterCount(); ++queueIndex)
+        {
+            auto* queue = outputChanges.getParameterData(queueIndex);
+            if (queue == nullptr || queue->getPointCount() == 0 ||
+                queue->getParameterId() != 3U)
+                continue;
+            int32 sampleOffset = 0;
+            ParamValue value = 0.0;
+            if (queue->getPoint(queue->getPointCount() - 1, sampleOffset,
+                                 value) != kResultTrue)
+                continue;
+            const auto code = static_cast<int>(value * 255.0 + 0.5);
+            if (code != 0)
+                engineErrorCode = code;
+        }
+        outputChanges.clearQueue();
+        heard.insert(heard.end(), outLeft.begin(), outLeft.end());
+        context.projectTimeSamples += data.numSamples;
+    }
+
+    const auto latency = processor->getLatencySamples();
+    const bool stopped = ok(processor->setProcessing(false)) &&
+                         ok(component->setActive(false));
+    processor = nullptr;
+    const bool terminated = ok(component->terminate());
+    component = nullptr;
+    setScriptPath({});
+    std::error_code ignored;
+    (void)std::filesystem::remove(sourcePath, ignored);
+    if (!stopped || !terminated)
+        return false;
+
+    // Where the loudest sample of [begin, end) is, as a lag from `click`.
+    const auto lagOf = [&heard](std::uint32_t click, std::uint32_t begin,
+                                std::uint32_t end) {
+        std::uint32_t at = begin;
+        float loudest = 0.0F;
+        for (std::uint32_t sample = begin;
+             sample < end && sample < heard.size(); ++sample)
+        {
+            if (std::abs(heard[sample]) > loudest)
+            {
+                loudest = std::abs(heard[sample]);
+                at = sample;
+            }
+        }
+        return std::make_pair(static_cast<long>(at) - static_cast<long>(click),
+                              loudest);
+    };
+    const auto before = lagOf(kClickBefore, kClickBefore, kClickAfter);
+    const auto after = lagOf(kClickAfter, kClickAfter,
+                             static_cast<std::uint32_t>(heard.size()));
+    const long expectBefore = static_cast<long>(latency + kRepeatBefore);
+    const long expectAfter = static_cast<long>(latency + kRepeatAfter);
+    std::cout << "TEMPO_FOLLOW latency=" << latency
+              << " repeat_before=" << before.first - static_cast<long>(latency)
+              << " (want " << kRepeatBefore << " at " << kTempoBefore
+              << " BPM) repeat_after="
+              << after.first - static_cast<long>(latency)
+              << " (want " << kRepeatAfter << " at " << kTempoAfter
+              << " BPM) peaks=" << before.second << "/" << after.second
+              << " error=" << engineErrorCode << '\n';
+    return engineErrorCode == 0 && before.second > 0.25F &&
+           after.second > 0.25F &&
+           std::abs(before.first - expectBefore) <= 2 &&
+           std::abs(after.first - expectAfter) <= 2;
+}
+
 } // namespace
 
 int main(int argc, char** argv)
@@ -2456,6 +2639,7 @@ int main(int argc, char** argv)
     const bool sweepMode = mode == "--expect-all-named";
     const bool scriptProbe = mode == "--effect-script";
     const bool instrumentProbe = mode == "--instrument-script";
+    const bool tempoMode = mode == "--expect-tempo-follow";
     if (argc < 2 || argc > 4 ||
         ((renderMode || scriptProbe || instrumentProbe || frameDump ||
           windowCapture || namedMode) && modeArgument.empty()) ||
@@ -2466,13 +2650,14 @@ int main(int argc, char** argv)
          mode != "--expect-effect-audio" && mode != "--expect-patch-select" &&
          mode != "--expect-editor" && mode != "--dump-editor-frame" &&
          mode != "--capture-editor-window" && mode != "--expect-named" &&
-         mode != "--expect-all-named" &&
+         mode != "--expect-all-named" && mode != "--expect-tempo-follow" &&
          mode != "--effect-script" && mode != "--instrument-script" &&
          !renderMode))
     {
         std::cerr << "usage: mpvst_smoke_host <plugin.vst3> "
                      "[--expect-micropython|--expect-embedded-state|"
                      "--expect-effect-audio|"
+                     "--expect-tempo-follow|"
                      "--expect-patch-select|"
                      "--expect-editor|"
                      "--dump-editor-frame <out.ppm>|"
@@ -2540,6 +2725,22 @@ int main(int argc, char** argv)
                 return 5;
             }
             std::cout << "HOOK effect.audio OK: 5 script/block cases aligned\n";
+        }
+        else if (tempoMode)
+        {
+            ClassInfo effectInfo;
+            if (findAudioClassNamed(factory, "MPVST Script Host (Fx)",
+                                    effectInfo) == nullptr)
+            {
+                std::cerr << "HOOK effect.scan FAIL\n";
+                return 5;
+            }
+            if (!effectFollowsHostTempo(factory, effectInfo, host))
+            {
+                std::cerr << "HOOK effect.tempo FAIL\n";
+                return 5;
+            }
+            std::cout << "HOOK effect.tempo OK\n";
         }
         else if (scriptProbe)
         {
@@ -2665,6 +2866,7 @@ int main(int argc, char** argv)
         }
         const bool defaultSuite = !embeddedState &&
                                   !renderMode && !effectMode && !scriptProbe &&
+                                  !tempoMode &&
                                   !instrumentProbe && !patchSelectMode &&
                                   !editorMode && !windowCapture &&
                                   !namedMode && !sweepMode;

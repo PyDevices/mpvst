@@ -17,6 +17,12 @@ The adapter calls `audioeffects.create(name, source, sample_rate, **kwargs)`;
 it does not instantiate an effect class directly. That package factory is the
 audiodsp component factory boundary.
 
+The component gets `vstaudio.transport` as its transport, and the adapter
+calls its `transport_changed()` whenever the host's tempo, time signature or
+play state moves, so a delay or a modulation effect synced to the beat
+follows a tempo change in the block it happens in, without waiting for a
+control to move.
+
 Macros work the same way they do for instruments - normalized 0.0-1.0 on the
 wire, MIDI 0-127 to the library. The provider declares an empty macro surface
 explicitly when an effect has no knobs; this consumer remains tolerant and
@@ -60,6 +66,20 @@ def attach(factory, **kwargs):
     labels = getattr(effect, "MACRO_LABELS", ())
     patches = getattr(effect, "PATCHES", {})
     if labels or patches:
+        # What the effect last heard about the transport: play state, tempo
+        # and time signature. The position moves every block and means
+        # nothing to a component that follows the beat.
+        heard = [None]
+
+        def follow_transport():
+            state = vstaudio.transport()
+            key = (state[0], state[2], state[3], state[4])
+            if key != heard[0]:
+                heard[0] = key
+                changed = getattr(effect, "transport_changed", None)
+                if changed is not None:
+                    changed()
+
         # A component may REBUILD its graph when a setting changes, and then
         # `effect.output` is a different object from the one the engine was
         # handed - the old node is still reachable from our reference but
@@ -78,9 +98,9 @@ def attach(factory, **kwargs):
 
         def dispatch(event_type, channel, note_id, data0, value0, value1,
                      sample_position):
-            # Effects take no notes. A parameter change is the only event
-            # that means anything here, and patches are the one other
-            # component event an effect may consume.
+            # Effects take no notes. Parameter changes and patches are what
+            # an effect consumes, and a transport change is passed on to the
+            # ones that follow the host's beat.
             if event_type == vstaudio.EVENT_PARAMETER:
                 if 0 <= data0 < len(labels):
                     effect.set_macro(data0, value0 * 127.0, channel, note_id,
@@ -101,6 +121,8 @@ def attach(factory, **kwargs):
                 effect.poly_pressure(data0, _midi_byte(value0), channel,
                                      note_id,
                                      sample_position)
+            elif event_type == vstaudio.EVENT_TRANSPORT:
+                follow_transport()
             rebind()
 
         vstaudio.on_event(dispatch)
@@ -121,7 +143,8 @@ def run(name, **kwargs):
     import audioeffects
 
     def factory(source, sample_rate, **options):
-        return audioeffects.create(name, source, sample_rate, **options)
+        return audioeffects.create(name, source, sample_rate,
+                                   transport=vstaudio.transport, **options)
 
     module_name = "audioeffects"
     class_name = name

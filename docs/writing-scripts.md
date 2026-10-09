@@ -190,9 +190,12 @@ value itself is not saved as state. Output uses a 128-sample fade-out, a
 128-sample fade-in.
 
 Host transport position, tempo and time signature reach the script.
-Locates, loop wraps and play-state changes arrive as
-`vstaudio.EVENT_TRANSPORT`, and `vstaudio.transport()` returns
-`(playing, seconds, bpm, numerator, denominator)`.
+Locates, loop wraps, play-state changes and tempo or time-signature changes
+arrive as `vstaudio.EVENT_TRANSPORT`, in the block they happen in, and a
+script gets one as soon as it has loaded. `vstaudio.transport()` returns
+`(playing, seconds, bpm, numerator, denominator)`. A named effect follows
+this for you: an `audioeffects` delay or modulation effect with Sync on takes
+the new tempo in the block it changes.
 
 `SidecarTransport::telemetry()` reports queue depth, render time,
 underruns, event drops, restarts, error code and last exit reason, with

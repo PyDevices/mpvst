@@ -64,6 +64,8 @@ public:
         std::uint16_t timeSignatureDenominator = 4U;
         bool playing = false;
         bool discontinuity = false;
+        // The tempo or the time signature differs from the last block's.
+        bool tempoChanged = false;
     };
 
     // Audio-thread entry point: bounded, lock-free, and allocation-free.

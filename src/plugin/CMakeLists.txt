@@ -86,6 +86,14 @@ if(EXISTS "${MPVST_MICROPYTHON_ENGINE}")
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${MPVST_MICROPYTHON_ENGINE}"
             $<TARGET_FILE_DIR:${MPVST_PLUGIN_TARGET}>
+        # A build directory that staged audiocomponents' packages, before they
+        # were frozen into the engine, still holds those copies, and the
+        # bundle's directory comes before the frozen modules on the sidecar's
+        # path: the plug-in would run that old library instead of the
+        # engine's. Nothing stages them now, so any copy here is stale.
+        COMMAND ${CMAKE_COMMAND} -E rm -rf
+            $<TARGET_FILE_DIR:${MPVST_PLUGIN_TARGET}>/audioinstruments
+            $<TARGET_FILE_DIR:${MPVST_PLUGIN_TARGET}>/audioeffects
         COMMAND ${CMAKE_COMMAND}
             -DMPVST_LIB_SRC=${CMAKE_SOURCE_DIR}/lib
             -DMPVST_LIB_DST=$<TARGET_FILE_DIR:${MPVST_PLUGIN_TARGET}>
