@@ -80,7 +80,9 @@ CASES = {
     "LadderFilter": ("audioeffects.LadderFilter(src, cutoff_hz=3000,"
                      " resonance=0.6)", "pass"),
     "CombFilter": ("audioeffects.CombFilter(src, frequency=440)", "pass"),
-    "Reverb": ("audioeffects.Reverb(src, preset='hall', mix=0.4)", "pass"),
+    # The rebuilt Reverb takes a patch, not the old Freeverb preset: Concert
+    # Hall is the hall patch, nearest the old preset='hall' by measured decay.
+    "Reverb": ("audioeffects.Reverb(src, patch=6)", "pass"),
     # Convolution, in the host rather than offline. The sidecar is where a
     # mistake in the allocation shows up as a stall or a dead instance
     # instead of as a number, and a quarter second of stereo impulse is
@@ -89,8 +91,10 @@ CASES = {
                           " mix=0.5)", "pass"),
     "ConvolutionReverb-patch": ("audioeffects.ConvolutionReverb(src,"
                                 " seconds=0.25, patch=2)", "pass"),
-    "Reverb_spring": ("audioeffects.Reverb(src, preset='spring', mix=0.4)",
-                      "pass"),
+    # The spring character is parked in the rebuilt Reverb (its tank has no
+    # dispersive chain yet). Short Plate is the patch nearest the old spring
+    # preset by measured decay and brightness, so the case stands on it.
+    "Reverb_short_plate": ("audioeffects.Reverb(src, patch=1)", "pass"),
     "DigitalDelay": ("audioeffects.DigitalDelay(src)", "pass"),
     "SlapbackDelay": ("audioeffects.SlapbackDelay(src)", "pass"),
     "TapeDelay": ("audioeffects.TapeDelay(src)", "pass"),

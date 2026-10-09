@@ -165,12 +165,23 @@ CODA_HARMONY = (
 
 # Shared-effect room placements ---------------------------------------------
 
-def room_rack(name, preset, mix, extra=""):
+# The racks predate the rebuilt Reverb and Chorus. Each old Freeverb preset
+# maps to the shipped Reverb patch whose measured decay and brightness sit
+# nearest it, and each Mix is the old one doubled: the rebuilt Reverb's Mix
+# runs 0 to 2 with the dry at unity to 1, where the old one ran 0 to 1 on the
+# same law, so the dry and the tail keep the gains they had.
+HALL = (6, "Concert Hall")
+ROOM = (5, "Live Room")
+CHAMBER = (8, "Bright Chamber")
+
+
+def room_rack(name, patch, mix, extra=""):
     room_source = "width.output" if extra else "source"
     stable_name = name.lower().replace(" ", "_")
     factory_extra = extra.replace(
         "width = Chorus(source,",
         'width = audioeffects.create("Chorus", source, RATE,')
+    index, patch_name = patch
     source = ("NAME = %r\n"
               "DISPLAY_NAME = %r\n"
               "CATEGORIES = ('Effect Rack', 'Reverb')\n"
@@ -185,25 +196,30 @@ def room_rack(name, preset, mix, extra=""):
               "\n"
               "RATE = vstaudio.sample_rate()\n"
               "source = vstaudio.input()\n%s"
-              "room = audioeffects.create(\"Reverb\", %s, RATE, "
-              "preset='%s', mix=%.3f)\n"
+              "room = audioeffects.create(\"Reverb\", %s, RATE, patch=%d)  # %s\n"
+              "room.set_macro(12, %.2f)  # Mix %.2f of 0..2\n"
               "vstaudio.output(room.output)\n" %
-              (stable_name, name, name, factory_extra, room_source, preset, mix))
+              (stable_name, name, name, factory_extra, room_source, index,
+               patch_name, mix * 127.0 / 2.0, mix))
     return {"name": name, "source": source, "macros": {}, "macro_env": {}}
 
 
-FX_PERCUSSION = room_rack("Rear Hall", "hall", 0.24)
-FX_BASS = room_rack("Bass Room", "room", 0.08)
-FX_PIZZ = room_rack("Pizzicato Chamber", "chamber", 0.14)
-FX_STRINGS = room_rack("String Hall", "hall", 0.22,
-                       "width = Chorus(source, rate=0.23, depth_ms=2.4, voices=2, mix=0.10)\n")
-FX_ORCHESTRA = room_rack("Orchestra Hall", "hall", 0.18)
-FX_VIOLIN = room_rack("Soloist Hall", "hall", 0.20)
-FX_FLUTE = room_rack("Woodwind Chamber", "chamber", 0.20)
-FX_HORNS = room_rack("Horn Hall", "hall", 0.16)
-FX_ORGAN = room_rack("Nave", "hall", 0.28)
-FX_PIANO = room_rack("Piano Chamber", "chamber", 0.13)
-FX_CHOIR = room_rack("Choir Nave", "hall", 0.26)
+FX_PERCUSSION = room_rack("Rear Hall", HALL, 0.48)
+FX_BASS = room_rack("Bass Room", ROOM, 0.16)
+FX_PIZZ = room_rack("Pizzicato Chamber", CHAMBER, 0.28)
+# The rebuilt Chorus is one delayed voice: Delay is the old line's centre
+# (depth_ms + 8 ms), Depth its swing as a fraction of that, Tone wide open
+# because the old one had no wet filter. Its Rate floor is 0.3 Hz.
+FX_STRINGS = room_rack("String Hall", HALL, 0.44,
+                       "width = Chorus(source, rate=0.3, depth=0.115, mix=0.10,"
+                       " delay_ms=10.4, tone_hz=12000.0)\n")
+FX_ORCHESTRA = room_rack("Orchestra Hall", HALL, 0.36)
+FX_VIOLIN = room_rack("Soloist Hall", HALL, 0.40)
+FX_FLUTE = room_rack("Woodwind Chamber", CHAMBER, 0.40)
+FX_HORNS = room_rack("Horn Hall", HALL, 0.32)
+FX_ORGAN = room_rack("Nave", HALL, 0.56)
+FX_PIANO = room_rack("Piano Chamber", CHAMBER, 0.26)
+FX_CHOIR = room_rack("Choir Nave", HALL, 0.52)
 
 
 # Principal material ---------------------------------------------------------
