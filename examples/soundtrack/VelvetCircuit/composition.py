@@ -169,29 +169,55 @@ def rack(name, imports, body):
     return {"name": name, "source": source, "macros": {}, "macro_env": {}}
 
 
+# These racks predate the rebuilt effects. Each old Freeverb preset maps to
+# the shipped Reverb patch whose measured decay and brightness sit nearest
+# it (spring is parked in the rebuilt Reverb; Short Plate is nearest), and
+# each Mix is the old one doubled, because the rebuilt Mix runs 0 to 2 on the
+# law the old one ran 0 to 1 on. A patch sets every macro, Mix included, so
+# Mix is set after it. The rebuilt Chorus is one delayed voice: Delay is the
+# old line's centre (depth_ms + 8 ms), Depth its swing as a fraction of
+# that, Tone open because the old one had no wet filter. Saturation's old
+# amount was its dry/wet blend, which is Mix now. Vibrato's Depth is in
+# cents, and Rise is at its shortest because the old one had none.
+# Overdrive is a Tube Screamer now: Drive is its gain (12 to 108), placed so
+# the old default 0.4 lands on the new default; Tone is the position whose
+# low-pass corner (480 x 18^Tone Hz) is the old tone_hz. Mix is still how
+# much of the drive you hear, though it now adds the clipped copy to a dry
+# note at unity instead of crossfading - except on the clav and the guitar.
+# Those parts are quiet enough that the old curve, backed off as it was,
+# barely clipped them, while the new circuit clips at any level and adds that
+# copy at a level of its own: the old Mix put both tracks 15 dB over what the
+# old rack gave. Their Mix is the one at which the stage's level on the
+# track's own part matches the old one's. The delays keep Time, Feedback and
+# Mix; TapeDelay's wow is the old 2.5 ms swing at 0.7 Hz as cents, with no
+# flutter, the old loop drive (0.3) and the old line length (twice Time); its
+# repeats cannot be as bright as the old tone_hz at these Times, so Spacing
+# is at its brightest. SlapbackDelay's Level is the old Mix doubled (Echo's
+# 0-1 law became 0-2), with no saturation, wobble or tone filter, as before.
 FX_DRUMS = rack(
     "Desk Heat", "Saturation, Overdrive",
-    "heat = Saturation(source, amount=0.16)\n"
-    "desk = Overdrive(heat.output, drive=0.18, tone_hz=7200.0, mix=0.22)\n"
+    "heat = Saturation(source, mix=0.16)\n"
+    "desk = Overdrive(heat.output, drive=19.8, tone=0.937, mix=0.22)\n"
     "vstaudio.output(desk.output)")
 
 FX_BASS = rack(
     "Valve Bass", "Saturation, Overdrive",
-    "valve = Saturation(source, amount=0.22)\n"
-    "edge = Overdrive(valve.output, drive=0.12, tone_hz=3200.0, mix=0.16)\n"
+    "valve = Saturation(source, mix=0.22)\n"
+    "edge = Overdrive(valve.output, drive=16.7, tone=0.656, mix=0.16)\n"
     "vstaudio.output(edge.output)")
 
 FX_RHODES = rack(
     "Neon Suitcase", "Chorus, TapeDelay, Reverb",
-    "chorus = Chorus(source, rate=0.34, depth_ms=4.0, voices=3, mix=0.28)\n"
-    "echo = TapeDelay(chorus.output, time_ms=355.0, feedback=0.22, mix=0.14, wow=0.22, tone_hz=4300.0)\n"
-    "room = Reverb(echo.output, preset='plate', mix=0.16)\n"
+    "chorus = Chorus(source, rate=0.34, depth=0.167, mix=0.28, delay_ms=12.0, tone_hz=12000.0)\n"
+    "echo = TapeDelay(chorus.output, time_ms=355.0, feedback=0.22, mix=0.14, wow_cents=4.18, flutter_cents=0.0, record_level=0.3, spacing_um=2.0, max_time_ms=710.0)\n"
+    "room = Reverb(echo.output, patch=0)  # Steel Plate\n"
+    "room.set_macro(12, 20.32)  # Mix 0.32 of 0..2\n"
     "vstaudio.output(room.output)")
 
 FX_CLAV = rack(
     "Chrome Clav", "Phaser, Overdrive",
     "phase = Phaser(source, rate=0.31, depth=0.72, stages=6, feedback=0.38, mix=0.42)\n"
-    "amp = Overdrive(phase.output, drive=0.28, tone_hz=5600.0, mix=0.58)\n"
+    "amp = Overdrive(phase.output, drive=26.0, tone=0.850, mix=0.004)\n"
     "vstaudio.output(amp.output)")
 
 FX_ORGAN = rack(
@@ -199,45 +225,52 @@ FX_ORGAN = rack(
     # The shared B3 already models two-speed Leslie rotors.  A restrained
     # cabinet chorus here adds the mic/room spread without phase-cancelling
     # that instrument-level motion.
-    "cab = Chorus(source, rate=0.72, depth_ms=3.2, voices=2, mix=0.18)\n"
-    "heat = Saturation(cab.output, amount=0.13)\n"
-    "room = Reverb(heat.output, preset='room', mix=0.13)\n"
+    "cab = Chorus(source, rate=0.72, depth=0.143, mix=0.18, delay_ms=11.2, tone_hz=12000.0)\n"
+    "heat = Saturation(cab.output, mix=0.13)\n"
+    "room = Reverb(heat.output, patch=5)  # Live Room\n"
+    "room.set_macro(12, 16.51)  # Mix 0.26 of 0..2\n"
     "vstaudio.output(room.output)")
 
 FX_GUITAR = rack(
     "Midnight Combo", "Overdrive, SlapbackDelay, Reverb",
-    "amp = Overdrive(source, drive=0.34, tone_hz=5100.0, mix=0.72)\n"
-    "slap = SlapbackDelay(amp.output, time_ms=88.0, mix=0.16)\n"
-    "spring = Reverb(slap.output, preset='spring', mix=0.15)\n"
+    "amp = Overdrive(source, drive=30.8, tone=0.818, mix=0.003)\n"
+    "slap = SlapbackDelay(amp.output, time_ms=88.0, level=0.32, saturation=0.0, tone_hz=20000.0, wow_cents=0.0)\n"
+    "spring = Reverb(slap.output, patch=1)  # Short Plate\n"
+    "spring.set_macro(12, 19.05)  # Mix 0.30 of 0..2\n"
     "vstaudio.output(spring.output)")
 
 FX_WIND = rack(
     "Tenor Chamber", "SlapbackDelay, Reverb",
-    "slap = SlapbackDelay(source, time_ms=112.0, mix=0.12)\n"
-    "room = Reverb(slap.output, preset='chamber', mix=0.22)\n"
+    "slap = SlapbackDelay(source, time_ms=112.0, level=0.24, saturation=0.0, tone_hz=20000.0, wow_cents=0.0)\n"
+    "room = Reverb(slap.output, patch=8)  # Bright Chamber\n"
+    "room.set_macro(12, 27.94)  # Mix 0.44 of 0..2\n"
     "vstaudio.output(room.output)")
 
 FX_BRASS = rack(
     "Brass Plate", "Saturation, Reverb",
-    "tape = Saturation(source, amount=0.12)\n"
-    "plate = Reverb(tape.output, preset='plate', mix=0.14)\n"
+    "tape = Saturation(source, mix=0.12)\n"
+    "plate = Reverb(tape.output, patch=0)  # Steel Plate\n"
+    "plate.set_macro(12, 17.78)  # Mix 0.28 of 0..2\n"
     "vstaudio.output(plate.output)")
 
 FX_CS80 = rack(
     "Satellite Echo", "TapeDelay, Reverb",
-    "echo = TapeDelay(source, time_ms=238.0, feedback=0.27, mix=0.18, wow=0.16, tone_hz=5200.0)\n"
-    "hall = Reverb(echo.output, preset='hall', mix=0.18)\n"
+    "echo = TapeDelay(source, time_ms=238.0, feedback=0.27, mix=0.18, wow_cents=3.04, flutter_cents=0.0, record_level=0.3, spacing_um=2.0, max_time_ms=476.0)\n"
+    "hall = Reverb(echo.output, patch=6)  # Concert Hall\n"
+    "hall.set_macro(12, 22.86)  # Mix 0.36 of 0..2\n"
     "vstaudio.output(hall.output)")
 
 FX_STRINGS = rack(
     "Velvet Hall", "Reverb",
-    "hall = Reverb(source, preset='hall', mix=0.24)\n"
+    "hall = Reverb(source, patch=6)  # Concert Hall\n"
+    "hall.set_macro(12, 30.48)  # Mix 0.48 of 0..2\n"
     "vstaudio.output(hall.output)")
 
 FX_TAPE = rack(
     "Ghost Projector", "Vibrato, Reverb",
-    "flutter = Vibrato(source, rate=4.7, depth_semitones=0.06)\n"
-    "room = Reverb(flutter.output, preset='chamber', mix=0.26)\n"
+    "flutter = Vibrato(source, rate=4.7, depth=6.0, rise=0.15)\n"
+    "room = Reverb(flutter.output, patch=8)  # Bright Chamber\n"
+    "room.set_macro(12, 33.02)  # Mix 0.52 of 0..2\n"
     "vstaudio.output(room.output)")
 
 
