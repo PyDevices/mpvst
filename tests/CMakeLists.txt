@@ -121,6 +121,10 @@ if(TARGET mpvst-stage-micropython-engine)
         $<TARGET_FILE_DIR:MPVST>/../.. --expect-micropython)
     add_test(NAME mpvst_effect_audio_smoke COMMAND mpvst_smoke_host
         $<TARGET_FILE_DIR:MPVST>/../.. --expect-effect-audio)
+    # A synced delay follows the host's tempo, mid-stream, in the block the
+    # tempo changes in.
+    add_test(NAME mpvst_tempo_follow_smoke COMMAND mpvst_smoke_host
+        $<TARGET_FILE_DIR:MPVST>/../.. --expect-tempo-follow)
     add_test(NAME mpvst_patch_select_smoke COMMAND mpvst_smoke_host
         $<TARGET_FILE_DIR:MPVST>/../.. --expect-patch-select)
     # The editor end to end: the controller learns the mapping, the engine

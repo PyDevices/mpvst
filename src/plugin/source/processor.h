@@ -100,6 +100,9 @@ private:
     std::int64_t expectedProjectSample_ {0};
     bool haveTransport_ {false};
     bool lastPlaying_ {false};
+    std::uint64_t lastTempoMicroBpm_ {0U};
+    std::uint16_t lastTimeSignatureNumerator_ {0U};
+    std::uint16_t lastTimeSignatureDenominator_ {0U};
     std::uint32_t fadeSamplesRemaining_ {0U};
     std::uint32_t holdSamplesRemaining_ {0U};
     ReloadFadeState reloadFadeState_ {ReloadFadeState::Idle};

@@ -442,9 +442,19 @@ SidecarTransport::TransportInfo Processor::readTransport (
         info.projectSample == expectedProjectSample_ &&
         info.playing == lastPlaying_;
     info.discontinuity = !continuous;
+    // A tempo or meter change is not a jump - the timeline carries on - but
+    // anything synced to the beat has to hear about it, and the block it
+    // happens in is the one to tell it in.
+    info.tempoChanged = haveTransport_ &&
+        (info.tempoMicroBpm != lastTempoMicroBpm_ ||
+         info.timeSignatureNumerator != lastTimeSignatureNumerator_ ||
+         info.timeSignatureDenominator != lastTimeSignatureDenominator_);
 
     haveTransport_ = true;
     lastPlaying_ = info.playing;
+    lastTempoMicroBpm_ = info.tempoMicroBpm;
+    lastTimeSignatureNumerator_ = info.timeSignatureNumerator;
+    lastTimeSignatureDenominator_ = info.timeSignatureDenominator;
     expectedProjectSample_ = info.projectSample +
         static_cast<std::int64_t> (data.numSamples);
     return info;
@@ -603,10 +613,14 @@ tresult PLUGIN_API Processor::process (ProcessData& data)
     clearOutput (data);
     const auto transport = readTransport (data);
     std::uint32_t eventCount = 0U;
-    if (transport.discontinuity)
+    // A freshly loaded or reloaded script has seen no transport event yet,
+    // so it gets one with the macro resync, in the same block.
+    const bool resync =
+        macroResyncPending_.load (std::memory_order_relaxed) != 0U &&
+        sidecar_.ready () && data.numSamples > 0;
+    if (transport.discontinuity || transport.tempoChanged || resync)
         eventCount = emitTransportEvent (transport, data.numSamples, eventCount);
-    if (macroResyncPending_.load (std::memory_order_relaxed) != 0U &&
-        sidecar_.ready () && data.numSamples > 0)
+    if (resync)
     {
         eventCount = emitMacroResync (data.numSamples, eventCount);
         macroResyncPending_.store (0U, std::memory_order_relaxed);
