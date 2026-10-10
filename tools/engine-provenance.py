@@ -206,14 +206,21 @@ def check_revision(engine: Path, audiodsp: Path) -> tuple[list[str], str | None]
                 "came from, which means it was not built in one pass: "
                 + ", ".join(f"{n} {r}" for n, r in sorted(revisions.items()))], None
     described = next(iter(revisions.values()))
-    match = DESCRIBE.search(described)
-    if match is None:
-        return [f"cannot read a commit out of the engine's __revision__ "
-                f"{described!r}; expected a git describe ending in -g<sha>."], None
-    if match.group("dirty"):
+    if described.endswith("-dirty"):
         return [f"the engine was built from a dirty audiodsp tree ({described}), "
                 f"so what it contains is not any commit."], None
-    sha = match.group("sha")
+    match = DESCRIBE.search(described)
+    if match is not None:
+        sha = match.group("sha")
+    else:
+        # Built exactly at a tag, `git describe` prints the tag alone, with no
+        # -g<sha> to read: that is how every engine built against an audiodsp
+        # release is stamped. Ask the checkout which commit the tag names.
+        sha = _out(audiodsp, "rev-parse", "--verify", "--quiet", f"{described}^{{commit}}")
+        if sha is None:
+            return [f"cannot read a commit out of the engine's __revision__ "
+                    f"{described!r}: it is neither a git describe ending in -g<sha> "
+                    f"nor a tag the checkout at {audiodsp} has."], None
     if head.startswith(sha):
         return [], f"built from audiodsp {described}, which is this checkout's HEAD"
     change = moved(audiodsp, sha, head, ENGINE_PATHS["audiodsp"])
