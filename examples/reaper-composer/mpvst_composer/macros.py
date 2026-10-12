@@ -15,7 +15,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 _SKIP_KW = {
     "sidechain", "duck", "key", "character", "stereo", "impulse",
-    "impulse_channels", "seed", "patch", "preset",
+    "impulse_channels", "seed", "patch",
 }
 
 _VST_FX_DIR = os.path.join(
@@ -169,7 +169,7 @@ def _lookup_entry(manifest: Mapping, kind: str, name: str) -> dict:
     return {}
 
 
-def patch_midi(entry: Mapping, preset) -> Tuple[int, List]:
+def patch_midi(entry: Mapping, patch) -> Tuple[int, List]:
     patches = entry.get("patches") or {}
     if not patches:
         return 0, []
@@ -189,20 +189,20 @@ def patch_midi(entry: Mapping, preset) -> Tuple[int, List]:
         """
         return _vals(patches.get("0") or patches.get(0) or [])
 
-    if preset is None or preset == "":
+    if patch is None or patch == "":
         data = patches.get("0") or patches.get(0)
         if data:
             return 0, _vals(data)
         return 0, []
-    if isinstance(preset, bool):
+    if isinstance(patch, bool):
         return 0, []
-    if isinstance(preset, int) or (isinstance(preset, str) and preset.isdigit()):
-        idx = str(int(preset))
+    if isinstance(patch, int) or (isinstance(patch, str) and patch.isdigit()):
+        idx = str(int(patch))
         data = patches.get(idx)
         if data:
             return int(idx), _vals(data)
         return 0, _zero()
-    needle = str(preset).lower()
+    needle = str(patch).lower()
     for idx_str, data in patches.items():
         pname = data[0] if isinstance(data, list) and data else data
         if str(pname).lower() == needle or needle in str(pname).lower():
@@ -271,14 +271,15 @@ def _kw_to_position(label: str, span, value: Any) -> Optional[float]:
 
 def macros_for_effect(
     effect: str,
-    preset,
+    patch,
     kwargs: Optional[Mapping[str, Any]],
     manifest: Mapping,
 ) -> Dict[int, float]:
+    """Start from the effect's patch, then overlay anything named after a
+    macro - the same rule as `macros_for_instrument`."""
     kwargs = dict(kwargs or {})
     entry = _lookup_entry(manifest, "effects", effect)
-    patch_key = kwargs.get("patch", preset)
-    _idx, midi = patch_midi(entry, patch_key)
+    _idx, midi = patch_midi(entry, patch)
     macros = _midi_macros(midi)
     labels, ranges = _labels_and_ranges(effect, entry)
     _overlay(macros, labels, ranges, kwargs)

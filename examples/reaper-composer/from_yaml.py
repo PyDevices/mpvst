@@ -133,9 +133,9 @@ def build(document):
     auxes = {}
     for spec in document.get("aux_tracks") or []:
         options = {k: v for k, v in spec.items()
-                   if k not in ("name", "effect", "preset")}
+                   if k not in ("name", "effect", "patch")}
         auxes[spec["name"]] = song.add_aux_track(
-            spec["name"], effect=spec["effect"], preset=spec.get("preset"),
+            spec["name"], effect=spec["effect"], patch=spec.get("patch"),
             **options)
 
     #: Keys a track spec uses for itself. Anything else is taken as one of
@@ -154,8 +154,8 @@ def build(document):
             track.pan = float(spec["pan"])
         for insert in spec.get("inserts") or []:
             options = {k: v for k, v in insert.items()
-                       if k not in ("effect", "preset")}
-            track.add_insert(insert["effect"], preset=insert.get("preset"),
+                       if k not in ("effect", "patch")}
+            track.add_insert(insert["effect"], patch=insert.get("patch"),
                              **options)
         for send in spec.get("sends") or []:
             target = auxes.get(send["to"])
@@ -176,8 +176,8 @@ def build(document):
 
     for effect in document.get("master_effects") or []:
         options = {k: v for k, v in effect.items()
-                   if k not in ("effect", "preset")}
-        song.add_master_effect(effect["effect"], preset=effect.get("preset"),
+                   if k not in ("effect", "patch")}
+        song.add_master_effect(effect["effect"], patch=effect.get("patch"),
                                **options)
 
     mix = document.get("mix_bus")

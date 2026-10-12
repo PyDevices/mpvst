@@ -139,7 +139,8 @@ def build() -> Project:
     song.add_tempo_marker(measure=1, bpm=TEMPO,
                           signature=(BEATS_PER_BAR, 4))
 
-    hall = song.add_aux_track("Hall", effect="Reverb", mix=1.0)
+    hall = song.add_aux_track("Hall", effect="Reverb", patch="Concert Hall",
+                              mix=2.0)
 
     for name, instrument, gain_db, pan, sections in VOICES:
         track = song.add_track(name, instrument=instrument)

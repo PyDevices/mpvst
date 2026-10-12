@@ -84,12 +84,19 @@ song.add_master_effect("TapeDelay", mix=0.2, feedback=0.4)
 
 **Aux Tracks (Sends):**
 ```python
-# 1. Create an Aux track hosting a Reverb
-verb_aux = song.add_aux_track("Big Verb", effect="Reverb", preset="hall")
+# 1. Create an Aux track hosting a Reverb: its Concert Hall patch, with Mix
+#    at 2 so the return carries the tail and none of the dry
+verb_aux = song.add_aux_track("Big Verb", effect="Reverb",
+                              patch="Concert Hall", mix=2.0)
 
 # 2. Route an instrument track into the Aux track
 bass_track.add_send(verb_aux, send_level=0.5)
 ```
+
+An effect takes a patch the way an instrument track does: `patch=` names one
+the effect itself declares, and any keyword named after one of its macros
+(`mix` above) is applied over it. Inserts and master effects take `patch=`
+too.
 
 **Sidechain Ducking:**
 To duck the bass when the kick hits, send the drums into the bass track's
