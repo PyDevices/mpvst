@@ -5,7 +5,7 @@ tempo: 96
 key: D
 scale: dorian
 aux_tracks:
-- {name: Hall, effect: Reverb, mix: 1.0}
+- {name: Hall, effect: Reverb, patch: Concert Hall, mix: 2.0}
 patterns:
   pedal:
   - [0, 2, 1, 2, 92]

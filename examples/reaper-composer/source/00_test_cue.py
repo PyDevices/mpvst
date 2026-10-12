@@ -58,13 +58,15 @@ def main():
     lead.volume = 0.20
     lead.pan = 0.12
 
-    hall = song.add_aux_track("Hall", effect="Reverb", preset="hall", mix=1.0)
+    # An aux return wants the tail alone, and Reverb's Mix gives you that at
+    # 2: the dry stays at unity up to Mix 1, then fades out.
+    hall = song.add_aux_track("Hall", effect="Reverb", patch="Concert Hall", mix=2.0)
     hall.volume = 0.22
     pad.add_send(hall, send_level=0.28)
     lead.add_send(hall, send_level=0.18)
 
     pad.add_insert("Chorus", rate=0.55, depth=0.18, mix=0.35, delay_ms=9.0, tone_hz=4500.0)
-    lead.add_insert("Saturation", amount=0.18, character="tape", drive=0.28)
+    lead.add_insert("Saturation", mix=0.18, character="tape", drive_db=-1.68)
 
     # Kick -> bass key (channels 3/4) plus an audible volume duck.
     drums.add_send(bass, send_level=1.0, src_chan=0, dst_chan=2, mode=1)

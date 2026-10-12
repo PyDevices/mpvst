@@ -155,11 +155,14 @@ class MidiPattern:
 
 
 class AuxTrack:
-    def __init__(self, name: str, effect: str, preset: Optional[str] = None, **kwargs):
+    def __init__(self, name: str, effect: str, patch=None, **kwargs):
         self.name = name
         self.guid = "{" + str(uuid.uuid4()).upper() + "}"
         self.effect = effect
-        self.preset = preset
+        #: The effect's patch, by name or index, the way a track names an
+        #: instrument's. Anything in `kwargs` named after a macro is applied
+        #: over it.
+        self.patch = patch
         self.kwargs = kwargs
         self.volume = 1.0
         self.pan = 0.0
@@ -226,10 +229,12 @@ class Track:
             "mode": mode,
         })
 
-    def add_insert(self, effect: str, preset: Optional[str] = None, **kwargs):
+    def add_insert(self, effect: str, patch=None, **kwargs):
+        """An effect after the instrument. `patch` names one of the effect's
+        patches (or its index); keywords named after a macro go over it."""
         self.inserts.append({
             "effect": effect,
-            "preset": preset,
+            "patch": patch,
             "kwargs": kwargs,
         })
 
@@ -456,15 +461,15 @@ class Project:
         self.tracks.append(t)
         return t
 
-    def add_aux_track(self, name: str, effect: str, preset: Optional[str] = None, **kwargs) -> AuxTrack:
-        aux = AuxTrack(name, effect, preset, **kwargs)
+    def add_aux_track(self, name: str, effect: str, patch=None, **kwargs) -> AuxTrack:
+        aux = AuxTrack(name, effect, patch, **kwargs)
         self.aux_tracks.append(aux)
         return aux
 
-    def add_master_effect(self, effect: str, preset: Optional[str] = None, **kwargs):
+    def add_master_effect(self, effect: str, patch=None, **kwargs):
         self.master_inserts.append({
             "effect": effect,
-            "preset": preset,
+            "patch": patch,
             "kwargs": kwargs,
         })
 

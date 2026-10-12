@@ -113,14 +113,11 @@ def _kw_repr(kwargs: dict) -> str:
     return ", ".join(parts)
 
 
-def _effect_call_args(preset, kwargs: dict) -> str:
-    bits = []
-    if preset:
-        bits.append(f"preset={repr(preset)}")
-    extra = _kw_repr(kwargs)
-    if extra:
-        bits.append(extra)
-    return ", ".join(bits)
+def _effect_call_args(kwargs: dict) -> str:
+    # The patch is not a constructor argument here. It reaches the plug-in
+    # as the macro array (`macros_for_effect`), which the host replays after
+    # the script runs, the same way the offline renderer applies it.
+    return _kw_repr(kwargs)
 
 
 # 24-bit PCM WAV render config (little-endian 'wave' + 24 + flag)
@@ -194,11 +191,11 @@ class ReaperRenderer(BaseRenderer):
             lines.append(f"inst.program_change({patch_idx})")
         return "\n".join(lines) + "\n"
 
-    def _effect_payload(self, effect: str, preset, kwargs: dict, sidechain: bool = False) -> str:
+    def _effect_payload(self, effect: str, kwargs: dict, sidechain: bool = False) -> str:
         kwargs = dict(kwargs or {})
         sidechain = sidechain or bool(kwargs.pop("sidechain", False))
         duck = bool(kwargs.pop("duck", False))
-        args = _effect_call_args(preset, kwargs)
+        args = _effect_call_args(kwargs)
         # Compressor has no key=. NoiseGate(duck=True) and Expander(key=) are the
         # processors that can actually hear an external key. When the track is
         # 4-channel (kick AUXRECV onto dest chan 2), pass the host input as key
@@ -252,10 +249,10 @@ class ReaperRenderer(BaseRenderer):
         lines.append(f"{indent}>")
         return lines
 
-    def _vst_for_effect(self, proj: Project, effect: str, preset, kwargs, sidechain=False, indent="      "):
-        payload = self._effect_payload(effect, preset, kwargs, sidechain=sidechain)
+    def _vst_for_effect(self, proj: Project, effect: str, patch, kwargs, sidechain=False, indent="      "):
+        payload = self._effect_payload(effect, kwargs, sidechain=sidechain)
         cid, display_name, numeric = proj.resolve_vst(effect)
-        macros = macros_for_effect(effect, preset, kwargs, proj.patch_manifest)
+        macros = macros_for_effect(effect, patch, kwargs, proj.patch_manifest)
         return self._encode_vst_chunk(
             payload, is_instrument=False, cid=cid, display_name=display_name,
             numeric_id=numeric, indent=indent, macros=macros,
@@ -471,10 +468,10 @@ class ReaperRenderer(BaseRenderer):
             out.append("    DOCKED 0")
             for ins in proj.master_inserts:
                 out.append("    BYPASS 0 0 0")
-                payload = self._effect_payload(ins["effect"], ins["preset"], ins["kwargs"])
+                payload = self._effect_payload(ins["effect"], ins["kwargs"])
                 cid, display_name, numeric = proj.resolve_vst(ins["effect"])
                 macros = macros_for_effect(
-                    ins["effect"], ins["preset"], ins["kwargs"], proj.patch_manifest,
+                    ins["effect"], ins["patch"], ins["kwargs"], proj.patch_manifest,
                 )
                 out.extend(self._encode_vst_chunk(
                     payload, is_instrument=False, cid=cid, display_name=display_name,
@@ -508,7 +505,7 @@ class ReaperRenderer(BaseRenderer):
                 )
 
             if kind == "aux":
-                vst = self._vst_for_effect(proj, obj.effect, obj.preset, obj.kwargs, indent="      ")
+                vst = self._vst_for_effect(proj, obj.effect, obj.patch, obj.kwargs, indent="      ")
                 out.extend(self._fxchain([vst]))
                 out.extend(self._generate_track_automation(obj, time_map))
             else:
@@ -539,7 +536,7 @@ class ReaperRenderer(BaseRenderer):
                     )
                     vst_blocks.append(
                         self._vst_for_effect(
-                            proj, ins["effect"], ins["preset"], ins["kwargs"],
+                            proj, ins["effect"], ins["patch"], ins["kwargs"],
                             sidechain=sc, indent="      ",
                         )
                     )

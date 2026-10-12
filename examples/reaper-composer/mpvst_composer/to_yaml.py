@@ -98,10 +98,10 @@ def _slug(text) -> str:
     return "_".join(part for part in out.split("_") if part) or "cell"
 
 
-def _effect_spec(effect: str, preset, kwargs) -> dict:
+def _effect_spec(effect: str, patch, kwargs) -> dict:
     spec = {"effect": effect}
-    if preset:
-        spec["preset"] = preset
+    if patch is not None and patch != "":
+        spec["patch"] = patch
     spec.update(kwargs or {})
     return spec
 
@@ -173,7 +173,7 @@ def document(project: Project) -> dict:
 
     if project.master_inserts:
         doc["master_effects"] = [
-            _effect_spec(fx["effect"], fx.get("preset"), fx.get("kwargs"))
+            _effect_spec(fx["effect"], fx.get("patch"), fx.get("kwargs"))
             for fx in project.master_inserts]
 
     if bus is not None:
@@ -187,8 +187,8 @@ def document(project: Project) -> dict:
 
 def _aux_spec(aux: AuxTrack) -> dict:
     spec = {"name": aux.name, "effect": aux.effect}
-    if aux.preset:
-        spec["preset"] = aux.preset
+    if aux.patch is not None and aux.patch != "":
+        spec["patch"] = aux.patch
     spec.update(aux.kwargs or {})
     return spec
 
@@ -205,7 +205,7 @@ def _track_spec(track, cells: _Cells, by_guid, bus) -> dict:
 
     if track.inserts:
         spec["inserts"] = [
-            _effect_spec(fx["effect"], fx.get("preset"), fx.get("kwargs"))
+            _effect_spec(fx["effect"], fx.get("patch"), fx.get("kwargs"))
             for fx in track.inserts]
 
     # The sends into the mix bus are not the composition's; route_to_mix_bus

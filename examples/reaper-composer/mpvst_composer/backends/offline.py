@@ -61,7 +61,7 @@ TAIL_SECONDS = 0.0
 #: Constructor arguments that name a routing choice rather than a control,
 #: so they are not passed to the component. The Reaper backend drops the same
 #: ones out of its effect payload.
-_ROUTING_KWARGS = ("sidechain", "duck", "patch", "preset")
+_ROUTING_KWARGS = ("sidechain", "duck")
 
 
 def _interpolate(points, beat, default):
@@ -271,7 +271,7 @@ class OfflineRenderer(BaseRenderer):
         # Aux tracks in declaration order, so one that feeds another - a mix
         # bus, say - is filled before it is read.
         for aux in project.aux_tracks:
-            spec = {"effect": aux.effect, "preset": aux.preset,
+            spec = {"effect": aux.effect, "patch": aux.patch,
                     "kwargs": aux.kwargs}
             data = self._through(self._stage(spec, rate), buses[aux.guid])
             data *= float(aux.volume)
@@ -311,7 +311,7 @@ class OfflineRenderer(BaseRenderer):
 
         options = {key: value for key, value in (spec["kwargs"] or {}).items()
                    if key not in _ROUTING_KWARGS}
-        macros = macros_for_effect(spec["effect"], spec.get("preset"),
+        macros = macros_for_effect(spec["effect"], spec.get("patch"),
                                    spec["kwargs"], self.project.patch_manifest)
 
         def build(pcm):

@@ -197,7 +197,7 @@ def document():
         "patterns": {name: [list(r) for r in rows]
                      for name, rows in PATTERNS.items()},
         "aux_tracks": [{"name": "Chapel", "effect": "Reverb",
-                        "preset": "hall", "mix": 1.0}],
+                        "patch": "Concert Hall", "mix": 2.0}],
         "tracks": [
             {"name": name, "instrument": instrument, "gain_db": gain,
              "pan": pan, "sends": [{"to": "Chapel", "level": 0.35}],
