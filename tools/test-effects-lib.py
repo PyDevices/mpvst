@@ -150,12 +150,34 @@ CASES = {
     "AnalogDelay-patch": ("audioeffects.AnalogDelay(src, patch=4)", "pass"),
     "PingPongDelay-cross": (
         "audioeffects.PingPongDelay(src, time_ms=160)", "pass"),
-    "PitchShifter": ("audioeffects.PitchShifter(src, semitones=7)", "pass"),
+    # The rebuilt shifter names its interval `pitch` (MACRO_LABELS[0]
+    # "Pitch"), in whole semitones; `semitones` was the old class's.
+    "PitchShifter": ("audioeffects.PitchShifter(src, pitch=7)", "pass"),
+    "PitchShifter-patch": ("audioeffects.PitchShifter(src, patch=2)", "pass"),
     "Harmonizer": ("audioeffects.Harmonizer(src)", "pass"),
-    "Octaver": ("audioeffects.Octaver(src, down=0.6)", "pass"),
+    "Harmonizer-patch": ("audioeffects.Harmonizer(src, patch=4)", "pass"),
+    # The rebuilt Octaver is a divider, like the OC-2: octaves below only,
+    # set by Direct, Octave 1 and Octave 2. The old `down`, `down2` and `up`
+    # are gone, and there is no octave up to ask for. The probe's 220 Hz
+    # tone sits inside patch 0's tracking range (E2 to A4).
+    "Octaver": ("audioeffects.Octaver(src, direct=1.0, octave1=0.6)", "pass"),
     "Octaver-two-octaves": (
-        "audioeffects.Octaver(src, down=0.4, down2=0.3, up=0.2)", "pass"),
+        "audioeffects.Octaver(src, direct=1.0, octave1=0.4, octave2=0.3)",
+        "pass"),
     "StereoWidener": ("audioeffects.StereoWidener(src)", "pass"),
+    "StereoWidener-midside": (
+        "audioeffects.StereoWidener(src, width=1.5, character='mid_side')",
+        "pass"),
+    # A two-pedal chain, so the rack's own wiring is what runs in the host:
+    # each pedal's output is the next one's source, and the rack's output
+    # is the last pedal's.
+    "Rack": ("audioeffects.Rack(src, chain=(('Overdrive', {'drive': 0.5}),"
+             " ('DigitalDelay', {'mix': 0.3})))", "pass"),
+    # The two racks with knobs, each at a shipped patch rather than its
+    # defaults. Fifth Halo is a Bloom patch, the heavier of ShimmerHall's
+    # two characters; Short Send is AirSpace's tape echo into its chamber.
+    "ShimmerHall-patch": ("audioeffects.ShimmerHall(src, patch=2)", "pass"),
+    "AirSpace-patch": ("audioeffects.AirSpace(src, patch=1)", "pass"),
 }
 
 TEMPLATE = """import vstaudio
