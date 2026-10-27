@@ -17,7 +17,7 @@ Offline is not the fast one. The two in the top half run in one CPython
 process at roughly the speed of the music; the two in the bottom half hand
 the work to Reaper, which renders far faster than real time and absorbs the
 plug-in's per-slot startup while it does. Sixteen-voice Canon, 150 s of
-music: 150 s offline, 26 s bounced, and the bounce is starting Reaper and
+music: 153 s offline, 25 s bounced, and the bounce is starting Reaper and
 eighteen MicroPython sidecars inside that.
 
 So reach for offline when you want it to work *anywhere* - no DAW, no
@@ -61,7 +61,7 @@ the two disagree, the bounce is right about the plug-in and the offline render
 is right about the arithmetic, and the gap between them is the bug.
 
 The gap is usually small. Sixteen-voice Canon comes out 150.00 s and
--14.36 LUFS offline against 150.00 s and -14.09 LUFS bounced.
+-14.77 LUFS offline against 150.00 s and -14.67 LUFS bounced.
 
 ## Measuring the result
 
