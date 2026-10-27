@@ -7,7 +7,7 @@ for that). Every script here is idempotent: safe to rerun.
 - **`bootstrap.sh`** - one-shot setup for a fresh clone: fetches the VST3
   SDK, builds the engine with the micropython-pydevices checkout beside this
   one (`build_mp.py`; the command is in
-  [`../docs/development.md`](../docs/development.md)), installs REAPER, then
+  [`../CONTRIBUTING.md`](../CONTRIBUTING.md)), installs REAPER, then
   configures, builds, and runs the test suite as a final verification.
   Start here.
 - **`fetch-vst3-sdk.sh`** - downloads the pinned VST3 SDK into `.deps/vst3sdk`.

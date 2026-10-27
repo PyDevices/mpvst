@@ -11,7 +11,7 @@ Two Windows surfaces read this one file, and both of them used to carry
 somebody else's mark:
 
 - **The sidecar executable.** The engine build passes it as `ENGINE_ICON=` to
-  MicroPython's make (docs/development.md); the windows vst3-engine variant in
+  MicroPython's make (CONTRIBUTING.md); the windows vst3-engine variant in
   micropython-pydevices swaps the port's resource rule for one that compiles
   this file, so the checkout is never edited. Without it the engine wears
   MicroPython's logo.

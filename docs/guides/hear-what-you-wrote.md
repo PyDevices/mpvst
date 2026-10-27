@@ -1,4 +1,4 @@
-# Hearing what you wrote
+# Hear what you wrote
 
 There are four ways to turn a project into audio, and they are not
 alternatives - they answer different questions. This page is which one to
@@ -23,10 +23,10 @@ eighteen MicroPython sidecars inside that.
 So reach for offline when you want it to work *anywhere* - no DAW, no
 install, no scan - not when you want it quickly.
 
-Details: [the composer guide](../examples/reaper-composer/mpvst_composer/mpvst_composer_guide.md#-rendering)
-for the first, [`tools/README.md`](../tools/README.md#composing-a-piece) for
-the second, [`examples/soundtrack/README.md`](../examples/soundtrack/README.md)
-and [`reaper/README.md`](../reaper/README.md) for the last two.
+Details: [the composer guide](../../examples/reaper-composer/mpvst_composer/mpvst_composer_guide.md#-rendering)
+for the first, [`tools/README.md`](../../tools/README.md#composing-a-piece) for
+the second, [`examples/soundtrack/README.md`](../../examples/soundtrack/README.md)
+and [`reaper/README.md`](../../reaper/README.md) for the last two.
 
 ## The two offline paths are not the same offline
 

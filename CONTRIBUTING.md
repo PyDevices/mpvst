@@ -1,8 +1,16 @@
-# Working on MPVST itself
+# Contributing to MPVST
 
-Building the plug-in from source, running its gates, and cutting a release.
-To write instruments or effects *for* MPVST - which needs none of this - see
-[writing-scripts.md](writing-scripts.md).
+This is how to build the plug-in from source, run its tests, and cut a release.
+To write instruments or effects *for* MPVST, which needs none of this, see
+[Write your own instruments and effects](docs/guides/write-a-script.md).
+
+A focused fix with a test, or a docs example that shows an existing call, is a
+good first contribution. Before a larger change, pick one narrow path and trace
+it end to end: one MIDI event from the VST callback to an instrument, one
+rendered block from a work slot back to the host's buffers, or one macro edit
+from the panel back to host automation. Each crosses the important boundaries
+and is small enough to test. [How it works](docs/how-it-works/index.md) is the
+map to follow.
 
 ## Repository layout
 
@@ -16,20 +24,9 @@ To write instruments or effects *for* MPVST - which needs none of this - see
 | `scripts/` | build, packaging and setup automation |
 | `installer/` | what a user runs rather than builds: `windows.nsi` (the NSIS installer, cross-built from Linux) and `install-linux.sh`, which ships inside the tarball as `install.sh` |
 | `reaper/` + `reaper.sh` | everything that drives REAPER. Deletable as a unit; nothing outside it depends on it |
-| `examples/` | two composers with their songs, and `bounce.py`; nothing in here imports anything above it (rendering: [rendering.md](rendering.md)) |
+| `examples/` | two composers with their songs, and `bounce.py`; nothing in here imports anything above it (rendering: [Hear what you wrote](docs/guides/hear-what-you-wrote.md)) |
 
-The architecture is written down in
-[docs/architecture/phase-0.md](architecture/phase-0.md) (the system
-boundary and what each process owns) and
-[docs/architecture/ipc-v1.md](architecture/ipc-v1.md) (the
-shared-memory protocol rules), with
-[docs/architecture/ui-v1.md](architecture/ui-v1.md) covering the
-editor. `ipc-v1.md` and `ui-v1.md` describe the shipping design;
-`phase-0.md` is historical - the Windows-only, no-editor design accepted
-before Linux shipped and before the LVGL editor existed - kept for its
-still-valid process/thread/state reasoning, not as a description of
-what ships today. The canonical structure sizes and offsets live in
-`src/protocol/include/mpvst/protocol.h` and `src/protocol/include/mpvst/ui.h`.
+How the pieces fit is in [How it works](docs/how-it-works/index.md). The canonical structure sizes and offsets live in `src/protocol/include/mpvst/protocol.h` and `src/protocol/include/mpvst/ui.h`; the [protocol reference](docs/reference/ipc-protocol.md) summarises them.
 
 ## Prerequisites
 
@@ -50,7 +47,7 @@ what ships today. The canonical structure sizes and offsets live in
   and resolves to that. Nothing else in the repository needs it: the Windows
   *sidecar engine* is cross-compiled from WSL with MinGW, the Linux build
   uses GCC, and a Python-only change to the instrument or effect library
-  never touches a compiler at all (see [the staging note](#building-and-testing)).
+  never touches a compiler at all (see [A Python-only change needs no compiler](#a-python-only-change-needs-no-compiler)).
 - CMake 3.25+ and Ninja (`cmake -S . -B .build-linux -G Ninja` is the
   documented invocation below).
 - On Linux, X11 development headers (`src/plugin/CMakeLists.txt` runs
@@ -59,11 +56,11 @@ what ships today. The canonical structure sizes and offsets live in
 - Python 3.x for `tools/`, `scripts/`, and the `ctest`-registered Python
   suites; `numpy`, `pydevices-audiodsp`, `pydevices-audioinstruments` and
   `pydevices-audioeffects` (all from TestPyPI - see
-  [`tools/README.md`](../tools/README.md)) for the instrument/effect tests
+  [`tools/README.md`](tools/README.md)) for the instrument/effect tests
   and preview renders, and `flake8` for the `mpvst_lint` ctest.
   `scripts/bootstrap.sh` creates a repo-local `.venv` with these.
 - The Steinberg VST3 SDK, fetched by `scripts/fetch-vst3-sdk.sh` into the
-  gitignored `.deps/vst3sdk` (see [the licence note](../README.md#license) for its terms).
+  gitignored `.deps/vst3sdk` (see [License](#license) for its terms).
 - A `micropython-pydevices` checkout beside this one. Its `build_mp.py`
   builds the MicroPython engine, fetching MicroPython and the modules it
   needs, and the plug-in build takes the engine from its `builds/`.
@@ -83,14 +80,14 @@ up:
 ./scripts/bootstrap.sh
 ```
 
-See [scripts/README.md](../scripts/README.md) for what it does and how to run
+See [scripts/README.md](scripts/README.md) for what it does and how to run
 each step individually.
 
 ## Building and testing
 
 The MicroPython sidecar is a MicroPython build like any other:
 micropython-pydevices' `build_mp.py` with the `vst3-engine` variant (no
-sockets, SSL or FFI; see [security.md](security.md)) and this repository
+sockets, SSL or FFI; see [What the shipped engine cannot do](docs/how-it-works/security.md)) and this repository
 among its modules, by path. It carries audiocomponents' instruments and
 effects frozen in, pydevices (the editor's `appdev` and `multimer`),
 audiodsp's DSP, audioif, LVGL and ulab:
@@ -195,14 +192,13 @@ the archive is made from, so the two cannot ship different bytes. The
 installer is built by NSIS, which cross-builds a Windows installer from
 Linux - `fetch-nsis.sh` unpacks it into `.deps/` rather than installing it
 on the machine, so it needs no root and removing `.deps` removes it.
-See [docs/windows/README.md](windows/README.md) and
-[docs/linux/README.md](linux/README.md) for the development
-install paths and the desktop-script security model.
+See [MPVST on Windows](docs/guides/windows.md) and
+[MPVST on Linux](docs/guides/linux.md) for the install paths and the
+desktop-script security model.
 
-This repository deliberately has no hosted CI. The 14-test `ctest` suite
-(lint included) is the gate, and it is run locally - by a developer before
-pushing, or by `scripts/bootstrap.sh` as its final verification step.
-Hosted CI is planned to arrive with the post-program refactor, not before.
+This repository has no hosted CI. The `ctest` suite (lint included) is the
+gate, and you run it locally before pushing; `scripts/bootstrap.sh` runs it as
+its final verification step.
 
 ## Testing against a real DAW
 
@@ -228,25 +224,63 @@ parameter.
 ```
 
 Both smoke hosts render a fixed score through the real MicroPython sidecar
-and the raw float32 PCM is compared. The current result is an identical
-SHA-256 - the platforms agree exactly, not within a tolerance.
+and the raw float32 PCM is compared. The two should produce an identical
+SHA-256: the platforms agree exactly, not within a tolerance.
 
 `./reaper.sh` renders and plays the example pieces; see
-[reaper/README.md](../reaper/README.md) and
-[examples/soundtrack/README.md](../examples/soundtrack/README.md).
+[reaper/README.md](reaper/README.md) and
+[examples/soundtrack/README.md](examples/soundtrack/README.md).
 
-## Workspace isolation
+## Dependencies are read-only
 
-The engine's modules are consumed read-only - no build or formatting command
+The engine's modules are consumed read-only. No build or formatting command
 here writes into any of them, or into the MicroPython checkout, which
 `build_mp.py` prepares once and builds into its own `builds/`.
 
-## Deferred
+## Testing layers
 
-- Effect extras: a wet/dry mix parameter and sidechain input buses.
-- Float64 host processing and a native floating-point audiodsp graph.
-- macOS bundles, signing, notarisation, and universal binaries.
-- Coverage-guided fuzzing. `tests/fuzz` exposes libFuzzer entry points;
-  configure with `-DMPVST_ENABLE_LIBFUZZER=ON` on a clang toolchain and
-  keep interesting inputs in `tests/fuzz/corpus`. The portable driver runs
-  on every toolchain as an ordinary test regardless.
+The suite tests the system at several boundaries:
+
+- **Protocol tests** exercise shared-memory validation, rings, generations,
+  state parsing and bounded failure without an engine or DAW.
+- **Engine tests** check that the staged MicroPython binary has the required
+  audio, UI and LVGL modules, and none of the capabilities
+  [the security page](docs/how-it-works/security.md) rules out.
+- **Smoke-host tests** load the real VST3 bundle in a minimal host and cover
+  embedded state, rendering, effects, patches, reload, editor input, and every
+  named class.
+- **Python component sweeps** test instruments directly against the CPython
+  `audiodsp` package, for faster feedback.
+- **Fuzz tests** exercise mapping and state parsing. A portable driver runs in
+  the normal suite, and optional Clang/libFuzzer targets allow deeper runs
+  (`-DMPVST_ENABLE_LIBFUZZER=ON`, with interesting inputs kept in
+  `tests/fuzz/corpus`).
+- **REAPER harnesses** cover what needs a real DAW: FX-chain changes,
+  automation, project reload, installed bundles and cross-platform render
+  parity.
+
+## Rules that keep the plug-in safe
+
+- **Never make the audio callback wait.** Late or missing output is silence
+  plus telemetry. Review changes to `Processor::process()`, the protocol or
+  `SidecarTransport` for allocation, locks, waits, I/O, logging, unbounded work
+  and UI calls.
+- **Treat the protocol headers as an ABI.** Two independently built binaries
+  share them, and they encode exact sizes, offsets and alignments. Update the
+  conformance tests with any intentional change.
+- **Keep editor failure separate from audio failure.** The editor is optional,
+  does no work while closed, and must never stop an instance rendering.
+- **Process isolation is not a trust boundary.** It contains crashes, not
+  permissions. Read [the security page](docs/how-it-works/security.md) before
+  changing the engine's enabled modules.
+
+## License
+
+MIT, in [LICENSE](LICENSE), the same terms as the rest of PyDevices.
+
+That covers this repository's own source. The Steinberg VST3 SDK is **not**
+vendored here: `scripts/fetch-vst3-sdk.sh` clones it into `.deps/`, which is
+ignored. It carries its own dual license (GPLv3 or a proprietary Steinberg
+agreement), and anyone distributing a **built** plug-in binary has to satisfy
+one of those two for the SDK it links. Building from source for your own use
+changes nothing here.

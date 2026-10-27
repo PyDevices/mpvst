@@ -31,7 +31,7 @@ trap cleanup EXIT
 
 mkdir -p "$stage_dir/$name"
 cp -a "$bundle" "$stage_dir/$name/"
-cp "$repo_dir/docs/windows/README.md" "$stage_dir/$name/README.md"
+cp "$repo_dir/docs/guides/windows.md" "$stage_dir/$name/README.md"
 cp "$repo_dir/LICENSE" "$stage_dir/$name/"
 
 mkdir -p "$dist_dir"

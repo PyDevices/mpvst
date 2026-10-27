@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Refuse an engine that can reach the network or native code.
 
-docs/security.md promises that the shipped sidecar engine has no sockets, no
+docs/how-it-works/security.md promises that the shipped sidecar engine has no sockets, no
 TLS and no FFI, so a piece someone downloaded cannot reach the network or load
 a native library whatever it contains. That promise lives in a build variant in
 another repository (micropython-pydevices' `vst3-engine`), and nothing here
@@ -93,9 +93,9 @@ def check(engine: Path, required: bool) -> int:
                         for m in FORBIDDEN)
     if bad:
         print(f"FAIL {engine}: {summary}")
-        print("    The engine must refuse all of these (docs/security.md). "
+        print("    The engine must refuse all of these (docs/how-it-works/security.md). "
               "The vst3-engine variant in micropython-pydevices switches them "
-              "off; rebuild it (docs/development.md).")
+              "off; rebuild it (CONTRIBUTING.md).")
         return 1
     print(f"ok {engine}: {summary}")
     return 0

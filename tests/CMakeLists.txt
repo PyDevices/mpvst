@@ -86,7 +86,7 @@ if(TARGET mpvst-stage-micropython-engine)
         ${CMAKE_SOURCE_DIR}/tools/engine-provenance.py check
         ${MPVST_MICROPYTHON_ENGINE})
 
-    # docs/security.md promises the engine has no sockets, TLS or FFI. The
+    # docs/how-it-works/security.md promises the engine has no sockets, TLS or FFI. The
     # Windows engine for 0.3.0 and 0.3.1 could import socket anyway while
     # every test on Linux passed, so ask each port's engine: this
     # platform's must run and refuse all of them, and the other port's is

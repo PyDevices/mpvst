@@ -30,7 +30,7 @@ trap cleanup EXIT
 
 mkdir -p "$stage_dir/$name"
 cp -a "$bundle" "$stage_dir/$name/"
-cp "$repo_dir/docs/linux/README.md" "$stage_dir/$name/README.md"
+cp "$repo_dir/docs/guides/linux.md" "$stage_dir/$name/README.md"
 cp "$repo_dir/LICENSE" "$stage_dir/$name/"
 # Named install.sh in the archive: what someone looks for after unpacking is
 # not a file named for the platform they already chose.

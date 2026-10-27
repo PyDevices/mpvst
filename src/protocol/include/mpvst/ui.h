@@ -1,11 +1,11 @@
 #pragma once
 
 /* The editor's shared-memory surface: one framebuffer, one dirty-rectangle
-   ring, one input ring, one parameter-edit ring. ui-v1.md is the design; the
-   exact sizes and offsets are here, and tests/protocol_tests.cpp pins them.
+   ring, one input ring, one parameter-edit ring. docs/how-it-works/editor.md
+   describes the design; the exact sizes and offsets are here, and tests/protocol_tests.cpp pins them.
 
    This is a *sibling* mapping, created next to the audio mapping rather than
-   inside it. ui-v1.md described it as a new optional region of the existing
+   inside it. The first design described it as a new optional region of the existing
    mapping, and that turned out not to be buildable without breaking the thing
    the same paragraph promised: mpvst_shared_header is exactly 128 bytes with
    no reserved field left, so carrying a ui_offset/ui_bytes pair means growing
@@ -20,7 +20,7 @@
    halves still pair up, and the degradation is the documented one: the engine
    is handed the UI mapping's name as an extra argument, and an engine that
    does not understand the argument ignores it and runs without an editor. It
-   also makes ui-v1.md's "the view maps only the UI region" literally true.
+   also makes the design's "the view maps only the UI region" literally true.
 
    Ownership: the engine is the producer of pixels, rectangles and edits and
    the consumer of input; the view is the reverse. Neither side ever waits. */
@@ -46,7 +46,7 @@
 #define MPVST_UI_ENDIAN_MARKER UINT32_C(0x01020304)
 #define MPVST_UI_CACHE_LINE_BYTES UINT32_C(64)
 
-/* The compile-time maximum ui-v1.md fixes. The framebuffer is always this
+/* The compile-time maximum size. The framebuffer is always this
    size; the logical size the panel declares indexes into the same stride, so
    changing the logical size never re-allocates anything. */
 #define MPVST_UI_MAX_WIDTH UINT32_C(1024)

@@ -6,7 +6,7 @@ way any module outside that repository is named, by its path:
     build_mp.py --port windows --variant vst3-engine --modules <others>,/path/to/mpvst
 
 The vst3-engine variant is what turns sockets, SSL and FFI off for the
-plug-in's sidecar; see docs/security.md.
+plug-in's sidecar; see docs/how-it-works/security.md.
 """
 
 if 0:

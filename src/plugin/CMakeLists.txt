@@ -61,7 +61,7 @@ endif()
 
 # The engine is a MicroPython build like any other: micropython-pydevices'
 # build_mp.py with the vst3-engine variant and this repository among its
-# modules (docs/development.md has the command). It lands in that
+# modules (CONTRIBUTING.md has the command). It lands in that
 # repository's builds/<port>/vst3-engine/, and is taken from there. The
 # instruments and effects (audiocomponents) are frozen into it, so nothing
 # here stages them.
@@ -137,7 +137,7 @@ else()
         "mpvst_reload_tests, the mpvst_smoke_host tests, "
         "mpvst_effects_library, mpvst_named_plugins) will be silently "
         "absent from the suite rather than failing. Build one with "
-        "micropython-pydevices' build_mp.py (docs/development.md), or set "
+        "micropython-pydevices' build_mp.py (CONTRIBUTING.md), or set "
         "MPVST_MICROPYTHON_ENGINE to point at an existing build.")
 endif()
 
