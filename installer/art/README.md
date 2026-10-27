@@ -15,7 +15,7 @@ somebody else's mark:
   micropython-pydevices swaps the port's resource rule for one that compiles
   this file, so the checkout is never edited. Without it the engine wears
   MicroPython's logo.
-- **The bundle folder in Explorer.** `src/plugin/CMakeLists.txt` sets
+- **The bundle folder in Explorer.** [`src/plugin/CMakeLists.txt`](../../src/plugin/CMakeLists.txt) sets
   `SMTG_PACKAGE_ICON_PATH`, which the VST3 SDK copies into the bundle root as
   `PlugIn.ico` with a `desktop.ini` beside it. Without it the SDK defaults to
   Steinberg's VST logo.

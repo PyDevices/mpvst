@@ -38,7 +38,7 @@ see [`../reaper/README.md`](../reaper/README.md) and the root
 
 ## Testing
 
-- **`../examples/soundtrack/composer/harness.py`** and **`vstaudio.py`**
+- **[`../examples/soundtrack/composer/harness.py`](../examples/soundtrack/composer/harness.py)** and **`vstaudio.py`**
   beside it - a CPython stand-in for the
   sidecar, built on the `audiodsp` wheel (the same `synthio`/`audiocore`
   DSP the real engine runs). Lets any instrument or effect script run

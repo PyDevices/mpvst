@@ -77,8 +77,8 @@ process operation, log call, or UI call in `process()` as a design error.
 ### 3. Work crosses a fixed shared-memory protocol
 
 The canonical definitions are in
-`src/protocol/include/mpvst/protocol.h` and
-`src/protocol/include/mpvst/ui.h`. The audio mapping contains:
+[`src/protocol/include/mpvst/protocol.h`](../../src/protocol/include/mpvst/protocol.h) and
+[`src/protocol/include/mpvst/ui.h`](../../src/protocol/include/mpvst/ui.h). The audio mapping contains:
 
 1. a host-to-engine command ring;
 2. a timestamped event and parameter ring;
@@ -107,7 +107,7 @@ and crashes between instances. The controller does not own the sidecar: a VST
 host may construct a controller independently, and the processor must work
 without an open editor.
 
-The engine begins in `lib/mpvst_bootstrap.py`. The bootstrap:
+The engine begins in [`lib/mpvst_bootstrap.py`](../../lib/mpvst_bootstrap.py). The bootstrap:
 
 1. configures `vstaudio` with the audio mapping;
 2. removes current-directory entries inherited from the DAW from `sys.path`;
@@ -125,7 +125,7 @@ The [audiocomponents](https://github.com/PyDevices/audiocomponents) repository c
 `audioinstruments` and `audioeffects` packages. They know nothing about VST3
 or MPVST's shared memory.
 
-`lib/mpvst_instrument_adapter.py` and `lib/mpvst_effect_adapter.py` form the
+[`lib/mpvst_instrument_adapter.py`](../../lib/mpvst_instrument_adapter.py) and [`lib/mpvst_effect_adapter.py`](../../lib/mpvst_effect_adapter.py) form the
 boundary. The instrument adapter, for example:
 
 - constructs an instrument at the host sample rate;
@@ -165,10 +165,10 @@ The Python editor draws an RGB565 framebuffer with LVGL. The native view:
 It does not interpret the widgets or reconstruct the UI. The seam is:
 **Python paints pixels; native code presents pixels.**
 
-`usermods/vstui/modvstui.c` exposes the shared framebuffer, input, open-state,
-edit, and error operations. `lib/mpvst_board_config.py` adapts those operations
-to the normal PyDevices display contract, and `lib/mpvst_editor.py` and
-`lib/mpvst_panel/` implement the product panel. [The editor](editor.md) covers what the panel does and how it fails.
+[`usermods/vstui/modvstui.c`](../../usermods/vstui/modvstui.c) exposes the shared framebuffer, input, open-state,
+edit, and error operations. [`lib/mpvst_board_config.py`](../../lib/mpvst_board_config.py) adapts those operations
+to the normal PyDevices display contract, and [`lib/mpvst_editor.py`](../../lib/mpvst_editor.py) and
+[`lib/mpvst_panel/`](../../lib/mpvst_panel/) implement the product panel. [The editor](editor.md) covers what the panel does and how it fails.
 
 ## Parameters, scripts, and state
 
