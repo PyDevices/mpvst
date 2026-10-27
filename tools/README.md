@@ -31,7 +31,7 @@ it loads instruments the way the sidecar does - through the bundle's
 somewhere unusual.
 
 Which render path to reach for, and what each one does and does not prove, is
-[`../docs/rendering.md`](../docs/rendering.md). Turning a piece into a real
+[`../docs/guides/hear-what-you-wrote.md`](../docs/guides/hear-what-you-wrote.md). Turning a piece into a real
 REAPER project, and driving REAPER itself, is a separate, deletable concern -
 see [`../reaper/README.md`](../reaper/README.md) and the root
 [`../reaper.sh`](../reaper.sh) entry point.
@@ -93,7 +93,7 @@ None of the `preview`-based tools prove a script sounds like the
 hardware it's named after, or like anything in particular - only that it
 doesn't crash and isn't silent. Hearing it is still on you, and what else
 an offline render cannot tell you is in
-[`../docs/rendering.md`](../docs/rendering.md).
+[`../docs/guides/hear-what-you-wrote.md`](../docs/guides/hear-what-you-wrote.md).
 
 ## Patches
 

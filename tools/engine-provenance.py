@@ -6,7 +6,7 @@
 The `mpvst_engine_provenance` ctest runs it on the engine the bundle stages.
 
 The engine is built by micropython-pydevices' `build_mp.py` (the command is in
-docs/development.md), into that repository's `builds/<port>/vst3-engine/`,
+CONTRIBUTING.md), into that repository's `builds/<port>/vst3-engine/`,
 and every later `cmake --build` copies whatever is sitting there into the
 bundle without asking how old it is. So the whole ctest suite can run green
 against a DSP core that no longer exists.
@@ -176,7 +176,7 @@ def engine_revisions(engine: Path) -> dict[str, str]:
         raise SystemExit(
             f"the engine could not report its provenance:\n{proc.stderr.strip()}\n"
             "An engine with no __revision__ is certainly stale; rebuild it "
-            "(docs/development.md)."
+            "(CONTRIBUTING.md)."
         )
     found = {}
     for line in proc.stdout.split("\n"):

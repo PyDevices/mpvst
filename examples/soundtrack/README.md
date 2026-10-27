@@ -16,7 +16,7 @@ the developer tooling in [`../../tools/README.md`](../../tools/README.md);
 turning it into a real REAPER project and driving REAPER itself lives in
 `../reaper/` and the root `../reaper.sh`, documented in
 [`../reaper/README.md`](../../reaper/README.md). Which render path answers
-which question is [`../../docs/rendering.md`](../../docs/rendering.md).
+which question is [`../../docs/guides/hear-what-you-wrote.md`](../../docs/guides/hear-what-you-wrote.md).
 
 ## Frozen patches and the shared library
 
