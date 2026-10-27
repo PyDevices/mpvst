@@ -64,7 +64,7 @@ Start declared macros from patch 0 (or a named preset) as MIDI/127, then overlay
 
 ## Put the chunk into the `.RPP`
 
-The script and its macros travel in the plug-in's **v2 component state**. Copy this layout from `reaper/matrix/build_effect_project.py`, or from `examples/reaper-composer/mpvst_composer/vst_state.py`, which does the same job in the composer.
+The script and its macros travel in the plug-in's **v2 component state**. Copy this layout from [`reaper/matrix/build_effect_project.py`](../../reaper/matrix/build_effect_project.py), or from [`examples/reaper-composer/mpvst_composer/vst_state.py`](../../examples/reaper-composer/mpvst_composer/vst_state.py), which does the same job in the composer.
 
 Little-endian component state:
 

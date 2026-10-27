@@ -7,7 +7,7 @@ Planned work, in no particular order:
 - **64-bit audio.** Float64 processing for hosts that ask for it, and a
   floating-point audio graph behind it.
 - **macOS.** Signed and notarised universal bundles.
-- **Coverage-guided fuzzing.** `tests/fuzz` already exposes libFuzzer entry
+- **Coverage-guided fuzzing.** [`tests/fuzz`](tests/fuzz/) already exposes libFuzzer entry
   points (`-DMPVST_ENABLE_LIBFUZZER=ON` on clang); running them is the plan.
 
 Bugs, and things you need that don't work yet, go to

@@ -26,7 +26,7 @@ map to follow.
 | `reaper/` + `reaper.sh` | everything that drives REAPER. Deletable as a unit; nothing outside it depends on it |
 | `examples/` | two composers with their songs, and `bounce.py`; nothing in here imports anything above it (rendering: [Hear what you wrote](docs/guides/hear-what-you-wrote.md)) |
 
-How the pieces fit is in [How it works](docs/how-it-works/index.md). The canonical structure sizes and offsets live in `src/protocol/include/mpvst/protocol.h` and `src/protocol/include/mpvst/ui.h`; the [protocol reference](docs/reference/ipc-protocol.md) summarises them.
+How the pieces fit is in [How it works](docs/how-it-works/index.md). The canonical structure sizes and offsets live in [`src/protocol/include/mpvst/protocol.h`](src/protocol/include/mpvst/protocol.h) and [`src/protocol/include/mpvst/ui.h`](src/protocol/include/mpvst/ui.h); the [protocol reference](docs/reference/ipc-protocol.md) summarises them.
 
 ## Prerequisites
 
@@ -50,7 +50,7 @@ How the pieces fit is in [How it works](docs/how-it-works/index.md). The canonic
   never touches a compiler at all (see [A Python-only change needs no compiler](#a-python-only-change-needs-no-compiler)).
 - CMake 3.25+ and Ninja (`cmake -S . -B .build-linux -G Ninja` is the
   documented invocation below).
-- On Linux, X11 development headers (`src/plugin/CMakeLists.txt` runs
+- On Linux, X11 development headers ([`src/plugin/CMakeLists.txt`](src/plugin/CMakeLists.txt) runs
   `find_package(X11 REQUIRED)` for the editor's native window) - e.g.
   `libx11-dev` on Debian/Ubuntu.
 - Python 3.x for `tools/`, `scripts/`, and the `ctest`-registered Python
@@ -58,14 +58,14 @@ How the pieces fit is in [How it works](docs/how-it-works/index.md). The canonic
   `pydevices-audioeffects` (all from TestPyPI - see
   [`tools/README.md`](tools/README.md)) for the instrument/effect tests
   and preview renders, and `flake8` for the `mpvst_lint` ctest.
-  `scripts/bootstrap.sh` creates a repo-local `.venv` with these.
-- The Steinberg VST3 SDK, fetched by `scripts/fetch-vst3-sdk.sh` into the
+  [`scripts/bootstrap.sh`](scripts/bootstrap.sh) creates a repo-local `.venv` with these.
+- The Steinberg VST3 SDK, fetched by [`scripts/fetch-vst3-sdk.sh`](scripts/fetch-vst3-sdk.sh) into the
   gitignored `.deps/vst3sdk` (see [License](#license) for its terms).
 - A `micropython-pydevices` checkout beside this one. Its `build_mp.py`
   builds the MicroPython engine, fetching MicroPython and the modules it
   needs, and the plug-in build takes the engine from its `builds/`.
 - On WSL, building the Windows plug-in needs a reachable Windows host:
-  `scripts/install-plugin-windows.sh` shells out to `powershell.exe`, and
+  [`scripts/install-plugin-windows.sh`](scripts/install-plugin-windows.sh) shells out to `powershell.exe`, and
   `scripts/bootstrap.sh` skips the Windows engine automatically when
   `/mnt/c/Users` or `powershell.exe` is not available.
 
@@ -145,7 +145,7 @@ done
 ```
 
 That is what `cmake --build` does for these two directories, minus the
-compiler: the excludes match `src/plugin/stage_lib.cmake`, and the two
+compiler: the excludes match [`src/plugin/stage_lib.cmake`](src/plugin/stage_lib.cmake), and the two
 scripts rewrite `moduleinfo.json` and `catalog.json`. A new instrument does
 not need a REAPER rescan either - the soundtrack composer's projects load
 the generic "MPVST Script Host" class with the script embedded in state, so
@@ -254,7 +254,7 @@ The suite tests the system at several boundaries:
 - **Fuzz tests** exercise mapping and state parsing. A portable driver runs in
   the normal suite, and optional Clang/libFuzzer targets allow deeper runs
   (`-DMPVST_ENABLE_LIBFUZZER=ON`, with interesting inputs kept in
-  `tests/fuzz/corpus`).
+  [`tests/fuzz/corpus`](tests/fuzz/corpus/)).
 - **REAPER harnesses** cover what needs a real DAW: FX-chain changes,
   automation, project reload, installed bundles and cross-platform render
   parity.

@@ -29,16 +29,16 @@ rest of the repo.
 - **`render-all.sh [--piece NAME]`** - the whole pipeline for every piece
   with no interaction: offline preview, REAPER bounce through the real
   plug-in, section-by-section comparison. Needs the plug-in installed
-  first (`../scripts/install-plugin-windows.sh`).
+  first ([`../scripts/install-plugin-windows.sh`](../scripts/install-plugin-windows.sh)).
 - **`install-reaper-portable.sh [--platform linux|windows]`** - downloads
   and portable-installs the pinned REAPER build everything here expects.
   Idempotent. The Windows install needs one UAC prompt approved by a
   human - it isn't fully unattended.
-- **`scripts/autoplay.lua`, `scripts/verify.lua`** - the self-deleting
+- **[`scripts/autoplay.lua`](scripts/autoplay.lua), [`scripts/verify.lua`](scripts/verify.lua)** - the self-deleting
   startup scripts `reaper.sh` installs as REAPER's `Scripts/__startup.lua`
   for play mode and render mode respectively.
 - **`matrix/`** - drives the instrument+effect chain through a real copy
-  of REAPER with no GUI interaction (`matrix/run-reaper-matrix.sh`), for
+  of REAPER with no GUI interaction ([`matrix/run-reaper-matrix.sh`](matrix/run-reaper-matrix.sh)), for
   the things only a real DAW host can exercise: FX chain add/remove,
   parameter automation, project save/reload, macro resync. See that
   script's header for platform-specific setup.
