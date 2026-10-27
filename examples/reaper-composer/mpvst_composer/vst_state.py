@@ -1,6 +1,6 @@
 """MPVST VST3 component state and REAPER chunk wrapping.
 
-Layout is the one in docs/writing-scripts.md, copied from
+Layout is the one in docs/guides/generate-projects.md, copied from
 reaper/matrix/build_effect_project.py. A rejected chunk is silent: the host
 discards it and the instance falls back to the catalog two-liner
 (`run("Limiter")`, no arguments).
