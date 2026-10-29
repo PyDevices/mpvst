@@ -1,24 +1,36 @@
-"""Canon in D for sixteen voices - the same piece, two ways out.
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+"""Build Pachelbel's Canon for sixteen voices and write it out.
 
-    python source/canon_16.py                 write canon_16.rpp
-    python source/canon_16.py --wav           render canon_16.wav here
-    python source/canon_16.py --yaml          write canon_16.yaml as well
+The canon is one melody played by three voices four bars apart, over a bass
+that never changes. The harmony does not move, so the only thing that can
+build is density: the same line in half notes, then quarters, then eighths,
+then sixteenths, stacking up. That is an algorithm rather than a
+transcription, so this file is functions. It starts from a ground of eight
+scale degrees and derives every other cell from it (triads on each degree,
+a root-and-fifth ostinato, a descending sixteenth-note cascade), so
+changing GROUND changes everything downstream.
 
-Pachelbel's Canon is one melody, played by three voices four bars apart, over
-a bass that never changes. The harmony does not move for the whole piece, so
-the only thing that can build is *density* - which is what the modern
-arrangements do: the same line in half notes, then quarters, then eighths,
-then sixteenths, stacking up.
+The program builds a document, the same dictionary `from_yaml.py` reads,
+and either renders it or writes it out as YAML. Read this file if you like
+functions; read the YAML it writes if you would rather see the notes.
 
-That is an algorithm, not a transcription, so this file is functions. The
-ground is eight scale degrees. Every other cell is derived from it: triads
-built on each degree, a root-and-fifth ostinato, a descending sixteenth-note
-cascade. Change GROUND and everything downstream follows.
+Needs: PyYAML (`pip install pyyaml`). For `--wav`, also numpy and
+`pydevices-audiodsp`, `pydevices-audioinstruments` and
+`pydevices-audioeffects`; the render takes about as long as the music.
 
-It builds a *document* - the same dictionary `from_yaml.py` reads - and then
-either hands it to the composer or writes it out as YAML. So one source makes
-an example for both: read this if you like functions, read the YAML it emits
-if you would rather see the notes.
+Run it:
+
+    python source/canon_16.py                 # write canon_16.rpp
+    python source/canon_16.py --wav           # render canon_16.wav here
+    python source/canon_16.py --yaml          # write canon_16.yaml as well
+
+Success is a "wrote ... (16 voices)" line and the file beside the script.
+
+Tested on: CPython 3.12.3 on Linux (WSL 2) with PyYAML 6.0.3, numpy 2.5.4
+and pydevices-audiodsp 0.6.7 and audiocomponents 0.4.1. Ran with `--wav` and
+`--yaml`.
 """
 
 from __future__ import annotations
@@ -26,6 +38,7 @@ from __future__ import annotations
 import os
 import sys
 
+# Put the folder holding from_yaml.py and mpvst_composer on the import path.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import from_yaml                                              # noqa: E402
@@ -40,6 +53,7 @@ TRIAD = {1: (1, 3, 5), 5: (5, 7, 2), 6: (6, 1, 3), 3: (3, 5, 7), 4: (4, 6, 1)}
 #: Pachelbel's treble: one half note per chord.
 TREBLE = [(3, 5), (2, 5), (1, 5), (7, 4), (6, 4), (5, 4), (6, 4), (7, 4)]
 
+# Each chord of the ground lasts two beats.
 BEATS_PER_CHORD = 2.0
 
 
@@ -139,6 +153,7 @@ def accents(velocity=70):
             for i, d in enumerate(GROUND)]
 
 
+# Every pattern the voices use, built from the ground and keyed by name.
 PATTERNS = {
     "pedal":        held(1, 2),
     "ground":       bassline(),
@@ -157,10 +172,9 @@ PATTERNS = {
 
 #: name, instrument, gain, pan, [(bar, pattern) ...]. Four-bar cycles.
 #:
-#: The ground plays from the first bar rather than under a bare drone: two
-#: cycles of pedal before anything recognisable happened was half a minute of
-#: nothing. The tune arrives at bar 5, and from there each cycle adds a layer
-#: or subdivides one, until bar 33 begins taking them away again.
+#: The ground plays from the first bar. The tune arrives at bar 5, and from
+#: there each cycle adds a layer or subdivides one, until bar 33 begins
+#: taking them away again.
 VOICES = [
     ("Pedal",      "prophet5",    -10.0,  0.0,  [(b, "pedal") for b in range(1, 41, 4)]),
     ("Cello",      "mellotron",    -3.0, -0.1,  [(b, "ground") for b in range(1, 41, 4)]),
@@ -209,8 +223,10 @@ def document():
 
 
 def main():
+    # Build the piece as a document.
     here = os.path.dirname(os.path.abspath(__file__))
     doc = document()
+    # With --yaml, write the document out for someone to read or edit.
     if "--yaml" in sys.argv:
         import yaml
         path = os.path.join(here, "canon_16.yaml")
@@ -220,11 +236,14 @@ def main():
             yaml.safe_dump(doc, handle, sort_keys=False, default_flow_style=None,
                            width=100)
         print("wrote %s" % path)
+    # Turn the document into a project, and pick a Reaper project or a WAV
+    # to write.
     song = from_yaml.build(doc)
     if "--wav" in sys.argv:
         out = os.path.join(here, "canon_16.wav")
     else:
         out = os.path.join(here, "canon_16.rpp")
+    # Render it and report.
     song.render(out, from_yaml.renderer_for(out))
     print("wrote %s (%d voices)" % (out, len(VOICES)))
     return 0

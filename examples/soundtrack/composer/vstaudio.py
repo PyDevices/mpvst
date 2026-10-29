@@ -1,12 +1,20 @@
-"""CPython stand-in for the sidecar's vstaudio module.
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+"""Stand in for the engine's `vstaudio` module on CPython.
 
-The score's instrument scripts run unmodified in two places: inside the
-MicroPython sidecar (where the real vstaudio usermod exists) and inside the
-offline preview renderer, where this shim provides the same names on top of
-the audiodsp CPython wheel. The preview harness drives a script by calling
-_reset() before exec'ing it, then _deliver()/_pull() per block.
+The instrument scripts run unmodified in two places: inside the MicroPython
+engine, where the real `vstaudio` module exists, and inside the offline
+renderer, where this shim provides the same names on top of the audiodsp
+CPython wheel. The harness drives a script by calling `_reset()` before
+running it, then `_deliver()` and `_pull()` for each block. Event type
+values mirror `src/protocol/include/mpvst/protocol.h`.
 
-Event type values mirror protocol.h exactly.
+Needs: Python 3. `harness.py` and `preview.py` load this module; it is not
+run on its own.
+
+Tested on: CPython 3.12.3 on Linux (WSL 2) with pydevices-audiodsp 0.6.7 and
+audiocomponents 0.4.1; `preview.py` and `reaper.py` run on several pieces.
 """
 
 EVENT_NOTE_ON = 1

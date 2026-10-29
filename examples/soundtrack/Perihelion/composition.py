@@ -1,4 +1,7 @@
-"""Perihelion - a hybrid orchestral/synth score for the MPVST.
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+"""Render Perihelion, a hybrid orchestral and synth score.
 
 Single source of truth for the piece: the tempo map, every note, the track
 gains and pans, the volume swells, and the macro automation that gives the
@@ -19,8 +22,26 @@ Form, in D minor:
                                      impacts, lead doubles the theme
   E  "Afterglow"   bars 61-74  @76..64  choir, pads and bells resolve to
                                      D major, long tail
+
+Needs: Python 3 with numpy and `pydevices-audiodsp`,
+`pydevices-audioinstruments` and `pydevices-audioeffects`, and an MPVST
+install (set `MPVST_BUNDLE` if it is somewhere unusual). Opening the Reaper
+project this feeds needs Reaper and MPVST.
+
+Run it: from the `soundtrack` folder, render the piece to a WAV, or write its
+Reaper project.
+
+    python composer/preview.py --piece Perihelion perihelion.wav
+    python composer/reaper.py --piece Perihelion
+
+Success is a level report ending in "wrote perihelion.wav" with no failed checks.
+
+Tested on: CPython 3.12.3 on Linux (WSL 2), rendered with
+`composer/preview.py` using pydevices-audiodsp 0.6.7 and audiocomponents
+0.4.1.
 """
 
+# Change these to suit the piece.
 TITLE = "Perihelion"
 SAMPLE_RATE = 48000
 MASTER_GAIN_DB = -2.0
@@ -46,6 +67,7 @@ TEMPO_MAP = [
 TOTAL_BEATS = float(TOTAL_BARS * BEATS_PER_BAR)
 
 
+# Convert a position in beats to seconds, following the tempo map.
 def beats_to_seconds(beat):
     """Exact beat->seconds through the piecewise-constant tempo map."""
     seconds = 0.0
@@ -382,16 +404,11 @@ def arp_notes():
 # --- Timpani -----------------------------------------------------------------
 
 # The timpani is a LinnDrum, and a LinnDrum reads a note number as "which
-# drum", not as a pitch. This line was written in pitches: D2 and F2 landed
-# on its snare and low floor tom, which is what you have been hearing, but
-# Bb1 and A1 are notes 34 and 33, which the machine maps to nothing. They
-# have been silent since the piece was written - the and-of-4 pickup the
-# comment below promises has never played once. They are the two toms the
-# line was not already using: the alternate root on the low tom, the pickup
-# on the tighter hi-mid one. Sixteen pickups a phrase that were not there
-# before, so this one wants an ear.
-TIMP_SNARE, TIMP_TOM_FLOOR = 38, 41       # what D2 and F2 already played
-TIMP_TOM_LOW, TIMP_TOM_HI = 45, 48        # where Bb1 and A1 go
+# drum", not as a pitch. So the line uses drum numbers: the snare and the low
+# floor tom for the two roots, and the two tighter toms for the alternate
+# root and the pickup.
+TIMP_SNARE, TIMP_TOM_FLOOR = 38, 41
+TIMP_TOM_LOW, TIMP_TOM_HI = 45, 48
 
 
 def timpani_notes():
@@ -489,13 +506,9 @@ def riser_notes():
 
 # --- Effect rack --------------------------------------------------------------
 
-# The rack scripts sit beside this file rather than being inlined as
-# strings the way Velvet Circuit's racks are. They used to carry the whole
-# graphs; audioeffects now ships those as ShimmerHall and AirSpace
-# (ported from these files), so each shrank to a loader that delegates to
-# the library class. Reading one here is what keeps it honest: it has to
-# actually load in the engine, because the piece will not render
-# otherwise.
+# The rack scripts sit beside this file, each a small loader for a class in
+# audioeffects (ShimmerHall and AirSpace). Reading them from disk means the
+# piece embeds the same scripts the engine loads.
 def _read_effect(name):
     import os
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), name)
@@ -504,10 +517,8 @@ def _read_effect(name):
 
 
 # Shimmer / Echo / Space / Tone. The choir plus a copy of itself an octave
-# up, through a tape echo and a long hall - the settings the Shimmer Lab
-# auditioned as take C, unchanged. How far back the track sits is the track's
-# gain, not this rack's business; keeping the approved sound intact and
-# moving it with one number beats re-tuning four.
+# up, through a tape echo and a long hall, as in take C of the Shimmer Lab
+# piece. How far back the track sits is the track's gain, not this rack's.
 FX_SHIMMER = {
     "name": "Shimmer Hall",
     "source": _read_effect("fx_shimmer.py"),
@@ -658,6 +669,7 @@ TRACKS = [
 ]
 
 
+# The linear gain of a track at a beat: its mix gain times its volume envelope.
 def track_gain(track, beat):
     """Linear gain (envelope value) for a track at `beat`."""
     base = _db(track["gain_db"])
@@ -675,6 +687,7 @@ def track_gain(track, beat):
     return base * points[-1][1]
 
 
+# A macro's value at a beat: its automation, or its fixed setting.
 def macro_value(track, index, beat):
     """Automated macro value at `beat` (falls back to the initial value)."""
     env = track["macro_env"].get(index)
@@ -691,6 +704,7 @@ def macro_value(track, index, beat):
     return env[-1][1]
 
 
+# Count the tracks with a note sounding at a beat.
 def active_track_count(beat):
     """How many tracks have a sounding note at `beat` (excludes tails)."""
     count = 0

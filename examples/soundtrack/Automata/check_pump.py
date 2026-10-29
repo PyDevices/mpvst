@@ -1,12 +1,26 @@
 #!/usr/bin/env python3
-"""Check that the pump pad's sidechain duck is beat-locked in a render.
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+"""Check that the pad's sidechain duck is locked to the beat in a render.
 
-Isolates a stretch of movement III, extracts the amplitude envelope of
-the band the pad occupies, and measures the strongest modulation
-frequency. If the sidecar saw a sane transport, it sits at the beat rate
-(2.1 Hz at 126 bpm) rather than drifting free.
+Takes a stretch of movement III of an Automata render, extracts the
+amplitude envelope of the band the pad occupies, and measures the strongest
+modulation frequency. If the engine saw a sane transport, the peak sits at
+the beat rate (2.1 Hz at 126 bpm) rather than drifting free. The program
+prints the peak and "PUMP LOCKED" or "PUMP NOT LOCKED", and exits non-zero
+when it is not locked.
 
-Usage: check_pump.py <render.wav>
+Needs: Python 3 with numpy, and a stereo WAV of Automata, such as one rendered with `composer/preview.py`
+or bounced from Reaper.
+
+Run it: from the `soundtrack` folder,
+
+    python composer/preview.py --piece Automata automata.wav
+    python Automata/check_pump.py automata.wav
+
+Tested on: CPython 3.12.3 on Linux (WSL 2) with numpy 2.5.4, on an Automata
+render from `composer/preview.py`.
 """
 
 import sys
@@ -15,6 +29,7 @@ from pathlib import Path
 
 import numpy as np
 
+# Load the Automata composition for its tempo map.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "composer"))
 from pieces import load_piece  # noqa: E402
 
@@ -23,6 +38,7 @@ SR = C.SAMPLE_RATE
 
 
 def main():
+    # Read the WAV, whatever its sample width, as floats from -1 to 1.
     with wave.open(sys.argv[1]) as handle:
         width = handle.getsampwidth()
         raw = handle.readframes(handle.getnframes())
@@ -36,6 +52,7 @@ def main():
         data = v.astype(np.float32) / 8388608.0
     else:
         data = np.frombuffer(raw, dtype=np.float32)
+    # Fold to mono.
     mono = data.reshape(-1, 2).mean(axis=1)
 
     # Movement III bars 5-13: pads pumping, before the arps pile in.
@@ -43,16 +60,18 @@ def main():
     s1 = int(C.beats_to_seconds(C.b3(13)) * SR)
     seg = mono[s0:s1]
 
-    # amplitude envelope, then its spectrum
+    # Take the amplitude envelope in 10 ms steps, then its spectrum.
     env = np.abs(seg)
     hop = 480  # 10 ms
     frames = env[:len(env) // hop * hop].reshape(-1, hop).mean(axis=1)
     frames -= frames.mean()
     spec = np.abs(np.fft.rfft(frames * np.hanning(len(frames))))
     freqs = np.fft.rfftfreq(len(frames), hop / SR)
+    # Look for the strongest modulation between 0.8 and 5 Hz.
     lo = np.searchsorted(freqs, 0.8)
     hi = np.searchsorted(freqs, 5.0)
     peak_hz = freqs[lo + int(np.argmax(spec[lo:hi]))]
+    # Compare it with the beat rate, allowing for half and double time.
     beat_hz = 126.0 / 60.0
     print("envelope modulation peak: %.3f Hz (beat rate %.3f Hz)"
           % (peak_hz, beat_hz))

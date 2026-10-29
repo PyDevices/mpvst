@@ -1,4 +1,7 @@
-"""Aurelia Overture - a tonal concert overture for the shared library.
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+"""Render Aurelia Overture, a tonal concert overture.
 
 One musical language, one four-note idea, one dramatic curve.  The piece is
 in D minor and common time throughout: a Grave invocation, a disciplined
@@ -9,8 +12,26 @@ middle melody; none is quoted.
 
 Every instrument comes directly from lib/instruments.  Every insert below is
 only a small room-placement script around processors from audioeffects.
+
+Needs: Python 3 with numpy and `pydevices-audiodsp`,
+`pydevices-audioinstruments` and `pydevices-audioeffects`, and an MPVST
+install (set `MPVST_BUNDLE` if it is somewhere unusual). Opening the Reaper
+project this feeds needs Reaper and MPVST.
+
+Run it: from the `soundtrack` folder, render the piece to a WAV, or write its
+Reaper project.
+
+    python composer/preview.py --piece AureliaOverture aureliaoverture.wav
+    python composer/reaper.py --piece AureliaOverture
+
+Success is a level report ending in "wrote aureliaoverture.wav" with no failed checks.
+
+Tested on: CPython 3.12.3 on Linux (WSL 2), rendered with
+`composer/preview.py` using pydevices-audiodsp 0.6.7 and audiocomponents
+0.4.1.
 """
 
+# Change these to suit the piece.
 TITLE = "Aurelia_Overture"
 SAMPLE_RATE = 48000
 MASTER_GAIN_DB = 0.0
@@ -45,6 +66,7 @@ SECTIONS = [
 ]
 
 
+# Convert a position in beats to seconds, following the tempo map.
 def beats_to_seconds(beat):
     seconds = 0.0
     for index, row in enumerate(TEMPO_MAP):
@@ -165,11 +187,9 @@ CODA_HARMONY = (
 
 # Shared-effect room placements ---------------------------------------------
 
-# The racks predate the rebuilt Reverb and Chorus. Each old Freeverb preset
-# maps to the shipped Reverb patch whose measured decay and brightness sit
-# nearest it, and each Mix is the old one doubled: the rebuilt Reverb's Mix
-# runs 0 to 2 with the dry at unity to 1, where the old one ran 0 to 1 on the
-# same law, so the dry and the tail keep the gains they had.
+# Each room is one of the Reverb effect's shipped patches. The Reverb's Mix
+# runs from 0 to 2, with the dry at unity up to 1, so the mixes below are
+# written on that scale.
 HALL = (6, "Concert Hall")
 ROOM = (5, "Live Room")
 CHAMBER = (8, "Bright Chamber")
@@ -207,9 +227,8 @@ def room_rack(name, patch, mix, extra=""):
 FX_PERCUSSION = room_rack("Rear Hall", HALL, 0.48)
 FX_BASS = room_rack("Bass Room", ROOM, 0.16)
 FX_PIZZ = room_rack("Pizzicato Chamber", CHAMBER, 0.28)
-# The rebuilt Chorus is one delayed voice: Delay is the old line's centre
-# (depth_ms + 8 ms), Depth its swing as a fraction of that, Tone wide open
-# because the old one had no wet filter. Its Rate floor is 0.3 Hz.
+# The Chorus is one delayed voice: Delay is the line's centre, Depth its
+# swing as a fraction of that, and Tone is wide open. Its Rate floor is 0.3 Hz.
 FX_STRINGS = room_rack("String Hall", HALL, 0.44,
                        "width = Chorus(source, rate=0.3, depth=0.115, mix=0.10,"
                        " delay_ms=10.4, tone_hz=12000.0)\n")
@@ -319,8 +338,7 @@ def fugue_subject_at(bar_function, start_bar, root, velocity):
 
 # Percussion -----------------------------------------------------------------
 
-# TOM_L/M/H moved from 43/47/50 to GM's 41/45/48 with the library's General
-# MIDI pass (audiocomponents, 2026-09-15). The same three SDS-V drums.
+# The three SDS-V toms sit on General MIDI's numbers 41, 45 and 48.
 KICK, TOM_L, TOM_M, TOM_H, CYMBAL = 36, 41, 45, 48, 49
 
 
@@ -936,10 +954,12 @@ def _linear(points, beat, default):
     return points[-1][1]
 
 
+# The linear gain of a track at a beat: its mix gain times its volume envelope.
 def track_gain(track, beat):
     return _db(track["gain_db"]) * _linear(track["vol"], beat, 1.0)
 
 
+# A macro's value at a beat: its automation, or its fixed setting.
 def macro_value(unit, index, beat):
     env = unit.get("macro_env", {}).get(index)
     if env:
@@ -947,6 +967,7 @@ def macro_value(unit, index, beat):
     return unit.get("macros", {}).get(index, 0.5)
 
 
+# Count the tracks with a note sounding at a beat.
 def active_track_count(beat):
     count = 0
     for track in TRACKS:

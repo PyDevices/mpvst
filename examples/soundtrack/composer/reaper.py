@@ -1,14 +1,27 @@
 #!/usr/bin/env python3
-"""Generate a piece's REAPER project.
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+"""Write a piece's Reaper project.
 
 Writes a complete .RPP where every track holds one MPVST Instrument and
-zero or more MPVST Effect inserts. Every script is embedded directly in
-synthesized VST3 state (the same byte layout REAPER itself saves), so the
-project opens with no environment variables and no build passes. MIDI, the
-tempo map, volume envelopes, effect racks, and macro automation envelopes all
-come from composition.py.
+zero or more MPVST Effect inserts. Every script is embedded in synthesized
+VST3 state, the same byte layout Reaper itself saves, so the project opens
+with no environment variables and no build step. The MIDI, tempo map, volume
+envelopes, effect racks and macro automation envelopes all come from the
+piece's `composition.py`. Success is the "wrote ..." line naming the file.
 
-Usage: generate_project.py [--piece NAME] [out.RPP]
+Needs: Python 3 with `pydevices-audioinstruments` and `pydevices-audioeffects`
+(or `MPVST_COMPONENTS_LIB` pointing at their `lib/` folder), and an MPVST
+install. Opening the project needs Reaper.
+
+Run it: from the `soundtrack` folder,
+
+    python composer/reaper.py --piece Perihelion
+    python composer/reaper.py --piece Perihelion build/perihelion.RPP
+
+Tested on: CPython 3.12.3 on Linux (WSL 2) with pydevices-audiodsp 0.6.7 and
+audiocomponents 0.4.1; `preview.py` and `reaper.py` run on several pieces.
 """
 
 import base64
@@ -45,28 +58,28 @@ EFFECT_HEADER = [0x5996706A, 0xFEED5EEE,
 
 # First macro's index among the visible parameters. PARMENV addresses a
 # parameter by its ordinal position in the plug-in's list, not by VST3
-# ParamID, so this has to match Controller::initialize's registration
-# order exactly:
+# ParamID, so this has to match the order the plug-in registers them in:
 #   0 Bypass, 1 Reload Script, 2 Engine Ready, 3 Engine Error,
 #   4 Patches, 5..20 the sixteen macros.
-# Verified against a running REAPER with TrackFX_GetParamName. This was 4
-# before the Patch program list was added ahead of the macros, which
-# silently shifted every macro envelope down one parameter.
 FIRST_MACRO_PARAM = 5
 
 
 def guid():
+    """A new GUID in the braces and upper case Reaper writes."""
     return "{%s}" % str(uuid.uuid4()).upper()
 
 
 def vst_chunk_lines(script_source, macros, header_words=INSTRUMENT_HEADER):
-    """REAPER's base64 wrapper around our component state."""
-    comp = struct.pack("<ii", 2, 0)                      # version, bypass
+    """Reaper's base64 wrapper around the plug-in's component state."""
+    # The state starts with a version and the bypass flag, then the sixteen
+    # macro values, then the script.
+    comp = struct.pack("<ii", 2, 0)
     for index in range(16):
         comp += struct.pack("<f", macros.get(index, 0.5))
-    comp += struct.pack("<ii", 4, len(script_source))    # pipeline, bytes
+    comp += struct.pack("<ii", 4, len(script_source))
     comp += script_source
 
+    # Wrap it with the header and footer Reaper puts around a plug-in's state.
     data = struct.pack("<II", len(comp), 1) + comp + b"\0" * 8
     words = [len(data) if word is None else word for word in header_words]
     header = struct.pack("<%dI" % len(words), *words)
@@ -88,6 +101,7 @@ def midi_events(notes, programs=()):
     a change of the kIsProgramChange-flagged Patch parameter, which the
     processor forwards to the script as EVENT_PROGRAM_CHANGE.
     """
+    # Program changes first, then a note-on and note-off for each note.
     events = []
     for start, program in programs:
         tick = int(round(start * PPQ))
@@ -100,11 +114,13 @@ def midi_events(notes, programs=()):
             off = on + 1
         events.append((on, 1, "90 %02x %02x" % (pitch, v)))
         events.append((off, 0, "80 %02x 00" % pitch))
+    # Sorting puts note-offs ahead of note-ons that land on the same tick.
     events.sort()
     return events
 
 
 def check_no_same_pitch_overlap(track):
+    """Exit if a track plays one pitch again before it has ended."""
     spans = {}
     for start, dur, pitch, _vel in sorted(track["notes"]):
         end = start + dur
@@ -117,6 +133,7 @@ def check_no_same_pitch_overlap(track):
 
 
 def envelope_block(kind, header_extra, points):
+    """The lines of one automation envelope."""
     lines = ["    <%s%s" % (kind, header_extra)]
     lines += ["      EGUID %s" % guid(),
               "      ACT 1 -1",
@@ -150,7 +167,10 @@ def fx_block(vst_line, header_words, script_source, macros, macro_env):
 
 
 def track_block(track):
+    """The lines of one track: volume envelope, plug-ins and MIDI item."""
+    # Refuse a track Reaper would play with stuck or cut notes.
     check_no_same_pitch_overlap(track)
+    # Read the instrument script that gets embedded in the project.
     script_path = INSTRUMENTS / track["script"]
     script = script_path.read_bytes()
     # A macro the composition does not mention resolves to the instrument's
@@ -164,6 +184,7 @@ def track_block(track):
         else:
             macros[i] = patch.get(i, 0.5)
 
+    # Start the track with its name, pan and routing.
     item_len = C.beats_to_seconds(C.TOTAL_BEATS)
     lines = ["  <TRACK %s" % guid(),
              '    NAME "%s"' % track["name"],
@@ -185,6 +206,7 @@ def track_block(track):
         vol_points = [(0.0, 10.0 ** (track["gain_db"] / 20.0), 0)]
     lines += envelope_block("VOLENV2", "", vol_points)
 
+    # The plug-in chain: the instrument, then each effect rack.
     lines.append("    <FXCHAIN")
     lines.append("      SHOW 0")
     lines.append("      LASTSEL 0")
@@ -223,11 +245,13 @@ def track_block(track):
               "        HASDATA 1 %d QN" % PPQ,
               "        CCINTERP 32",
               "        POOLEDEVTS %s" % guid()]
+    # Write the MIDI events, each as a delay from the one before.
     cursor = 0
     for tick, _order, message in midi_events(track["notes"],
                                               track.get("programs", ())):
         lines.append("        E %d %s" % (tick - cursor, message))
         cursor = tick
+    # End with all-notes-off so nothing hangs past the item.
     end_tick = int(round(C.TOTAL_BEATS * PPQ))
     lines.append("        E %d b0 7b 00" % max(0, end_tick - cursor))
     lines += ["        CCINTERP 32",
@@ -244,6 +268,7 @@ def track_block(track):
 
 
 def tempo_block():
+    """The lines of the tempo and time signature envelope."""
     lines = ["  <TEMPOENVEX",
              "    EGUID %s" % guid(),
              "    ACT 1 -1",
@@ -266,10 +291,12 @@ def tempo_block():
 
 
 def main():
+    # Choose where the project goes: the command line, or build/ by default.
     out = (Path(ARGV[0]) if ARGV
            else SOUNDTRACK / "build" / (C.TITLE + ".RPP"))
     out.parent.mkdir(parents=True, exist_ok=True)
 
+    # Write the project header, then the tempo map and every track.
     master_vol = 10.0 ** (C.MASTER_GAIN_DB / 20.0)
     lines = ['<REAPER_PROJECT 0.1 "7.79" 0',
              "  RIPPLE 0",
@@ -286,6 +313,7 @@ def main():
         lines += track_block(track)
     lines.append(">")
 
+    # Save the project and say what it holds.
     out.write_text("\n".join(lines) + "\n")
     total_notes = sum(len(t["notes"]) for t in C.TRACKS)
     print("wrote %s (%d tracks, %d notes, %.1f s song, %.1f s with tail)"

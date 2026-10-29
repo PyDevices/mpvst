@@ -1,28 +1,33 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
 """Turn a `Project` back into the document `from_yaml.py` reads.
+
+`from_yaml.build` goes from a document to a Project. This goes the other
+way, so a composition written against the Python API can be handed to
+someone who would rather read notes than functions, and so the two halves
+can be checked against each other, which is what `source/converge.py` does.
+
+The round trip preserves what a project is (the notes, where they fall, the
+instruments and the routing), not how the Python that built it was
+organised. Two things change on the way through. Patterns get named: a
+Project holds pattern objects, while the document holds named cells that
+tracks refer to, and identical cells are found by comparing their rows. A
+cell nothing else matches is named after the track that plays it. Offsets
+get baked: a placement may shift a cell by a fraction of a beat, and on the
+way out the shift is already in the rows, so the notes land in the same
+places.
+
+Needs: Python 3.8 or later and PyYAML to write the file.
+
+Run it:
 
     from mpvst_composer import to_yaml
     to_yaml.write(song, "song.yaml")
 
-`from_yaml.build` goes document to Project. This goes the other way, so a
-composition written against the Python API can be handed to someone who
-would rather read notes than functions - and so the two halves can be
-checked against each other, which is what `source/converge.py` does.
-
-The round trip is not textual and does not try to be. It preserves what a
-project *is* - the notes, where they fall, the instruments, the routing -
-not how the Python that built it was organised. Two things change on the
-way through by design:
-
-Patterns get named. A Project holds pattern objects; the document holds a
-dictionary of named cells that tracks refer to. Identical cells are found
-by comparing their rows, so a piece that reuses one figure across eight
-voices exports one cell played eight times, the way someone would write it
-by hand. A cell nothing else matches gets a name from the track that plays
-it.
-
-Offsets get baked. A placement may shift a cell by a fraction of a beat;
-on the way out the shift is already in the rows, and `offset` is gone. The
-notes land in the same places either way.
+Tested on: CPython 3.12.3 on Linux (WSL 2) with PyYAML 6.0.3, numpy 2.5.4
+and pydevices-audiodsp 0.6.7 and audiocomponents 0.4.1. Exercised by
+`converge.py`, `canon_16.py` and `from_yaml.py`.
 """
 
 from __future__ import annotations
