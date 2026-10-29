@@ -9,6 +9,10 @@ Planned work, in no particular order:
 - **macOS.** Signed and notarised universal bundles.
 - **Coverage-guided fuzzing.** [`tests/fuzz`](tests/fuzz/) already exposes libFuzzer entry
   points (`-DMPVST_ENABLE_LIBFUZZER=ON` on clang); running them is the plan.
+- **CI.** A workflow that builds the plug-in and runs its tests on every
+  change.
+- **The C modules in the shape every PyDevices module has.** `vstaudio` and
+  `vstui` keep their C under `src/`, gain a simpletest each and a `__revision__`.
 
 Bugs, and things you need that don't work yet, go to
 [issues](https://github.com/PyDevices/mpvst/issues).
