@@ -1,3 +1,29 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+"""Describe a song: the project, its tracks, patterns and automation.
+
+A `Project` holds tempo markers, a key, tracks, aux tracks and a mix bus.
+Tracks hold `MidiPattern` and `DrumPattern` objects whose notes are scale
+degrees, plus macro, volume and pan automation. A project reads the class
+IDs and patch names it needs from the installed MPVST bundle's
+`catalog.json`, and falls back to the `audioinstruments` and `audioeffects`
+packages for what they declare. `Project.render` hands the finished project
+to a backend that writes it out.
+
+Needs: Python 3.8 or later. Class IDs for a Reaper project come from an
+MPVST install; set `MPVST_BUNDLE` if it is somewhere unusual.
+
+Run it:
+
+    from mpvst_composer import Project
+    song = Project(name="Sketch")
+
+Tested on: CPython 3.12.3 on Linux (WSL 2) with PyYAML 6.0.3, numpy 2.5.4
+and pydevices-audiodsp 0.6.7 and audiocomponents 0.4.1. Exercised by
+`converge.py`, `canon_16.py` and `from_yaml.py`.
+"""
+
 import json
 import os
 import random
@@ -8,6 +34,8 @@ from .theory import Note, Scale, TheoryEngine
 
 
 class TempoMarker:
+    """A tempo and time signature that take effect at a measure."""
+
     def __init__(self, measure: int, bpm: float, signature: Tuple[int, int] = (4, 4), transition: str = "square"):
         self.measure = measure
         self.bpm = bpm
@@ -48,6 +76,8 @@ class PanAutomation:
 
 
 class MidiEvent:
+    """One note, placed by beat and written as a scale degree."""
+
     def __init__(self, start_beat: float, length_beats: float, degree: int, octave: int = 4, velocity: int = 100, accidental: int = 0):
         self.start_beat = start_beat
         self.length_beats = length_beats
@@ -79,6 +109,8 @@ def _update_pattern_span(pattern, start_beat: float, length_beats: float):
 
 
 class MidiPattern:
+    """A cell of notes that starts at a measure and can repeat."""
+
     def __init__(self, start_measure: int, repeat: int = 1, beats_per_bar: int = 4):
         self.start_measure = start_measure
         self.repeat = repeat
@@ -155,6 +187,8 @@ class MidiPattern:
 
 
 class AuxTrack:
+    """An effect track that other tracks send to."""
+
     def __init__(self, name: str, effect: str, patch=None, **kwargs):
         self.name = name
         self.guid = "{" + str(uuid.uuid4()).upper() + "}"
@@ -182,6 +216,8 @@ class AuxTrack:
 
 
 class Track:
+    """An instrument track: its patterns, automation, inserts and sends."""
+
     def __init__(self, name: str, instrument: str, patch: str = "Default",
                  **options):
         self.name = name
@@ -244,6 +280,8 @@ def _new_guid() -> str:
 
 
 class Project:
+    """A whole song: key, tempo map, tracks, aux tracks and master effects."""
+
     def __init__(self, name: str = "MPVST Project"):
         self.name = name
         self.theory = TheoryEngine()
@@ -760,6 +798,8 @@ class DrumEvent:
 
 
 class DrumPattern:
+    """A cell of drum hits, named by drum, that can repeat."""
+
     def __init__(self, start_measure: int, repeat: int = 1, beats_per_bar: int = 4):
         self.start_measure = start_measure
         self.repeat = repeat

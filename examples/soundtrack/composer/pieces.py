@@ -1,33 +1,34 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
 """Resolve a piece name to its composition module and instrument directory.
 
-soundtrack/ is example content, not infrastructure: treat it as
-disposable (it might be renamed, restructured, or deleted independently
-of this tooling). This is the one place that hardcodes its location.
+Each piece lives in its own subdirectory of `soundtrack/`, holding a
+`composition.py` and, for older pieces, an `instruments/` folder. A
+composition may set INSTRUMENTS_DIR to a path relative to its piece
+directory, which lets newer pieces use the shared instrument library while
+older ones keep their private patches. Piece names match case-insensitively,
+so `--piece automata` finds `Automata/`.
 
-Each piece lives in its own subdirectory of soundtrack/:
+Instruments are owned per piece on purpose. The scripts are the patches, and
+a generated project embeds them byte for byte, so a shared library would let
+a tweak made for a new piece change how an old one renders. To start a new
+piece, copy the closest existing instrument and let it diverge.
 
-  soundtrack/<Piece>/composition.py
-  soundtrack/<Piece>/instruments/*.py
+A composition module exposes TITLE, SAMPLE_RATE, MASTER_GAIN_DB, TEMPO_MAP
+(rows of (beat, bpm) or (beat, bpm, ts_num, ts_den)), TOTAL_BEATS,
+SONG_SECONDS, RENDER_SECONDS, SECTIONS (name, start_beat, end_beat), TRACKS,
+beats_to_seconds(), track_gain(), macro_value() and active_track_count(),
+and optionally ACTIVE_LIMIT (None for no limit) and CLIMAX_SECTION. A track
+may also carry an effects list; each entry embeds one MPVST Effect script
+after the instrument and uses the same macros and macro_env shape as an
+instrument.
 
-A composition may set INSTRUMENTS_DIR to a path relative to its piece
-directory.  That lets new pieces opt into the shared lib/instruments
-library while historical pieces keep their frozen private patches.
+Needs: Python 3. `preview.py` and `reaper.py` import this module; it is not
+run on its own.
 
-Piece names are matched case-insensitively, so `--piece automata` finds
-`Automata/`. Instruments are owned per piece on purpose: the scripts are
-the patches, and the generated projects embed them byte-for-byte, so a
-shared library would let a tweak made for a new piece silently change how
-an old one renders. Starting a new piece means copying the closest
-existing instrument and letting it diverge.
-
-A composition module exposes: TITLE, SAMPLE_RATE, MASTER_GAIN_DB,
-TEMPO_MAP (rows of (beat, bpm) or (beat, bpm, ts_num, ts_den)),
-TOTAL_BEATS, SONG_SECONDS, RENDER_SECONDS, SECTIONS (name, start_beat,
-end_beat), TRACKS, beats_to_seconds(), track_gain(), macro_value(),
-active_track_count(), and optionally ACTIVE_LIMIT (None for no limit)
-and CLIMAX_SECTION. A track may also carry an effects list; each entry embeds
-one MPVST Effect script after the instrument and uses the same macros /
-macro_env shape as an instrument.
+Tested on: CPython 3.12.3 on Linux (WSL 2) with pydevices-audiodsp 0.6.7 and
+audiocomponents 0.4.1; `preview.py` and `reaper.py` run on several pieces.
 """
 
 import ast
@@ -40,11 +41,9 @@ from pathlib import Path
 #: The pieces sit beside this package: examples/soundtrack/<Piece>/.
 SOUNDTRACK_DIR = Path(__file__).resolve().parent.parent
 
-#: Where audioinstruments lives. Same workspace-sibling rule the engine
-#: build and the plug-in's staging step use; the environment variable is
-#: the escape hatch for a checkout somewhere else.
-#: Failing an override, the copy inside the installed plug-in, which is the
-#: one a user has. MPVST_BUNDLE moves the search.
+#: Where audioinstruments lives. MPVST_COMPONENTS_LIB names a checkout's
+#: lib/ folder; without it, the copy inside the installed plug-in is used,
+#: and MPVST_BUNDLE moves the search for that.
 _BUNDLE = os.environ.get("MPVST_BUNDLE") or os.path.join(
     os.environ.get("LOCALAPPDATA", os.path.expanduser("~/AppData/Local")),
     "Programs", "Common", "VST3", "MPVST.vst3")
@@ -113,17 +112,21 @@ def available_pieces():
 
 def load_piece(name="perihelion"):
     """Return (composition_module, instruments_dir) for `name`."""
+    # Find the piece's folder, ignoring case.
     pieces = available_pieces()
     piece_dir = pieces.get(name.lower())
     if piece_dir is None:
         raise SystemExit("unknown piece %r (have: %s)"
                          % (name, ", ".join(sorted(pieces)) or "none"))
+    # Import its composition under a name of its own.
     module_path = piece_dir / "composition.py"
     spec = importlib.util.spec_from_file_location(
         "composition_" + piece_dir.name.lower(), module_path)
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
+    # Resolve the instrument folder, falling back to the shared library when
+    # the piece has no private instruments.
     instruments = getattr(module, "INSTRUMENTS_DIR", "instruments")
     instruments = Path(instruments)
     if not instruments.is_absolute():
@@ -168,6 +171,7 @@ def shared_instruments():
             "shared instrument directory is missing: %s\n"
             "Set MPVST_COMPONENTS_LIB to audiocomponents' lib/ directory."
             % package_dir)
+    # Write one loader per library instrument into a temporary folder.
     output = Path(tempfile.mkdtemp(prefix="mpvst-instruments-"))
     for source in sorted(package_dir.glob("*.py")):
         if source.name.startswith("_") or source.name == "__init__.py":

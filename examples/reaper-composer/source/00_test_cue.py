@@ -1,19 +1,31 @@
-"""The rig, not a piece of music.
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+"""Write a small test project that uses every part of the pipeline.
 
-Eight bars and about sixteen seconds, built to exercise every part of the
-pipeline at once: four instrument tracks (808, Minimoog, Juno-106, SH-101),
-two insert effects, a sidechain duck, and an effect on the master. Small
-enough to render in a couple of seconds, complete enough that if it comes out
-clean the routing works.
+Builds eight bars, about sixteen seconds, with four instrument tracks
+(TR-808, Minimoog, Juno-106, SH-101), two insert effects, a sidechain duck
+and an effect on the master. It is small enough to render in a couple of
+seconds and complete enough that, if it comes out clean, the routing works.
+Swap instruments and effects into it to measure them. The program writes a
+Reaper project and prints its path.
 
-Swap instruments and effects into it to measure them. If a change to the
-composer or to MPVST breaks something, this is the file that should say so
-first.
+Needs: Python 3.8 or later. Opening or rendering the project needs MPVST
+installed with Reaper (see `examples/bounce.py`).
+
+Run it:
+
+    python source/00_test_cue.py
+
+Tested on: CPython 3.12.3 on Linux (WSL 2) with pydevices-audiodsp 0.6.7 and
+audiocomponents 0.4.1; the project it wrote rendered in REAPER 7.79 through
+`bounce.py`.
 """
 
 import os
 import sys
 
+# Put the folder holding mpvst_composer on the import path.
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
@@ -29,11 +41,14 @@ from mpvst_composer import (
 )
 from mpvst_composer.backends.reaper import ReaperRenderer
 
-STEM = "00_test_cue"
+# Change these to match your setup.
+STEM = "00_test_cue"  # name of the project and its rendered WAV
 BOUNCE_DIR = os.path.join(ROOT, "bounce")
 
 
 def main():
+    # Start a project in D minor at 118 bpm, 48 kHz, with room for reverb
+    # tails at the end of the render.
     song = Project(name="Signal Room — Test Cue")
     song.set_key(Note.D, Scale.MINOR)
     song.tempo_markers.clear()
@@ -42,6 +57,7 @@ def main():
     song.render_tail_ms = 800
     song.render_file = os.path.join(BOUNCE_DIR, f"{STEM}.wav")
 
+    # Four instrument tracks, with their levels and pan positions.
     drums = song.add_track("TR-808", instrument="tr808", patch="Default")
     drums.volume = 0.34
     drums.pan = 0.0
@@ -65,6 +81,7 @@ def main():
     pad.add_send(hall, send_level=0.28)
     lead.add_send(hall, send_level=0.18)
 
+    # Insert effects: a chorus on the pad and tape saturation on the lead.
     pad.add_insert("Chorus", rate=0.55, depth=0.18, mix=0.35, delay_ms=9.0, tone_hz=4500.0)
     lead.add_insert("Saturation", mix=0.18, character="tape", drive_db=-1.68)
 
@@ -81,6 +98,8 @@ def main():
         range_db=-10.0,
     )
 
+    # The drum groove: kick on 1 and 3, a hi-hat on every half beat and an
+    # open hi-hat leading into the next bar.
     groove = DrumPattern(start_measure=1, repeat=8, beats_per_bar=4)
     for bar_off in (0,):
         groove.add_hit(bar_off + 0.0, "kick", 118)
@@ -96,17 +115,20 @@ def main():
     groove.humanize(velocity_jitter=6, timing_jitter_beats=0.006)
     drums.add_pattern(groove)
 
+    # The bass, one bar repeated eight times.
     bass_pat = MidiPattern(start_measure=1, repeat=8, beats_per_bar=4)
     # Held roots with a fifth answer — leaves space for the duck.
     bass_pat.add_event(MidiEvent(0.0, 1.75, degree=1, octave=1, velocity=110))
     bass_pat.add_event(MidiEvent(2.0, 1.75, degree=5, octave=1, velocity=100))
     bass.add_pattern(bass_pat)
 
+    # The pad plays a held triad on the tonic.
     triad = song.theory.get_chord_degrees(1, Chord.TRIAD)
     pad_pat = MidiPattern(start_measure=1, repeat=8, beats_per_bar=4)
     pad_pat.add_chord(0.0, 3.9, 1, triad, octave=4, velocity=78)
     pad.add_pattern(pad_pat)
 
+    # The lead plays a short hook.
     hook = MidiPattern(start_measure=1, repeat=8, beats_per_bar=4)
     hook.add_event(MidiEvent(0.5, 0.45, degree=5, octave=4, velocity=96))
     hook.add_event(MidiEvent(1.0, 0.45, degree=6, octave=4, velocity=90))
@@ -116,11 +138,13 @@ def main():
     hook.humanize(velocity_jitter=5, timing_jitter_beats=0.008)
     lead.add_pattern(hook)
 
+    # Duck the bass on every kick.
     song.apply_sidechain_duck(
         drums, bass, hit_type="kick",
         depth=0.42, attack_beats=0.02, hold_beats=0.08, release_beats=0.22,
     )
 
+    # Limit the whole mix on a bus that every track feeds.
     mix = song.add_mix_bus(
         "Mix Bus",
         ceiling_db=-1.6,
@@ -133,6 +157,7 @@ def main():
     mix.volume = 1.0
     song.route_to_mix_bus(mix)
 
+    # Write the Reaper project and say where it is.
     os.makedirs(BOUNCE_DIR, exist_ok=True)
     rpp = os.path.join(BOUNCE_DIR, f"{STEM}.rpp")
     song.render(rpp, ReaperRenderer)

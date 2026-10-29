@@ -1,8 +1,31 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+"""Notes, scales and chords for writing music by scale degree.
+
+`TheoryEngine` turns a key, a scale and a degree into a MIDI note number, so
+a pattern written as degrees moves to another key when the key changes.
+`get_chord_degrees` builds a chord on a degree, with inversions.
+
+Needs: Python 3.8 or later.
+
+Run it:
+
+    from mpvst_composer import Note, Scale, TheoryEngine
+    TheoryEngine(Note.D, Scale.MINOR).get_midi_note(1, octave=4)   # 62
+
+Tested on: CPython 3.12.3 on Linux (WSL 2) with PyYAML 6.0.3, numpy 2.5.4
+and pydevices-audiodsp 0.6.7 and audiocomponents 0.4.1. Exercised by
+`converge.py`, `canon_16.py` and `from_yaml.py`.
+"""
+
 from enum import Enum
 from typing import List
 
 
 class Note(Enum):
+    """The twelve pitch classes, with sharp and flat spellings of each."""
+
     C = 0
     Cs = 1
     Db = 1
@@ -23,6 +46,8 @@ class Note(Enum):
 
 
 class Scale(Enum):
+    """A scale as semitone offsets from its key."""
+
     MAJOR = [0, 2, 4, 5, 7, 9, 11]
     MINOR = [0, 2, 3, 5, 7, 8, 10]
     DORIAN = [0, 2, 3, 5, 7, 9, 10]
@@ -38,6 +63,8 @@ class Scale(Enum):
 
 
 class Chord(Enum):
+    """A chord as the scale steps it stacks, counted from its root."""
+
     TRIAD = [1, 3, 5]
     SEVENTH = [1, 3, 5, 7]
     NINTH = [1, 3, 5, 7, 9]
@@ -46,6 +73,8 @@ class Chord(Enum):
 
 
 class TheoryEngine:
+    """Turns scale degrees in a key and scale into MIDI notes and chords."""
+
     def __init__(self, key: Note = Note.C, scale: Scale = Scale.MAJOR):
         self.key = key
         self.scale = scale

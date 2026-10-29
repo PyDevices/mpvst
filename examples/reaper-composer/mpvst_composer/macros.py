@@ -1,8 +1,18 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
 """Map constructor kwargs / named patches onto MPVST's 16 normalized macros.
 
 The plug-in restores the float array from project state and replays it after
 the script runs. Constructor arguments are not round-tripped; they only
 survive if they are also in this array (or arrive later as PARMENV).
+
+Needs: Python 3.8 or later. Effect macro ranges are read from the
+installed MPVST bundle's `audioeffects` folder.
+
+Tested on: CPython 3.12.3 on Linux (WSL 2) with PyYAML 6.0.3, numpy 2.5.4
+and pydevices-audiodsp 0.6.7 and audiocomponents 0.4.1. Exercised by
+`converge.py`, `canon_16.py` and `from_yaml.py`.
 """
 
 from __future__ import annotations

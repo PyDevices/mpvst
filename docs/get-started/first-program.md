@@ -14,27 +14,38 @@ The names are not compiled in. Each is a two-line Python script the plug-in buil
 
 The two **MPVST Script Host** entries (one instrument, one effect) run whatever script you point them at. With none pointed at them the instrument host makes no sound, so an empty slot you did not choose is easy to spot, and the effect host passes its input through unchanged.
 
-This is [`examples/pluck.py`](../../examples/pluck.py), a plucked instrument in twenty lines:
+This is [`examples/pluck.py`](../../examples/pluck.py), a plucked instrument in about twenty lines:
 
 ```python
 import synthio
 import vstaudio
 
+# The plug-in reads these two names: this script has no macro knobs and a
+# single patch.
 MACRO_LABELS = ()
 PATCHES = {0: ("Default", ())}
+
+# Make the synthesizer at the host's sample rate, in stereo.
 synth = synthio.Synthesizer(sample_rate=vstaudio.sample_rate(), channel_count=2)
+
+# A fast attack and a decaying tail give the pluck.
 env = synthio.Envelope(attack_time=0.005, decay_time=0.4, sustain_level=0.1, release_time=0.3)
+
+# The notes now sounding, keyed by MIDI pitch, so a note-off can release them.
 held = {}
 
 
 def on_event(kind, channel, note_id, pitch, velocity, bend, position):
+    # A note-on with a velocity starts a note.
     if kind == vstaudio.EVENT_NOTE_ON and velocity > 0:
         held[pitch] = synthio.Note(synthio.midi_to_hz(pitch), amplitude=velocity, envelope=env)
         synth.press(held[pitch])
+    # A note-off, or a note-on with velocity zero, releases it.
     elif kind in (vstaudio.EVENT_NOTE_ON, vstaudio.EVENT_NOTE_OFF) and pitch in held:
         synth.release(held.pop(pitch))
 
 
+# Hand MIDI events to the handler and the synthesizer to the host.
 vstaudio.on_event(on_event)
 vstaudio.output(synth)
 ```

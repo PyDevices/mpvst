@@ -1,9 +1,18 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
 """MPVST VST3 component state and REAPER chunk wrapping.
 
 Layout is the one in docs/guides/generate-projects.md, copied from
 reaper/matrix/build_effect_project.py. A rejected chunk is silent: the host
 discards it and the instance falls back to the catalog two-liner
 (`run("Limiter")`, no arguments).
+
+Needs: Python 3.8 or later.
+
+Tested on: CPython 3.12.3 on Linux (WSL 2) with PyYAML 6.0.3, numpy 2.5.4
+and pydevices-audiodsp 0.6.7 and audiocomponents 0.4.1. Exercised by
+`converge.py`, `canon_16.py` and `from_yaml.py`.
 """
 
 from __future__ import annotations

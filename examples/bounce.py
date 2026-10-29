@@ -1,24 +1,28 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
 """Render a Reaper project to a WAV.
+
+Drives Reaper headless and comes back with a file. It writes a temporary
+copy of the project with the render file and format stated, so nothing has
+to be edited to bounce it, and `--mp3` swaps the format (Reaper ships
+libmp3lame, so a 41 MiB render becomes 2.3 MiB with no external encoder).
+The script checks nothing about the audio itself.
+
+Needs: Reaper and a Python interpreter, on Windows or under WSL (paths are
+translated and the same executable is driven). Set REAPER_EXE if Reaper is
+somewhere unusual. To check the result, `tools/audio_qc.py` reports
+loudness and true peak, and tells you when a render is not a render at all:
+digital black, a silent head or holes in the middle usually mean a plug-in
+never loaded.
+
+Run it:
 
     python bounce.py source/my_song.rpp
     python bounce.py source/my_song.rpp --mp3
-    python bounce.py my_song.rpp --out /tmp/song.wav --timeout 240
+    python bounce.py my_song.rpp --out song.wav --timeout 240
 
-Drives Reaper headless and comes back with a file. It checks nothing and
-imports nothing, so rendering needs Reaper and a Python interpreter.
-
-Checking is `tools/audio_qc.py`. It reports loudness and true peak, and it
-will tell you when a render is not a render at all - digital black, a silent
-head or holes in the middle usually mean a plug-in never loaded.
-
-Runs natively on Windows, where Reaper lives; under WSL it translates paths
-and drives the same executable.
-
-Rendering uses `-renderproject` against a temporary copy of the project with
-`RENDER_FILE` and `RENDER_CFG` written in, so nothing has to be edited to be
-bounced and the format is stated rather than inherited. `--mp3` swaps the
-format block: Reaper ships libmp3lame, so that needs no external encoder and
-turns a 41 MiB render into 2.3.
+Tested on: CPython 3.12.3 under WSL 2, driving REAPER 7.79 on Windows.
 """
 
 from __future__ import annotations
@@ -30,7 +34,10 @@ import subprocess
 from pathlib import Path
 import time
 
+
 def under_wsl() -> bool:
+    """Whether this Python is running inside WSL."""
+    # WSL kernels name Microsoft in their version string.
     try:
         with open("/proc/version") as handle:
             return "microsoft" in handle.read().lower()
@@ -48,9 +55,12 @@ def to_host(path: str) -> str:
 
 
 def find_reaper() -> str:
+    """Find the Reaper executable, or exit saying how to point at it."""
+    # An explicit REAPER_EXE always wins.
     explicit = os.environ.get("REAPER_EXE")
     if explicit:
         return explicit
+    # Under WSL, look in the Windows user's own REAPER folder first.
     candidates = []
     if under_wsl():
         profile = subprocess.run(
@@ -61,6 +71,7 @@ def find_reaper() -> str:
             candidates.append(subprocess.run(
                 ["wslpath", "-u", profile + "\\REAPER\\reaper.exe"],
                 capture_output=True, text=True).stdout.strip())
+    # Then the usual install locations.
     candidates += [
         os.path.expanduser("~/REAPER/reaper.exe"),
         r"C:\Program Files\REAPER (x64)\reaper.exe",
@@ -146,9 +157,12 @@ def render_target(project: str) -> str | None:
 
 
 def render(project: str, wav: str, reaper: str, timeout: int) -> None:
+    """Run Reaper on the project and wait for the WAV to appear."""
+    # Remove any earlier render so a stale file can't pass for a new one.
     if os.path.isfile(wav):
         os.remove(wav)
     os.makedirs(os.path.dirname(os.path.abspath(wav)), exist_ok=True)
+    # -renderproject renders the project and exits.
     command = [reaper, "-nosplash", "-newinst", "-renderproject",
                to_host(project)]
     print(" ".join(command))
@@ -156,7 +170,8 @@ def render(project: str, wav: str, reaper: str, timeout: int) -> None:
         subprocess.run(command, timeout=timeout)
     except subprocess.TimeoutExpired:
         raise SystemExit("Reaper did not finish within %ds" % timeout)
-    for _ in range(40):                       # the file lands after the exit
+    # The file lands a moment after Reaper exits, so wait up to ten seconds.
+    for _ in range(40):
         if os.path.isfile(wav) and os.path.getsize(wav) > 1000:
             return
         time.sleep(0.25)
@@ -164,6 +179,7 @@ def render(project: str, wav: str, reaper: str, timeout: int) -> None:
 
 
 def main() -> int:
+    # Read the command line.
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("project", help=".RPP to render")
     parser.add_argument("--out", help="WAV to write (default: the project's "
@@ -173,9 +189,11 @@ def main() -> int:
                         help="render MP3 instead of the project's own format")
     args = parser.parse_args()
 
+    # Find Reaper and pick the output format.
     reaper = find_reaper()
     fmt = "mp3" if args.mp3 else "wav"
 
+    # Work out where the render goes: --out, or the project's own RENDER_FILE.
     wav = args.out
     if wav is None:
         wav = render_target(args.project)
@@ -185,6 +203,7 @@ def main() -> int:
                 "Pass --out." % args.project)
         if fmt == "mp3":
             wav = os.path.splitext(wav)[0] + ".mp3"
+    # A Windows drive path from the project needs translating under WSL.
     if under_wsl() and re.match(r"^[A-Za-z]:", wav):
         wav = subprocess.run(["wslpath", "-u", wav], capture_output=True,
                              text=True).stdout.strip()
@@ -197,7 +216,8 @@ def main() -> int:
     try:
         render(project, wav, reaper, args.timeout)
         print("wrote %s" % wav)
-        # Printed rather than run: rendering needs nothing but Reaper.
+        # Point at the audio checker rather than running it, because
+        # rendering needs nothing but Reaper.
         checker = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                "..", "tools", "audio_qc.py")
         if os.path.isfile(checker):
@@ -207,6 +227,7 @@ def main() -> int:
             print("  to check it, see tools/audio_qc.py in the MPVST repo")
         return 0
     finally:
+        # Remove the temporary project copy.
         if os.path.isfile(project):
             os.remove(project)
 

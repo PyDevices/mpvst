@@ -1,21 +1,18 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
 """Write a song in YAML instead of Python.
 
-    python from_yaml.py source/interlock.yaml
+Reads a YAML file that names some patterns and says where they play, then
+drives the same `mpvst_composer` library the Python examples use, so
+anything you can express here is a real project with real routing. It is
+deliberately smaller than the Python API: patterns, tracks, sends, an aux
+track or two and a mix bus, which is what a first song needs. When you
+outgrow it, `mpvst_composer/mpvst_composer_guide.md` covers the library
+from the inside. A `.rpp` output is a Reaper project; a `.wav` output is
+rendered here with no DAW. Success is the "wrote ..." line and the file.
 
-The other way in to `mpvst_composer`, for when you would rather describe a
-song than program one. A YAML file names some patterns and says where they
-play; this reads it and drives the same composer the Python examples use, so
-anything you can express here is a real project with real routing.
-
-It is deliberately smaller than the Python API. Patterns, tracks, sends, an
-aux or two, a mix bus - the things a first song needs. When you outgrow it,
-`mpvst_composer_guide.md` is the same library from the inside.
-
-Needs PyYAML: `pip install pyyaml`.
-
-
-THE FILE
---------
+A song file looks like this:
 
     title: Interlock
     tempo: 104
@@ -36,20 +33,28 @@ THE FILE
           - {bar: 1, pattern: figure, repeat: 8}
           - {bar: 9, pattern: figure, repeat: 8, offset: 0.5}
 
-Any other key on a track is one of the instrument's own macros - `decay: 0.9`,
-`cutoff_hz: 800` - named the way the instrument names it and applied over the
-patch. Inserts and aux effects take the same treatment.
+Any other key on a track is one of the instrument's own macros, such as
+`decay: 0.9` or `cutoff_hz: 800`, named the way the instrument names it and
+applied over the patch. Inserts and aux effects work the same way.
 
-`degree` is a step of the scale, so 1 is the tonic and 8 is the octave above -
-no MIDI numbers to look up, and a change of `key` moves the whole song. A
-drum pattern uses names (`kick`, `snare`, `closed_hihat`) and the instrument's
-own note map decides which key that is.
+`degree` is a step of the scale: 1 is the tonic and 8 is the octave above.
+A drum pattern uses names (`kick`, `snare`, `closed_hihat`), and the
+instrument's own note map decides which key each one is. `offset` shifts
+every beat in a placement, so two tracks playing one pattern half a beat
+apart interlock into a line neither is playing.
 
-`offset` shifts every beat in that placement. Two tracks playing one pattern
-half a beat apart interlock into a line neither of them is playing, and
-walking the offset over successive placements is how a part drifts against
-itself. That is the thing this format makes easy and a piano roll makes
-tedious.
+Needs: PyYAML (`pip install pyyaml`). For a `.wav` output, also numpy and
+`pydevices-audiodsp`, `pydevices-audioinstruments` and
+`pydevices-audioeffects`.
+
+Run it:
+
+    python from_yaml.py source/interlock.yaml
+    python from_yaml.py source/interlock.yaml interlock.wav
+
+Tested on: CPython 3.12.3 on Linux (WSL 2) with PyYAML 6.0.3, numpy 2.5.4
+and pydevices-audiodsp 0.6.7 and audiocomponents 0.4.1. Wrote
+`interlock.rpp`.
 """
 
 from __future__ import annotations
@@ -62,7 +67,10 @@ from mpvst_composer import DrumPattern, MidiEvent, MidiPattern, Note, Project, S
 from mpvst_composer.backends.offline import OfflineRenderer
 from mpvst_composer.backends.reaper import ReaperRenderer
 
+
 def scale_of(name):
+    """Look up a Scale by name, or exit listing the names that exist."""
+    # Names are upper case in the enum, with underscores for hyphens.
     key = str(name).replace("-", "_").upper()
     try:
         return getattr(Scale, key)
@@ -72,6 +80,8 @@ def scale_of(name):
 
 
 def note_of(name):
+    """Look up a key by name, or exit if there is no such note."""
+    # Sharps are spelled with an s in the Note enum.
     key = str(name).replace("#", "s").replace("b", "b").capitalize()
     try:
         return getattr(Note, key)
@@ -119,16 +129,19 @@ def build(document):
     same dictionary and go either way with it - straight to a project, or out
     to YAML for someone to read and edit. `source/canon_16.py` does both.
     """
+    # Start the project and set its key, meter and opening tempo.
     song = Project(name=document.get("title", "Untitled"))
     song.set_key(note_of(document.get("key", "C")),
                  scale_of(document.get("scale", "major")))
     beats_per_bar = int(document.get("beats_per_bar", 4))
     song.add_tempo_marker(measure=1, bpm=float(document.get("tempo", 120)),
                           signature=(beats_per_bar, 4))
+    # Add any later tempo changes.
     for marker in document.get("tempo_changes") or []:
         song.add_tempo_marker(measure=int(marker["bar"]),
                               bpm=float(marker["tempo"]))
 
+    # Make the aux tracks first, so a track's sends can find them by name.
     patterns = document.get("patterns") or {}
     auxes = {}
     for spec in document.get("aux_tracks") or []:
@@ -143,6 +156,8 @@ def build(document):
     track_keys = {"name", "instrument", "patch", "gain_db", "pan",
                   "inserts", "sends", "play"}
 
+    # Make each track: its instrument, level, pan, inserts, sends and the
+    # places its patterns play.
     tracks = []
     for spec in document.get("tracks") or []:
         options = {k: v for k, v in spec.items() if k not in track_keys}
@@ -174,12 +189,14 @@ def build(document):
                 float(placement.get("offset", 0.0)), beats_per_bar))
         tracks.append(track)
 
+    # Put any effects on the master.
     for effect in document.get("master_effects") or []:
         options = {k: v for k, v in effect.items()
                    if k not in ("effect", "patch")}
         song.add_master_effect(effect["effect"], patch=effect.get("patch"),
                                **options)
 
+    # Add a mix bus and route every track through it, if asked.
     mix = document.get("mix_bus")
     if mix:
         bus = song.add_mix_bus(**{k: v for k, v in mix.items()
@@ -199,11 +216,14 @@ def renderer_for(path):
 
 
 def main():
+    # Read the command line: the song, and optionally where to write it.
     if len(sys.argv) < 2:
         raise SystemExit("usage: from_yaml.py <song.yaml> [out.rpp|out.wav]")
     source = sys.argv[1]
     song = load(source)
+    # Default to a Reaper project beside the song.
     out = sys.argv[2] if len(sys.argv) > 2 else source.rsplit(".", 1)[0] + ".rpp"
+    # Render, and say what was written.
     song.render(out, renderer_for(out))
     print("wrote %s" % out)
     return 0

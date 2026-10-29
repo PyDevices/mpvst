@@ -1,4 +1,7 @@
-"""Velvet Circuit - a retro-future jazz/prog main title.
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+"""Render Velvet Circuit, a retro-future jazz and prog main title.
 
 This is the first soundtrack piece built directly from the shared hardware
 library and the first with real MPVST Effect inserts.  It deliberately
@@ -13,8 +16,26 @@ F minor/major ambiguity (F-C-Ab-A-D-G): the mystery remains open next week.
 
 All instruments resolve from ../../lib/instruments.  Effect scripts below are
 only racks: every processor they instantiate comes from audioeffects.
+
+Needs: Python 3 with numpy and `pydevices-audiodsp`,
+`pydevices-audioinstruments` and `pydevices-audioeffects`, and an MPVST
+install (set `MPVST_BUNDLE` if it is somewhere unusual). Opening the Reaper
+project this feeds needs Reaper and MPVST.
+
+Run it: from the `soundtrack` folder, render the piece to a WAV, or write its
+Reaper project.
+
+    python composer/preview.py --piece VelvetCircuit velvetcircuit.wav
+    python composer/reaper.py --piece VelvetCircuit
+
+Success is a level report ending in "wrote velvetcircuit.wav" with no failed checks.
+
+Tested on: CPython 3.12.3 on Linux (WSL 2), rendered with
+`composer/preview.py` using pydevices-audiodsp 0.6.7 and audiocomponents
+0.4.1.
 """
 
+# Change these to suit the piece.
 TITLE = "Velvet_Circuit"
 SAMPLE_RATE = 48000
 MASTER_GAIN_DB = -1.5
@@ -50,6 +71,7 @@ SECTIONS = [
 ]
 
 
+# Convert a position in beats to seconds, following the tempo map.
 def beats_to_seconds(beat):
     seconds = 0.0
     for index, row in enumerate(TEMPO_MAP):
@@ -169,31 +191,13 @@ def rack(name, imports, body):
     return {"name": name, "source": source, "macros": {}, "macro_env": {}}
 
 
-# These racks predate the rebuilt effects. Each old Freeverb preset maps to
-# the shipped Reverb patch whose measured decay and brightness sit nearest
-# it (spring is parked in the rebuilt Reverb; Short Plate is nearest), and
-# each Mix is the old one doubled, because the rebuilt Mix runs 0 to 2 on the
-# law the old one ran 0 to 1 on. A patch sets every macro, Mix included, so
-# Mix is set after it. The rebuilt Chorus is one delayed voice: Delay is the
-# old line's centre (depth_ms + 8 ms), Depth its swing as a fraction of
-# that, Tone open because the old one had no wet filter. Saturation's old
-# amount was its dry/wet blend, which is Mix now. Vibrato's Depth is in
-# cents, and Rise is at its shortest because the old one had none.
-# Overdrive is a Tube Screamer now: Drive is its gain (12 to 108), placed so
-# the old default 0.4 lands on the new default; Tone is the position whose
-# low-pass corner (480 x 18^Tone Hz) is the old tone_hz. Mix is still how
-# much of the drive you hear, though it now adds the clipped copy to a dry
-# note at unity instead of crossfading - except on the clav and the guitar.
-# Those parts are quiet enough that the old curve, backed off as it was,
-# barely clipped them, while the new circuit clips at any level and adds that
-# copy at a level of its own: the old Mix put both tracks 15 dB over what the
-# old rack gave. Their Mix is the one at which the stage's level on the
-# track's own part matches the old one's. The delays keep Time, Feedback and
-# Mix; TapeDelay's wow is the old 2.5 ms swing at 0.7 Hz as cents, with no
-# flutter, the old loop drive (0.3) and the old line length (twice Time); its
-# repeats cannot be as bright as the old tone_hz at these Times, so Spacing
-# is at its brightest. SlapbackDelay's Level is the old Mix doubled (Echo's
-# 0-1 law became 0-2), with no saturation, wobble or tone filter, as before.
+# The effect racks, one per track. Each is a few lines of audioeffects code.
+# A patch sets every macro, Mix included, so a rack that sets Mix does it
+# after choosing the patch. The Reverb's Mix runs from 0 to 2, with the dry at
+# unity up to 1. The Chorus is one delayed voice: Delay is the line's centre
+# and Depth its swing as a fraction of that. Vibrato's Depth is in cents.
+# Overdrive's Drive runs from 12 to 108 and its Tone sets a low-pass corner
+# (480 x 18^Tone Hz). TapeDelay's wow is in cents.
 FX_DRUMS = rack(
     "Desk Heat", "Saturation, Overdrive",
     "heat = Saturation(source, mix=0.16)\n"
@@ -278,8 +282,7 @@ FX_TAPE = rack(
 
 KICK, RIM, SNARE, CLAP = 36, 37, 38, 39
 HAT_C, HAT_O, COWBELL, TAMBO, CABASA = 42, 46, 56, 54, 69
-# 43/47/50 before the library's General MIDI pass (audiocomponents,
-# 2026-09-15); GM puts the LinnDrum's three toms on 41/45/48.
+# General MIDI puts the LinnDrum's three toms on 41, 45 and 48.
 TOM_L, TOM_M, TOM_H = 41, 45, 48
 
 
@@ -927,10 +930,12 @@ def _linear(points, beat, default):
     return points[-1][1]
 
 
+# The linear gain of a track at a beat: its mix gain times its volume envelope.
 def track_gain(track, beat):
     return _db(track["gain_db"]) * _linear(track["vol"], beat, 1.0)
 
 
+# A macro's value at a beat: its automation, or its fixed setting.
 def macro_value(unit, index, beat):
     env = unit.get("macro_env", {}).get(index)
     if env:
@@ -938,6 +943,7 @@ def macro_value(unit, index, beat):
     return unit.get("macros", {}).get(index, 0.5)
 
 
+# Count the tracks with a note sounding at a beat.
 def active_track_count(beat):
     count = 0
     for track in TRACKS:

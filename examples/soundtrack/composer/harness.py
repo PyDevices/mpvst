@@ -1,18 +1,29 @@
-"""Offline runner for MPVST instrument/effect scripts.
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+"""Run an instrument or effect script offline.
 
-Runs a script against the vstaudio shim on top of the audiodsp CPython
-wheel - the same DSP code (synthio, audiocore, ...) the real MicroPython
-sidecar runs - and pulls PCM block by block. No compiled engine and no
-VST3 host involved, so a script loads and runs in milliseconds instead of
-the seconds a full plug-in load takes; that's what makes it useful for
-iterating across many scripts (see tools/test-instruments-lib.py) or one
-script at a time while developing it.
+Runs a script against the `vstaudio` shim on top of the audiodsp CPython
+wheel, the same DSP code (synthio, audiocore and the rest) the engine runs,
+and pulls PCM block by block. There is no compiled engine and no VST3 host,
+so a script loads and runs in milliseconds instead of the seconds a full
+plug-in load takes. That makes it useful for iterating across many scripts
+(see `tools/test-instruments-lib.py`) or on one script while you develop it.
 
-This is a fast correctness check, not a substitute for the real plug-in:
-it shares the DSP but not the VST3 processor, the shared-memory protocol,
-or macro/state handling. The REAPER render through the real plug-in stays
-authoritative for anything the script's audio behavior alone doesn't
-cover.
+This is a fast correctness check, not a substitute for the plug-in. It
+shares the DSP but not the VST3 processor, the shared-memory protocol or the
+macro and state handling, so a Reaper render through the real plug-in stays
+authoritative for anything the script's audio does not cover.
+
+Needs: Python 3 with numpy and `pydevices-audiodsp`,
+`pydevices-audioinstruments` and `pydevices-audioeffects`, and an MPVST
+install (set `MPVST_BUNDLE` if it is somewhere unusual).
+
+Run it: import `InstrumentRun` or `EffectRun` from a program beside it; the
+first-program guide has a complete example that prints a peak and an RMS.
+
+Tested on: CPython 3.12.3 on Linux (WSL 2) with pydevices-audiodsp 0.6.7 and
+audiocomponents 0.4.1; `preview.py` and `reaper.py` run on several pieces.
 """
 
 import os
@@ -22,12 +33,9 @@ from pathlib import Path
 
 COMPOSER_DIR = Path(__file__).resolve().parent
 
-# audiodsp is a dependency, imported from wherever it is installed --
-# pydevices-audiodsp, from TestPyPI or as an editable install of a sibling
-# checkout. It used to be put on sys.path from a sibling directory instead,
-# which silently won over the installed wheel and, because this ran at
-# sys.path[0], over PYTHONPATH as well: an A/B done by pointing PYTHONPATH at
-# another checkout rendered current code twice and came out bit-identical.
+# Put the soundtrack folder on the import path so the composer package
+# imports. audiodsp is imported from wherever it is installed, as
+# pydevices-audiodsp, so a checkout on PYTHONPATH can still override it.
 sys.path.insert(0, str(COMPOSER_DIR.parent))
 # The adapters a composition's instrument scripts import live in the
 # installed bundle, beside the engine. MPVST_BUNDLE moves the search.

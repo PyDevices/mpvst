@@ -1,4 +1,7 @@
-"""Neon Meridian - 80s synthwave for the MPVST.
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+"""Render Neon Meridian, an 80s synthwave piece.
 
 Nine shared hardware emulations, no effect inserts. The instruments carry
 their own character the way the hardware did: the Juno-106's bucket-brigade
@@ -24,8 +27,26 @@ Form, in A minor:
 
 The one modulation is the C-major excursion at bar 61; everything else is
 diatonic A minor coloured with added ninths.
+
+Needs: Python 3 with numpy and `pydevices-audiodsp`,
+`pydevices-audioinstruments` and `pydevices-audioeffects`, and an MPVST
+install (set `MPVST_BUNDLE` if it is somewhere unusual). Opening the Reaper
+project this feeds needs Reaper and MPVST.
+
+Run it: from the `soundtrack` folder, render the piece to a WAV, or write its
+Reaper project.
+
+    python composer/preview.py --piece NeonMeridian neonmeridian.wav
+    python composer/reaper.py --piece NeonMeridian
+
+Success is a level report ending in "wrote neonmeridian.wav" with no failed checks.
+
+Tested on: CPython 3.12.3 on Linux (WSL 2), rendered with
+`composer/preview.py` using pydevices-audiodsp 0.6.7 and audiocomponents
+0.4.1.
 """
 
+# Change these to suit the piece.
 TITLE = "Neon_Meridian"
 INSTRUMENTS_DIR = "../../lib/instruments"
 SAMPLE_RATE = 48000
@@ -48,6 +69,7 @@ TEMPO_MAP = [
 TOTAL_BEATS = float(TOTAL_BARS * BEATS_PER_BAR)
 
 
+# Convert a position in beats to seconds, following the tempo map.
 def beats_to_seconds(beat):
     """Exact beat->seconds through the piecewise-constant tempo map."""
     seconds = 0.0
@@ -630,6 +652,7 @@ TRACKS = [
 ]
 
 
+# The linear gain of a track at a beat: its mix gain times its volume envelope.
 def track_gain(track, beat):
     """Linear gain (envelope value) for a track at `beat`."""
     base = _db(track["gain_db"])
@@ -647,6 +670,7 @@ def track_gain(track, beat):
     return base * points[-1][1]
 
 
+# A macro's value at a beat: its automation, or its fixed setting.
 def macro_value(track, index, beat):
     """Automated macro value at `beat` (falls back to the initial value)."""
     env = track["macro_env"].get(index)
@@ -663,6 +687,7 @@ def macro_value(track, index, beat):
     return env[-1][1]
 
 
+# Count the tracks with a note sounding at a beat.
 def active_track_count(beat):
     """How many tracks have a sounding note at `beat` (excludes tails)."""
     count = 0

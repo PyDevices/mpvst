@@ -1,4 +1,7 @@
-"""Automata - a five-movement electronic suite for the MPVST.
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+"""Render Automata, a five-movement electronic suite.
 
 Twenty-four tracks, twenty-four sidecar instances, no third-party sounds.
 Where Perihelion was a film cue, Automata is a machine coming to life:
@@ -23,8 +26,26 @@ Groove is real: swing on the hats, humanized shakers, velocity accents,
 ghost notes, fills. The acid line slides between overlapping notes the
 way a 303 ties steps. All echoes and the sidechain pump sync themselves
 to the host tempo through the plug-in's transport API.
+
+Needs: Python 3 with numpy and `pydevices-audiodsp`,
+`pydevices-audioinstruments` and `pydevices-audioeffects`, and an MPVST
+install (set `MPVST_BUNDLE` if it is somewhere unusual). Opening the Reaper
+project this feeds needs Reaper and MPVST.
+
+Run it: from the `soundtrack` folder, render the piece to a WAV, or write its
+Reaper project.
+
+    python composer/preview.py --piece Automata automata.wav
+    python composer/reaper.py --piece Automata
+
+Success is a level report ending in "wrote automata.wav" with no failed checks.
+
+Tested on: CPython 3.12.3 on Linux (WSL 2), rendered with
+`composer/preview.py` using pydevices-audiodsp 0.6.7 and audiocomponents
+0.4.1.
 """
 
+# Change these to suit the piece.
 TITLE = "Automata"
 SAMPLE_RATE = 48000
 MASTER_GAIN_DB = -2.5
@@ -56,6 +77,7 @@ SECTIONS = [
 ]
 
 
+# Convert a position in beats to seconds, following the tempo map.
 def beats_to_seconds(beat):
     seconds = 0.0
     for index, row in enumerate(TEMPO_MAP):
@@ -108,10 +130,7 @@ def P(name):
 
 KICK, SNARE, CLAP = 36, 38, 39
 HAT_C, HAT_O = 42, 46
-# The toms moved with the library's General MIDI pass (audiocomponents,
-# 2026-09-15): the TR-909 used to answer its hardware's accent key numbers
-# 43/47/50 as well, and now answers only GM's 41/45/48. Same three drums,
-# same sound, the numbers GM gives them.
+# General MIDI puts the three toms on 41, 45 and 48.
 TOM_L, TOM_M, TOM_H = 41, 45, 48
 
 
@@ -283,14 +302,8 @@ def shaker_notes():
     return out
 
 
-# The SP-1200 glitch line. Its two tick notes were 65 and 50, which the
-# machine used to answer with a catch-all: before the library's General MIDI
-# pass (audiocomponents, 2026-09-15) an unmapped note got a generic noise
-# burst, and both of these got the identical one. That burst is gone - an
-# unmapped note is silent now - so the ticks are the SP's own clap, which is
-# what the burst was borrowing anyway: the same 3 kHz band, 101 ms of decay
-# against the burst's 80. This is the one place in the soundtrack where the
-# map change altered a sound rather than moving it, so it wants an ear.
+# The SP-1200 glitch line. An unmapped note is silent, so its two ticks use
+# the SP's own clap.
 SP_KICK, SP_TICK = 36, 39
 
 
@@ -803,6 +816,7 @@ def _db(x):
     return 10.0 ** (x / 20.0)
 
 
+# The linear gain of a track at a beat: its mix gain times its volume envelope.
 def track_gain(track, beat):
     base = _db(track["gain_db"])
     points = track["vol"]
@@ -819,6 +833,7 @@ def track_gain(track, beat):
     return base * points[-1][1]
 
 
+# A macro's value at a beat: its automation, or its fixed setting.
 def macro_value(track, index, beat):
     env = track["macro_env"].get(index)
     if not env:
@@ -834,6 +849,7 @@ def macro_value(track, index, beat):
     return env[-1][1]
 
 
+# Count the tracks with a note sounding at a beat.
 def active_track_count(beat):
     count = 0
     for track in TRACKS:

@@ -1,44 +1,43 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
 """Render a project to a WAV here, with no DAW and no plug-in.
+
+The Reaper backend writes a project for a host to play. This one plays it
+through the same DSP: `audiorender` is audiodsp's offline renderer, and it
+drives the same `audioinstruments` and `audioeffects` packages the plug-in's
+engine imports. It runs at about the speed of the music, so it is slower
+than a Reaper bounce; what you get is a render that needs no DAW and no
+plug-in.
+
+It does not go through the `vstaudio` shim, because `audiorender.deliver`
+crosses the normalized-to-MIDI boundary with the same multiply the plug-in's
+instrument adapter uses. Two things the adapters do that the bare renderer
+does not are guarded below, both places where a component declares fewer than
+sixteen macros.
+
+`Project` still reads patch names, macro ranges and class IDs from an
+installed bundle's `catalog.json`. Without one, patches resolve to zero and
+the render differs from a bounce; the composer warns when that happens, and
+`MPVST_BUNDLE` points it at the install. This backend cannot tell you the
+plug-in works, because the class IDs, state chunk, item timing and send
+topology are things only a host can honour. Render here while you write, and
+through Reaper before you believe it.
+
+Pan automation (the pan is static, as in `apply_mix`) and sidechain keys are
+not mixed here.
+
+Needs: numpy and `pydevices-audiodsp`, `pydevices-audioinstruments` and
+`pydevices-audioeffects`.
+
+Run it:
 
     from mpvst_composer.backends.offline import OfflineRenderer
     song.render("song.wav", OfflineRenderer)
 
-The Reaper backend writes a project for a host to play. This one plays it,
-through the same DSP: `audiorender` is audiodsp's offline renderer, and it
-drives the very `audioinstruments` and `audioeffects` packages the sidecar
-imports. Same notes, same components, same arithmetic, on a machine with
-nothing installed on it.
-
-It is not the quick way. This runs at about the speed of the music - sixteen
-voices over two and a half minutes take two and a half minutes - where Reaper
-bounces the same project in twenty-six seconds, eighteen sidecar startups and
-all. What you get here is a render that needs no DAW and no plug-in, not a
-render that arrives sooner.
-
-It does not go through the vstaudio shim, because there is nothing left for
-the adapter to do: `audiorender.deliver` crosses the normalized-to-MIDI seam
-with the same multiply `mpvst_instrument_adapter` uses. Routing through a
-script to reach the same multiply would buy a dependency on the installed
-product and no fidelity. Two things the adapters do that the bare renderer
-does not are guarded below, both places a component declares fewer than
-sixteen macros.
-
-The plug-in is still where the catalog comes from: `Project` reads patch
-names, macro ranges and class IDs out of an installed bundle's
-`catalog.json`. Without one, patches resolve to zero and this renders a
-different arrangement than the bounce - the composer warns when that
-happens, and `MPVST_BUNDLE` points it at the install.
-
-What it cannot tell you is whether the plug-in works. The class IDs, the
-state chunk, the item timing and the send topology are all things the
-project file asserts and only a host can honour. Render here while you are
-writing; render through Reaper before you believe it.
-
-Not yet mixed here: pan automation (the pan is static, as in `apply_mix`)
-and sidechain keys.
-
-Needs `pydevices-audiodsp`, `pydevices-audioinstruments` and
-`pydevices-audioeffects`.
+Tested on: CPython 3.12.3 on Linux (WSL 2) with PyYAML 6.0.3, numpy 2.5.4
+and pydevices-audiodsp 0.6.7 and audiocomponents 0.4.1. Exercised by
+`converge.py`, `canon_16.py` and `from_yaml.py`.
 """
 
 from __future__ import annotations
