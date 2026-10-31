@@ -115,6 +115,19 @@ if(TARGET mpvst-stage-micropython-engine)
     add_dependencies(mpvst_reload_tests mpvst-stage-micropython-engine)
     add_test(NAME mpvst_reload_tests COMMAND mpvst_reload_tests
         $<TARGET_FILE_DIR:MPVST>/${mpvst_engine_name})
+    # An engine whose host died must exit, not spin on the dead host's
+    # shared memory. Linux only: the test finds the engine through /proc.
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        add_executable(mpvst_orphan_tests orphan_tests.cpp)
+        target_link_libraries(mpvst_orphan_tests PRIVATE mpvst_sidecar_transport)
+        target_compile_features(mpvst_orphan_tests PRIVATE cxx_std_17)
+        target_compile_options(mpvst_orphan_tests PRIVATE
+            -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion)
+        add_dependencies(mpvst_orphan_tests mpvst-stage-micropython-engine)
+        add_test(NAME mpvst_orphan_tests COMMAND mpvst_orphan_tests
+            $<TARGET_FILE_DIR:MPVST>/${mpvst_engine_name})
+        set_tests_properties(mpvst_orphan_tests PROPERTIES TIMEOUT 60)
+    endif()
     add_test(NAME mpvst_embedded_state_smoke COMMAND mpvst_smoke_host
         $<TARGET_FILE_DIR:MPVST>/../.. --expect-embedded-state)
     add_test(NAME mpvst_micropython_smoke COMMAND mpvst_smoke_host
