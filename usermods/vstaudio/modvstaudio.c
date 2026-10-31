@@ -4,6 +4,7 @@
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
+#include <tlhelp32.h>
 #else
 #include <errno.h>
 #include <fcntl.h>
@@ -242,6 +243,168 @@ static void engine_yield(void) {
 #endif
 }
 
+// Waiting for the host to hand over the next block. While blocks are flowing
+// the wait is a short spin, so the engine is already looking when one lands.
+// When none arrives for a while (a host that is not processing audio: a
+// stopped transport, a muted project, an audio device that never opened) a
+// spin burns a whole core for nothing, so the wait backs off to sleeping, in
+// steps up to a quarter of a millisecond. The first block after a quiet
+// stretch can be that late; the pipeline several blocks deep absorbs it, and
+// the next block finds the engine spinning again.
+#if defined(_WIN32)
+// Windows timers wake no finer than about half a millisecond, and measured
+// 128 and 512 frame blocks arrived late when the engine slept between them, so
+// it spins through the gap of any block up to a few thousand frames and only
+// then backs off.
+#define VSTAUDIO_SPIN_NS 25000000ull
+#define VSTAUDIO_SLEEP_MIN_NS 500000ull
+#define VSTAUDIO_SLEEP_MAX_NS 1000000ull
+#else
+#define VSTAUDIO_SPIN_NS 3000000ull
+#define VSTAUDIO_SLEEP_MIN_NS 20000ull
+#define VSTAUDIO_SLEEP_MAX_NS 250000ull
+#endif
+
+#if defined(_WIN32)
+// Sleep(1) rounds up to a whole scheduler tick, often 15.6 ms, unless the
+// process raised the timer resolution, which would make a 10 ms block late.
+// A high-resolution waitable timer (Windows 10 1803 and later) sleeps for what
+// it is asked. Where that is missing, raise the system timer to 1 ms for the
+// life of the process and use Sleep(1).
+#ifndef CREATE_WAITABLE_TIMER_HIGH_RESOLUTION
+#define CREATE_WAITABLE_TIMER_HIGH_RESOLUTION 0x00000002
+#endif
+static HANDLE vstaudio_wait_timer;
+static bool vstaudio_timer_probed;
+
+static void windows_sleep_ns(uint64_t ns) {
+    if (!vstaudio_timer_probed) {
+        vstaudio_timer_probed = true;
+        vstaudio_wait_timer = CreateWaitableTimerExW(NULL, NULL,
+            CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
+        if (vstaudio_wait_timer == NULL) {
+            typedef unsigned int (WINAPI *time_begin_period_t)(unsigned int);
+            HMODULE winmm = LoadLibraryA("winmm.dll");
+            time_begin_period_t begin = winmm == NULL ? NULL
+                : (time_begin_period_t)(void *)GetProcAddress(winmm, "timeBeginPeriod");
+            if (begin != NULL) {
+                (void)begin(1u);
+            }
+        }
+    }
+    if (vstaudio_wait_timer != NULL) {
+        LARGE_INTEGER due;
+        due.QuadPart = -(LONGLONG)(ns / 100u);
+        if (SetWaitableTimer(vstaudio_wait_timer, &due, 0, NULL, NULL, FALSE)) {
+            (void)WaitForSingleObject(vstaudio_wait_timer, 100);
+            return;
+        }
+    }
+    Sleep(1);
+}
+#endif
+
+static uint64_t vstaudio_wait_started_ns;
+static uint64_t vstaudio_sleep_ns;
+
+static void work_arrived(void) {
+    vstaudio_wait_started_ns = 0u;
+    vstaudio_sleep_ns = VSTAUDIO_SLEEP_MIN_NS;
+}
+
+static void engine_wait_for_work(void) {
+    const uint64_t now = monotonic_ns();
+    if (vstaudio_wait_started_ns == 0u) {
+        vstaudio_wait_started_ns = now;
+        vstaudio_sleep_ns = VSTAUDIO_SLEEP_MIN_NS;
+    }
+    if (now - vstaudio_wait_started_ns < VSTAUDIO_SPIN_NS) {
+        engine_yield();
+        return;
+    }
+#if defined(_WIN32)
+    windows_sleep_ns(vstaudio_sleep_ns);
+#else
+    const struct timespec delay = {0, (long)vstaudio_sleep_ns};
+    (void)nanosleep(&delay, NULL);
+#endif
+    if (vstaudio_sleep_ns < VSTAUDIO_SLEEP_MAX_NS) {
+        vstaudio_sleep_ns *= 2u;
+        if (vstaudio_sleep_ns > VSTAUDIO_SLEEP_MAX_NS) {
+            vstaudio_sleep_ns = VSTAUDIO_SLEEP_MAX_NS;
+        }
+    }
+}
+
+// The host owns this engine. When the host ends without closing the instance
+// (a crash, a kill, an exit before the plug-in unloads) nothing ever moves the
+// lifecycle on, and the run loop would wait on a channel nobody feeds for as
+// long as the machine stays up, at a full core. So the loop asks now and then
+// whether its parent is still there.
+//
+// This is a poll rather than PR_SET_PDEATHSIG: that signal follows the thread
+// that started the engine, not the process, so a host that loads plug-ins on
+// a short-lived thread would have its engine killed under it.
+#define VSTAUDIO_PARENT_CHECK_INTERVAL_NS 100000000ull
+
+#if defined(_WIN32)
+static HANDLE vstaudio_parent_process;
+#else
+static pid_t vstaudio_parent_pid;
+#endif
+static uint64_t vstaudio_parent_check_next_ns;
+
+// Remember who started this process. Holding the Windows handle from now on
+// keeps the process id from being reused by something else.
+static void remember_parent(void) {
+    vstaudio_parent_check_next_ns = 0u;
+#if defined(_WIN32)
+    if (vstaudio_parent_process != NULL) {
+        CloseHandle(vstaudio_parent_process);
+        vstaudio_parent_process = NULL;
+    }
+    const DWORD self = GetCurrentProcessId();
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snapshot == INVALID_HANDLE_VALUE) {
+        return;
+    }
+    PROCESSENTRY32 entry;
+    entry.dwSize = sizeof(entry);
+    for (BOOL more = Process32First(snapshot, &entry); more;
+         more = Process32Next(snapshot, &entry)) {
+        if (entry.th32ProcessID == self) {
+            vstaudio_parent_process = OpenProcess(SYNCHRONIZE, FALSE,
+                entry.th32ParentProcessID);
+            break;
+        }
+    }
+    CloseHandle(snapshot);
+#else
+    vstaudio_parent_pid = getppid();
+#endif
+}
+
+// True once the process that started this engine has ended. Cheap enough to
+// call from the idle paths: it looks at the clock first and only asks the
+// system a few times a second.
+static bool parent_has_exited(void) {
+    const uint64_t now = monotonic_ns();
+    if (now < vstaudio_parent_check_next_ns) {
+        return false;
+    }
+    vstaudio_parent_check_next_ns = now + VSTAUDIO_PARENT_CHECK_INTERVAL_NS;
+#if defined(_WIN32)
+    // A handle is only signalled once the process has ended. Without one
+    // (the parent could not be found or opened) there is nothing to go on.
+    return vstaudio_parent_process != NULL &&
+        WaitForSingleObject(vstaudio_parent_process, 0) == WAIT_OBJECT_0;
+#else
+    // A dead parent hands its children to init or to the nearest subreaper,
+    // so the parent id changes.
+    return vstaudio_parent_pid != 0 && getppid() != vstaudio_parent_pid;
+#endif
+}
+
 static void set_error_text(const char *text, size_t length, uint32_t error_code) {
     if (vstaudio_status == NULL) {
         return;
@@ -335,6 +498,7 @@ static mp_obj_t vstaudio_configure(mp_obj_t name_obj, mp_obj_t bytes_obj) {
     MP_STATE_VM(vstaudio_output) = MP_OBJ_NULL;
     MP_STATE_VM(vstaudio_event_callback) = MP_OBJ_NULL;
     MP_STATE_VM(vstaudio_event_observer) = MP_OBJ_NULL;
+    remember_parent();
     return mp_const_none;
 }
 static MP_DEFINE_CONST_FUN_OBJ_2(vstaudio_configure_obj, vstaudio_configure);
@@ -695,6 +859,9 @@ static mp_obj_t vstaudio_run(size_t n_args, const mp_obj_t *args) {
             break;
         }
         if (lifecycle != MPVST_LIFECYCLE_RUNNING) {
+            if (parent_has_exited()) {
+                break;
+            }
             run_housekeeping(housekeeping, &housekeeping_disabled);
             engine_idle();
             continue;
@@ -706,11 +873,15 @@ static mp_obj_t vstaudio_run(size_t n_args, const mp_obj_t *args) {
         mpvst_output_slot *output = output_at(output_position);
         if (atomic_load_u64(&work->sequence) != work_position + 1u ||
             atomic_load_u64(&output->sequence) != output_position) {
+            if (parent_has_exited()) {
+                break;
+            }
             run_housekeeping(housekeeping, &housekeeping_disabled);
-            engine_yield();
+            engine_wait_for_work();
             continue;
         }
 
+        work_arrived();
         output->generation = work->generation;
         output->frame_count = work->frame_count;
         output->start_sample = work->start_sample;
