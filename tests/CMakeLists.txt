@@ -127,6 +127,11 @@ if(TARGET mpvst-stage-micropython-engine)
         add_test(NAME mpvst_orphan_tests COMMAND mpvst_orphan_tests
             $<TARGET_FILE_DIR:MPVST>/${mpvst_engine_name})
         set_tests_properties(mpvst_orphan_tests PROPERTIES TIMEOUT 60)
+        # Not a test: prints the host-to-engine round trip per block.
+        add_executable(mpvst_roundtrip_bench roundtrip_bench.cpp)
+        target_link_libraries(mpvst_roundtrip_bench PRIVATE mpvst_sidecar_transport)
+        target_compile_features(mpvst_roundtrip_bench PRIVATE cxx_std_17)
+        add_dependencies(mpvst_roundtrip_bench mpvst-stage-micropython-engine)
     endif()
     add_test(NAME mpvst_embedded_state_smoke COMMAND mpvst_smoke_host
         $<TARGET_FILE_DIR:MPVST>/../.. --expect-embedded-state)

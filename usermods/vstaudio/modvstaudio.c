@@ -243,6 +243,50 @@ static void engine_yield(void) {
 #endif
 }
 
+// Waiting for the host to hand over the next block. While blocks are flowing
+// the wait is a short spin, so the engine is already looking when one lands.
+// When none arrives for a while (a host that is not processing audio: a
+// stopped transport, a muted project, an audio device that never opened) a
+// spin burns a whole core for nothing, so the wait backs off to sleeping, in
+// steps up to a quarter of a millisecond. The first block after a quiet
+// stretch can be that late; the pipeline several blocks deep absorbs it, and
+// the next block finds the engine spinning again.
+#define VSTAUDIO_SPIN_NS 3000000ull
+#define VSTAUDIO_SLEEP_MIN_NS 20000ull
+#define VSTAUDIO_SLEEP_MAX_NS 250000ull
+
+static uint64_t vstaudio_wait_started_ns;
+static uint64_t vstaudio_sleep_ns;
+
+static void work_arrived(void) {
+    vstaudio_wait_started_ns = 0u;
+    vstaudio_sleep_ns = VSTAUDIO_SLEEP_MIN_NS;
+}
+
+static void engine_wait_for_work(void) {
+    const uint64_t now = monotonic_ns();
+    if (vstaudio_wait_started_ns == 0u) {
+        vstaudio_wait_started_ns = now;
+        vstaudio_sleep_ns = VSTAUDIO_SLEEP_MIN_NS;
+    }
+    if (now - vstaudio_wait_started_ns < VSTAUDIO_SPIN_NS) {
+        engine_yield();
+        return;
+    }
+#if defined(_WIN32)
+    Sleep(1);
+#else
+    const struct timespec delay = {0, (long)vstaudio_sleep_ns};
+    (void)nanosleep(&delay, NULL);
+    if (vstaudio_sleep_ns < VSTAUDIO_SLEEP_MAX_NS) {
+        vstaudio_sleep_ns *= 2u;
+        if (vstaudio_sleep_ns > VSTAUDIO_SLEEP_MAX_NS) {
+            vstaudio_sleep_ns = VSTAUDIO_SLEEP_MAX_NS;
+        }
+    }
+#endif
+}
+
 // The host owns this engine. When the host ends without closing the instance
 // (a crash, a kill, an exit before the plug-in unloads) nothing ever moves the
 // lifecycle on, and the run loop would wait on a channel nobody feeds for as
@@ -784,10 +828,11 @@ static mp_obj_t vstaudio_run(size_t n_args, const mp_obj_t *args) {
                 break;
             }
             run_housekeeping(housekeeping, &housekeeping_disabled);
-            engine_yield();
+            engine_wait_for_work();
             continue;
         }
 
+        work_arrived();
         output->generation = work->generation;
         output->frame_count = work->frame_count;
         output->start_sample = work->start_sample;

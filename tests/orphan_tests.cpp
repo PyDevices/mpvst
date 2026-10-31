@@ -87,6 +87,29 @@ bool alive(pid_t pid)
            line[close + 2] != 'Z';
 }
 
+// User plus system CPU time the process has used, in clock ticks.
+long cpuTicks(pid_t pid)
+{
+    std::ifstream stat("/proc/" + std::to_string(pid) + "/stat");
+    std::string line;
+    std::getline(stat, line);
+    const auto close = line.rfind(')');
+    if (close == std::string::npos)
+        return -1;
+    char state = 0;
+    long skip = 0;
+    unsigned long minflt = 0, cminflt = 0, majflt = 0, cmajflt = 0, utime = 0, stime = 0;
+    int ppid = 0, pgrp = 0, session = 0, tty = 0, tpgid = 0;
+    unsigned flags = 0;
+    (void)skip;
+    if (std::sscanf(line.c_str() + close + 1,
+                    " %c %d %d %d %d %d %u %lu %lu %lu %lu %lu %lu",
+                    &state, &ppid, &pgrp, &session, &tty, &tpgid, &flags,
+                    &minflt, &cminflt, &majflt, &cmajflt, &utime, &stime) != 13)
+        return -1;
+    return static_cast<long>(utime + stime);
+}
+
 bool waitForExit(pid_t pid, int seconds)
 {
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(seconds);
@@ -178,6 +201,21 @@ int main(int argc, char** argv)
             }
             else
             {
+                // A host that is alive but not processing audio must not cost
+                // a core: measure the engine over two seconds of idleness.
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                const auto before = cpuTicks(engines[0]);
+                std::this_thread::sleep_for(std::chrono::seconds(2));
+                const auto used = cpuTicks(engines[0]) - before;
+                const auto percent = 100.0 * static_cast<double>(used) /
+                    (2.0 * static_cast<double>(sysconf(_SC_CLK_TCK)));
+                std::cout << "idle engine CPU: " << percent << "%\n";
+                if (before < 0 || percent > 20.0)
+                {
+                    std::cerr << "FAIL: an idle engine used " << percent
+                              << "% of a core\n";
+                    result = 8;
+                }
                 kill(host.pid, SIGKILL);
                 int status = 0;
                 waitpid(host.pid, &status, 0);
