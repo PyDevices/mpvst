@@ -65,9 +65,19 @@ def main():
             editor.script_reloaded(script_path)
         return loaded
 
+    def housekeeping():
+        # The instrument first: it is audio, the panel is optional. Looked up
+        # rather than imported, so a script that builds its sound by hand
+        # never loads the seam.
+        adapter = sys.modules.get("mpvst_instrument_adapter")
+        if adapter is not None:
+            adapter.tick()
+        if editor is not None:
+            editor.tick()
+
     load_script()
     try:
-        vstaudio.run(reload_script, editor.tick if editor is not None else None)
+        vstaudio.run(reload_script, housekeeping)
     finally:
         if editor is not None:
             editor.stop()
