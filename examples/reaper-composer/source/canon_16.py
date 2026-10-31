@@ -29,7 +29,7 @@ Run it:
 Success is a "wrote ... (16 voices)" line and the file beside the script.
 
 Tested on: CPython 3.12.3 on Linux (WSL 2) with PyYAML 6.0.3, numpy 2.5.4
-and pydevices-audiodsp 0.6.7 and audiocomponents 0.4.1. Ran with `--wav` and
+and pydevices-audiodsp 0.6.7 and audioinstruments 0.5.0. Ran with `--wav` and
 `--yaml`.
 """
 
@@ -170,33 +170,33 @@ PATTERNS = {
     "accents":      accents(),
 }
 
-#: name, instrument, gain, pan, [(bar, pattern) ...]. Four-bar cycles.
+#: name, instrument, patch, gain, pan, [(bar, pattern) ...]. Four-bar cycles.
 #:
 #: The ground plays from the first bar. The tune arrives at bar 5, and from
 #: there each cycle adds a layer or subdivides one, until bar 33 begins
 #: taking them away again.
 VOICES = [
-    ("Pedal",      "prophet5",    -10.0,  0.0,  [(b, "pedal") for b in range(1, 41, 4)]),
-    ("Cello",      "mellotron",    -3.0, -0.1,  [(b, "ground") for b in range(1, 41, 4)]),
-    ("Continuo",   "cp70",         -9.0,  0.1,  [(b, "rf_quarter") for b in range(5, 37, 4)]),
-    ("Violin I",   "solina",       -8.0, -0.35, [(5, "half"), (9, "quarter"), (13, "eighth"),
+    ("Pedal",      "poly5", "Glide Pad",    -10.0,  0.0,  [(b, "pedal") for b in range(1, 41, 4)]),
+    ("Cello",      "string_ensemble", "Dark Violas",    -3.0, -0.1,  [(b, "ground") for b in range(1, 41, 4)]),
+    ("Continuo",   "electric_grand70", "Stage Grand",         -9.0,  0.1,  [(b, "rf_quarter") for b in range(5, 37, 4)]),
+    ("Violin I",   "string_ensemble", "High Violins",       -8.0, -0.35, [(5, "half"), (9, "quarter"), (13, "eighth"),
                                                  (17, "sixteenth"), (21, "eighth"), (25, "quarter"),
                                                  (29, "half"), (33, "half"), (37, "half")]),
-    ("Violin II",  "solina",       -9.0,  0.0,  [(9, "half"), (13, "quarter"), (17, "eighth"),
+    ("Violin II",  "string_ensemble", "High Violins",       -9.0,  0.0,  [(9, "half"), (13, "quarter"), (17, "eighth"),
                                                  (21, "sixteenth"), (25, "eighth"), (29, "quarter"),
                                                  (33, "half")]),
-    ("Violin III", "solina",       -9.0,  0.35, [(13, "half"), (17, "quarter"), (21, "eighth"),
+    ("Violin III", "string_ensemble", "High Violins",       -9.0,  0.35, [(13, "half"), (17, "quarter"), (21, "eighth"),
                                                  (25, "sixteenth"), (29, "eighth")]),
-    ("Pad",        "jupiter8",    -14.0, -0.2,  [(b, "pad") for b in range(13, 37, 4)]),
-    ("Chords",     "juno106",     -13.0,  0.2,  [(b, "chords_q") for b in range(9, 33, 4)]),
-    ("Pluck",      "karplus",     -11.0, -0.45, [(b, "arp_e") for b in range(13, 33, 4)]),
-    ("Bells",      "music_easel", -13.0,  0.45, [(b, "accents") for b in range(21, 37, 4)]),
-    ("Counter",    "rhodes",      -13.0,  0.15, [(b, "chords_q") for b in range(17, 33, 4)]),
-    ("Choir",      "vp330",       -15.0,  0.0,  [(b, "pad") for b in range(21, 37, 4)]),
-    ("Ostinato",   "clavinet",    -14.0, -0.25, [(b, "rf_sixteenth") for b in range(17, 33, 4)]),
-    ("Accent",     "dx7",         -15.0,  0.3,  [(b, "accents") for b in range(25, 33, 4)]),
-    ("Pad 2",      "polysix",     -15.0, -0.3,  [(b, "pad") for b in range(25, 37, 4)]),
-    ("Lead",       "cs80",        -11.0,  0.0,  [(21, "half_high"), (25, "half_high"),
+    ("Pad",        "poly8", "Airy Pad",    -14.0, -0.2,  [(b, "pad") for b in range(13, 37, 4)]),
+    ("Chords",     "poly106", "Poly Keys",     -13.0,  0.2,  [(b, "chords_q") for b in range(9, 33, 4)]),
+    ("Pluck",      "clavichord", "Muted",     -11.0, -0.45, [(b, "arp_e") for b in range(13, 33, 4)]),
+    ("Bells",      "west_coast_synth", "Init", -13.0,  0.45, [(b, "accents") for b in range(21, 37, 4)]),
+    ("Counter",    "electric_piano", "Suitcase",      -13.0,  0.15, [(b, "chords_q") for b in range(17, 33, 4)]),
+    ("Choir",      "vocoder330", "Full Choir",       -15.0,  0.0,  [(b, "pad") for b in range(21, 37, 4)]),
+    ("Ostinato",   "clavichord", "Funk",    -14.0, -0.25, [(b, "rf_sixteenth") for b in range(17, 33, 4)]),
+    ("Accent",     "poly5", "FM Bell",         -15.0,  0.3,  [(b, "accents") for b in range(25, 33, 4)]),
+    ("Pad 2",      "poly6", "PWM Pad",     -15.0, -0.3,  [(b, "pad") for b in range(25, 37, 4)]),
+    ("Lead",       "poly80", "Ribbon Lead",        -11.0,  0.0,  [(21, "half_high"), (25, "half_high"),
                                                  (29, "half_high"), (33, "half_high")]),
 ]
 
@@ -213,10 +213,11 @@ def document():
         "aux_tracks": [{"name": "Chapel", "effect": "Reverb",
                         "patch": "Concert Hall", "mix": 2.0}],
         "tracks": [
-            {"name": name, "instrument": instrument, "gain_db": gain,
+            {"name": name, "instrument": instrument, "patch": patch,
+             "gain_db": gain,
              "pan": pan, "sends": [{"to": "Chapel", "level": 0.35}],
              "play": [{"bar": bar, "pattern": pattern} for bar, pattern in plays]}
-            for name, instrument, gain, pan, plays in VOICES
+            for name, instrument, patch, gain, pan, plays in VOICES
         ],
         "mix_bus": {"ceiling_db": -2.0, "gain_db": 6.0},
     }
