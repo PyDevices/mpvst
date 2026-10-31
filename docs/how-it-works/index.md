@@ -121,8 +121,8 @@ continue without a custom editor.
 
 ### 5. Adapters connect Python components to VST semantics
 
-The [audiocomponents](https://github.com/PyDevices/audiocomponents) repository contains the host-neutral
-`audioinstruments` and `audioeffects` packages. They know nothing about VST3
+The host-neutral [`audioinstruments`](https://github.com/PyDevices/audioinstruments) and
+[`audioeffects`](https://github.com/PyDevices/audioeffects) packages know nothing about VST3
 or MPVST's shared memory.
 
 [`lib/mpvst_instrument_adapter.py`](../../lib/mpvst_instrument_adapter.py) and [`lib/mpvst_effect_adapter.py`](../../lib/mpvst_effect_adapter.py) form the

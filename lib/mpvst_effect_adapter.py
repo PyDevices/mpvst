@@ -1,7 +1,7 @@
 """Run an `audioeffects` component inside the sidecar.
 
 The instrument twin of this is `mpvst_instrument_adapter`, and the split is the same:
-the effect library lives in audiocomponents and knows nothing about this
+the effect library is the `audioeffects` package and knows nothing about this
 plug-in, so this module is the one place that knows both halves. An effect
 factory takes the host input and sample rate and returns an object exposing
 an `output` to pull from, which is exactly what `vstaudio.input()` and

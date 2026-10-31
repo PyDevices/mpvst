@@ -48,7 +48,7 @@ Build library effects through `audioeffects.create(name, source, sample_rate, **
 
 ## Where the library lives
 
-The instruments and effects are the `audioinstruments` and `audioeffects` packages from [audiocomponents](https://github.com/PyDevices/audiocomponents): host-neutral Python built on audiodsp's audio nodes, which any application can import, not just this plug-in. They're built into the engine.
+The instruments and effects are the `audioinstruments` and `audioeffects` packages from [audioinstruments](https://github.com/PyDevices/audioinstruments) and [audioeffects](https://github.com/PyDevices/audioeffects): host-neutral Python built on audiodsp's audio nodes, which any application can import, not just this plug-in. They're built into the engine.
 
 There is no file per instrument. The unit the plug-in deals in is still a script: a saved project embeds its bytes, and the editor reads macro labels out of it. For a library instrument that script is built from its catalog entry when the class is instantiated, as two lines, so the library stays the one source of a plug-in's name, category and macro labels.
 

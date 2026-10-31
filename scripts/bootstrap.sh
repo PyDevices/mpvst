@@ -17,7 +17,7 @@ die() { log "ERROR: $*"; exit 1; }
 build_mp="$repo_dir/../micropython-pydevices/build_mp.py"
 [[ -x "$build_mp" ]] || die "no micropython-pydevices checkout beside this one (clone PyDevices/micropython-pydevices next to it)"
 # The engine's modules: CONTRIBUTING.md says what each one is for.
-engine_modules="audiocomponents,audiodsp,audioif,lvgl-micropython,pydevices,ulab,$repo_dir"
+engine_modules="audioinstruments,audioeffects,audiodsp,audioif,lvgl,pydevices,ulab,$repo_dir"
 
 log "fetching VST3 SDK"
 "$repo_dir/scripts/fetch-vst3-sdk.sh" || die "fetch-vst3-sdk.sh failed"
@@ -48,11 +48,8 @@ if [[ ! -d "$repo_dir/.venv" ]]; then
     python3 -m venv "$repo_dir/.venv" || die "python3 -m venv failed"
 fi
 # The three PyDevices distributions live on TestPyPI; the extra index
-# resolves their ordinary dependencies. The two component distributions
-# keep their names across the audiodsp -> audiocomponents split
-# (audiocomponents#2): after it they are published from audiocomponents,
-# still as pydevices-audioinstruments and pydevices-audioeffects, so this
-# line does not change with the flip.
+# resolves their ordinary dependencies. The instruments and the effects are
+# published from PyDevices/audioinstruments and PyDevices/audioeffects.
 "$repo_dir/.venv/bin/pip" install -q \
     -i https://test.pypi.org/simple/ \
     --extra-index-url https://pypi.org/simple/ \

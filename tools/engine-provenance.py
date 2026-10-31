@@ -29,7 +29,7 @@ Two questions, asked two ways:
   `__revision__`, the `git describe` of the tree it was compiled from. That is
   the running binary's own claim, so it cannot be fooled by a record that was
   copied from somewhere else.
-- **this repository's vstaudio and vstui, and audiocomponents' packages**
+- **this repository's vstaudio and vstui, and the audioinstruments and audioeffects packages**
   (frozen into the engine): `build_mp.py` writes `pydevices-build.json`
   beside every build, naming the commit of each module that went in. The
   engine has to pass both questions.
@@ -59,13 +59,14 @@ REPO = Path(__file__).resolve().parents[1]
 #: freeze manifest and VERSION (compiled in as __version__) and
 #: DEPENDENCIES.lock (the mp3 decoder's pin); not its docs, tests, workflows,
 #: Python lib/ or CircuitPython patches. mpvst: the two usermods and the
-#: manifest that names them. audiocomponents and pydevices: the packages they
-#: freeze.
+#: manifest that names them. audioinstruments, audioeffects and pydevices: the
+#: packages they freeze.
 ENGINE_PATHS = {
     "mpvst": ("usermods/vstaudio", "usermods/vstui", "manifest.py"),
     "audiodsp": ("src", "micropython.mk", "micropython.cmake", "manifest.py",
                  "VERSION", "DEPENDENCIES.lock"),
-    "audiocomponents": ("lib", "manifest.py"),
+    "audioinstruments": ("lib", "manifest.py"),
+    "audioeffects": ("lib", "manifest.py"),
     "pydevices": ("lib", "manifest.py"),
 }
 
@@ -73,7 +74,7 @@ ENGINE_PATHS = {
 RECORD = "pydevices-build.json"
 
 REBUILD = ("../micropython-pydevices/build_mp.py --port {port} --variant vst3-engine "
-           "--modules audiocomponents,audiodsp,audioif,lvgl-micropython,pydevices,ulab,{repo}{extra}")
+           "--modules audioinstruments,audioeffects,audiodsp,audioif,lvgl,pydevices,ulab,{repo}{extra}")
 
 # Any audiodsp module carries the stamp; ask three, and require that they
 # agree. They are all compiled from one tree, so a disagreement is its own
@@ -127,7 +128,8 @@ def record_problems(engine: Path) -> tuple[list[str], dict[str, Path]]:
     by_path = {Path(m["path"]).resolve(): m for m in modules.values()}
     entries = {"mpvst": by_path.get(REPO),
                "audiodsp": modules.get("audiodsp"),
-               "audiocomponents": modules.get("audiocomponents"),
+               "audioinstruments": modules.get("audioinstruments"),
+               "audioeffects": modules.get("audioeffects"),
                "pydevices": modules.get("pydevices")}
     problems, sources = [], {}
     for name, entry in entries.items():
