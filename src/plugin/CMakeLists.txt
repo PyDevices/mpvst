@@ -63,7 +63,7 @@ endif()
 # build_mp.py with the vst3-engine variant and this repository among its
 # modules (CONTRIBUTING.md has the command). It lands in that
 # repository's builds/<port>/vst3-engine/, and is taken from there. The
-# instruments and effects (audiocomponents) are frozen into it, so nothing
+# instruments and effects (the audioinstruments and audioeffects packages) are frozen into it, so nothing
 # here stages them.
 set(MPVST_ENGINE_BUILDS "${CMAKE_SOURCE_DIR}/../micropython-pydevices/builds"
     CACHE PATH "micropython-pydevices' builds/, where the engine is built")
@@ -86,7 +86,7 @@ if(EXISTS "${MPVST_MICROPYTHON_ENGINE}")
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${MPVST_MICROPYTHON_ENGINE}"
             $<TARGET_FILE_DIR:${MPVST_PLUGIN_TARGET}>
-        # A build directory that staged audiocomponents' packages, before they
+        # A build directory that staged those packages, before they
         # were frozen into the engine, still holds those copies, and the
         # bundle's directory comes before the frozen modules on the sidecar's
         # path: the plug-in would run that old library instead of the

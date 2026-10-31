@@ -1,6 +1,6 @@
 """Play an `audioinstruments` module inside the sidecar.
 
-The instrument library lives in audiocomponents now, where it knows nothing
+The instrument library is the `audioinstruments` package, which knows nothing
 about this plug-in: an instrument is constructed through
 `audioinstruments.create(name, sample_rate, ...)`, returning an object with
 `note_on`/`note_off`/`set_macro`/`program_change` and an `output` to pull PCM
@@ -9,7 +9,7 @@ factory to `vstaudio`, so a script here shrinks to two lines. This is the
 instrument side of audiodsp's component factory boundary:
 
     import mpvst_instrument_adapter
-    mpvst_instrument_adapter.run("audioinstruments.tr808")
+    mpvst_instrument_adapter.run("audioinstruments.rhythm808")
 
 That line is what the plug-in builds for a named instrument, from the entry
 `moduleinfo.json` carries for it - there are no generated shim files. The
