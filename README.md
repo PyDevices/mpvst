@@ -1,5 +1,10 @@
 # MPVST
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/mpvst-dark.svg">
+  <img alt="MPVST: MicroPython instruments in your DAW" src="docs/images/mpvst-light.svg" width="830">
+</picture>
+
 MPVST is a VST3 plug-in whose instruments and effects are MicroPython-compatible
 scripts: pick one from your DAW's browser, or write your own in a few lines of
 Python and point the plug-in at the file.
