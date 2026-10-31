@@ -61,7 +61,8 @@ aux_tracks:
 tracks:
 
   - name: Pluck A
-    instrument: karplus
+    instrument: clavichord
+    patch: Muted
     gain_db: -2.0
     pan: -0.25
     sends:
@@ -73,7 +74,8 @@ tracks:
   # The same cell, half a beat later, on a different voice. Bars 17-24 walk
   # the offset out and back: this column is the composition.
   - name: Pluck B
-    instrument: music_easel
+    instrument: west_coast_synth
+    patch: Init
     gain_db: -4.0
     pan: 0.25
     sends:
@@ -92,7 +94,8 @@ tracks:
       - {bar: 25, pattern: figure, repeat: 4, offset: 0.25}
 
   - name: Sub
-    instrument: taurus
+    instrument: bass_pedals
+    patch: Soft Thump
     gain_db: -1.0
     play:
       - {bar: 5,  pattern: sub_d, repeat: 2}
@@ -110,19 +113,22 @@ tracks:
       - {bar: 29, pattern: sub_d, repeat: 4}
 
   - name: Kick
-    instrument: tr808
+    instrument: rhythm808
+    patch: Classic
     gain_db: -1.0
     play:
       - {bar: 9,  pattern: pulse, repeat: 16}
 
   - name: Hats
-    instrument: tr808
+    instrument: rhythm808
+    patch: Classic
     gain_db: -8.0
     play:
       - {bar: 11, pattern: hats, repeat: 14}
 
   - name: Pad
-    instrument: solina
+    instrument: string_ensemble
+    patch: Slow Swell
     gain_db: -6.0
     sends:
       - to: Hall

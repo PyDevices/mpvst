@@ -1,30 +1,28 @@
 # SPDX-FileCopyrightText: 2026 Brad Barnett
 #
 # SPDX-License-Identifier: MIT
-"""Render a drum part that walks through ten drum machines.
+"""Render a drum part that walks through five drum machines.
 
 A fixture rather than a piece of music, in the same spirit as Patch Test: the
-groove never changes, so everything you hear change came from the program
-change. `drumkits` holds all ten drum machines and swaps which one is playing
-when a MIDI Program Change arrives, so this walks the list - TR-808, TR-909,
-TR-707, TR-606, CR-78, LinnDrum, DMX, DrumTraks, SP-1200, Simmons SDS-V - four
-bars each at 120.
+groove never changes, so everything you hear change came from the machine
+playing it. It walks the package's drum machines - Rhythm808, Rhythm909,
+Rhythm606, Rhythm78 and ElectronicDrums5 - four bars each at 120, one track
+per machine, each track playing only its own four bars.
 
-The part is written in General MIDI, which every machine in the library now
-answers, and it deliberately reaches past the five notes they all share:
+The part is written in General MIDI, which every machine in the package
+answers, and it deliberately reaches past the notes they all share:
 
-  kick 36, snare 38, hats 42/46, crash 49    every kit has these
-  cowbell 56                                 seven of the ten
-  congas 62/63                               the LinnDrum and the TR-808 only
+  kick 36, snare 38                          every machine has these
+  hats 42/46, crash 49                       all but ElectronicDrums5
+  cowbell 56, congas 62/63                   Rhythm808 and Rhythm78 only
 
 So the backbone holds all the way through while the decoration comes and goes.
-A kit with no cowbell is silent on the cowbell - it does not answer with the
-nearest drum it has, which is the whole point of the library's General MIDI
-pass. The crash lands on the downbeat of every switch, so the change announces
-itself.
+A machine with no cowbell is silent on the cowbell - it does not answer with
+the nearest drum it has. The crash lands on the downbeat of every switch, so
+the change announces itself.
 
-A drum machine's macros are its own, so the program change brings each kit's
-patch 0 with it; nothing here sets a macro.
+A drum machine's macros are its own, so each track plays its patch 0; nothing
+here sets a macro.
 
 Needs: Python 3 with numpy and `pydevices-audiodsp`,
 `pydevices-audioinstruments` and `pydevices-audioeffects`, and an MPVST
@@ -40,8 +38,8 @@ Reaper project.
 Success is a level report ending in "wrote kittour.wav" with no failed checks.
 
 Tested on: CPython 3.12.3 on Linux (WSL 2), rendered with
-`composer/preview.py` using pydevices-audiodsp 0.6.7 and audiocomponents
-0.4.1.
+`composer/preview.py` using pydevices-audiodsp 0.6.7 and
+audioinstruments 0.5.0.
 """
 
 # Change these to suit the piece.
@@ -49,16 +47,17 @@ TITLE = "Kit_Tour"
 SAMPLE_RATE = 48000
 MASTER_GAIN_DB = -3.0
 ACTIVE_LIMIT = 1
-CLIMAX_SECTION = "TR-808"   # measured: the loudest of the ten, in both renders
+CLIMAX_SECTION = "ElectronicDrums5"   # measured: the loudest of the five
 BEATS_PER_BAR = 4
 BARS_PER_KIT = 4
 TAIL_SECONDS = 3.0
 
-#: The kits, in the order `audioinstruments.drumkits.KITS` lists them, which
-#: is the order a program change walks. Program N selects index N.
+#: The machines, in the order they play: a section name and the instrument
+#: script behind it. Block N of four bars belongs to index N.
 KITS = [
-    "TR-808", "TR-909", "TR-707", "TR-606", "CR-78",
-    "LinnDrum", "DMX", "DrumTraks", "SP-1200", "Simmons SDS-V",
+    ("Rhythm808", "rhythm808.py"), ("Rhythm909", "rhythm909.py"),
+    ("Rhythm606", "rhythm606.py"), ("Rhythm78", "rhythm78.py"),
+    ("ElectronicDrums5", "electronic_drums5.py"),
 ]
 
 TOTAL_BARS = BARS_PER_KIT * len(KITS)
@@ -91,7 +90,7 @@ COWBELL, CONGA_HI, CONGA_MID = 56, 62, 63
 
 
 def groove_notes():
-    """The same bar, forty times over. Only the machine underneath changes."""
+    """The same bar, twenty times over. Only the machine underneath changes."""
     out = []
     for index in range(TOTAL_BARS):
         first = bar(index + 1)
@@ -124,19 +123,23 @@ def groove_notes():
     return out
 
 
+def block_notes(index):
+    """The groove notes that fall in machine `index`'s four bars."""
+    first = bar(1 + BARS_PER_KIT * index)
+    last = bar(1 + BARS_PER_KIT * (index + 1))
+    return [n for n in groove_notes() if first <= n[0] < last]
+
+
 TRACKS = [
     {
-        "name": "Drum Kits", "script": "drumkits.py", "gain_db": -5.0,
-        "pan": 0.0, "notes": groove_notes(),
-        # Nothing set: each program change carries that kit's own patch 0.
+        "name": name, "script": script, "gain_db": -5.0,
+        "pan": 0.0, "notes": block_notes(index),
+        # Nothing set: each machine plays its own patch 0.
         "macros": {},
         "vol": [(bar(1), 1.0)],
         "macro_env": {},
-        # (beat, program). Zero-based on the wire - a DAW shows program 1
-        # where this says 0 - and one per four-bar block, in KITS order.
-        "programs": [(bar(1 + BARS_PER_KIT * index), index)
-                     for index in range(len(KITS))],
-    },
+    }
+    for index, (name, script) in enumerate(KITS)
 ]
 
 
@@ -190,5 +193,5 @@ def active_track_count(beat):
 
 SECTIONS = [
     (name, bar(1 + BARS_PER_KIT * index), bar(1 + BARS_PER_KIT * (index + 1)))
-    for index, name in enumerate(KITS)
+    for index, (name, _script) in enumerate(KITS)
 ]

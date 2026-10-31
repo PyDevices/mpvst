@@ -20,7 +20,8 @@ Run it: from the `soundtrack` folder,
     python Automata/check_pump.py automata.wav
 
 Tested on: CPython 3.12.3 on Linux (WSL 2) with numpy 2.5.4, on an Automata
-render from `composer/preview.py`.
+render from `composer/preview.py` with audioinstruments 0.5.0; it printed
+"PUMP LOCKED".
 """
 
 import sys
