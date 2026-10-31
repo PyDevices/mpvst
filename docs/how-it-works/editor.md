@@ -1,6 +1,6 @@
 # The editor
 
-Every instance can show a panel of its own: a patch selector, a bypass switch, a reload button, an engine-status light and a slider per macro, labelled with whatever the script declares. This page is how that panel works and what happens when it breaks. It is one generic panel; per-script panels, a shared knob widget, meters and resizable editors aren't built.
+Every instance can show a panel of its own, laid out like a hardware instrument. It has sixteen patch pads in eight banks, an encoder with a ring of LEDs for each macro, a dot-matrix display, an engine light, and FINE, BYPASS and RELOAD buttons, labelled with whatever the script declares. This page is how that panel works and what happens when it breaks. It is one generic panel, the `controlpanel` package, frozen into the engine. Per-script panels, meters and resizable editors aren't built.
 
 ## Who draws what
 
@@ -12,13 +12,13 @@ When no editor is open the engine does no UI work at all: no timers, no painting
 
 ## Input
 
-The panel takes pointer and wheel input, not keyboard. Click a control to focus it. The wheel (or a trackpad swipe) acts on the focused control: sideways adjusts it, rightward increasing, and up and down move focus to the previous or next control.
+The panel takes pointer and wheel input, not keyboard. Drag an encoder up or right to turn it up. Click a control to focus it: the wheel (or a trackpad swipe) acts on the focused control, sideways adjusting it (rightward increasing) and up and down moving focus to the previous or next control. Double-click an encoder to return it to the value the patch gave it. FINE makes drags and the wheel finer. A pad picks a patch; the bank buttons show another bank's pads.
 
 ## Gestures become automation
 
-A slider drag is reported to your host as one begin, a stream of changes, and one end, so it records as a single automation edit. A burst of wheel notches on a focused control is one gesture too: it begins on the first notch and ends after a short quiet. The host echoes each change back through the normal parameter path, and the panel treats the host's value as the truth.
+An encoder drag is reported to your host as one begin, a stream of changes, and one end, so it records as a single automation edit. A burst of wheel notches on a focused control is one gesture too: it begins on the first notch and ends after a short quiet. The host echoes each change back through the normal parameter path, and the panel treats the host's value as the truth.
 
-The panel edits the patch selector, the 16 macros, bypass and reload. All of them are ordinary automatable parameters your host's generic editor shows as well.
+The panel edits the patch, the 16 macros, bypass and reload. When the patch changes from the host, every encoder and LED ring moves to the new patch's macros, and nothing is sent back. All of them are ordinary automatable parameters your host's generic editor shows as well.
 
 ## When the panel fails
 

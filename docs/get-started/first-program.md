@@ -6,7 +6,7 @@ You can play a library instrument in two minutes, and run a script of your own i
 
 MPVST does not install as one plug-in. Every instrument and effect in the library appears in your FX browser under its own name and category. Search for **TR-808**, **Minimoog** or **Tape Delay** and drop it on a track like any other VST3.
 
-Its editor has a patch selector, a bypass switch, an engine-status light and a slider per macro, labelled with whatever that instrument calls its knobs. Click a control to focus it, then scroll: sideways adjusts it, up and down move between controls. If your host provides no editor, its generic parameter editor reaches the same parameters.
+Its editor has patch pads, a bypass button, an engine light and an encoder per macro, labelled with whatever that instrument calls its knobs. Drag an encoder up to turn it, or click a control to focus it, then scroll: sideways adjusts it, up and down move between controls. If your host provides no editor, its generic parameter editor reaches the same parameters.
 
 The names are not compiled in. Each is a two-line Python script the plug-in builds when you insert it, and your project saves that script as plain text. Adding an instrument is writing a script, not rebuilding anything.
 
@@ -62,7 +62,7 @@ Each new instance reads that file. Toggle `Reload Script` off and on to re-read 
 What each line is for:
 
 - `on_event` receives every note, pressure and pitch-bend event at its exact sample position, and `vstaudio.output` tells the plug-in which node to pull audio from. The full list of events is in the [script reference](../reference/script-api.md).
-- `MACRO_LABELS` and `PATCHES` are the script's declarations to the editor. This script has no macros, so it declares none and the editor draws no sliders.
+- `MACRO_LABELS` and `PATCHES` are the script's declarations to the editor. This script has no macros, so it declares none and the editor's encoders stay dark.
 - Notes are keyed by pitch here. A script that has to cope with overlapping notes on one pitch would key them by `note_id`, as the bundle's `default_instrument.py` does.
 
 ## Hear it without a DAW

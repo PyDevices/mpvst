@@ -1841,24 +1841,29 @@ bool editorDrivesParameters(const PluginFactory& factory,
     }
     (void)view.drainEdits();
 
-    // Click the first macro slider, then swipe right along it. Both signs are
-    // asserted, because a sign is a fact about this input path and nothing
-    // else in the build would notice if it flipped.
-    constexpr std::int32_t kSliderX = 250;
-    constexpr std::int32_t kSliderY = 101;
-    view.push(MPVST_UI_INPUT_POINTER_MOVE, 0U, kSliderX, kSliderY, 0, 0);
-    view.push(MPVST_UI_INPUT_POINTER_DOWN, 1U, kSliderX, kSliderY, 0, 0);
-    view.push(MPVST_UI_INPUT_POINTER_UP, 0U, kSliderX, kSliderY, 0, 0);
+    // Click the first macro's encoder, then swipe right. The probe declares
+    // no patches, so the encoders span the panel and the first one's knob is
+    // at (118, 168) on the 800 x 480 panel. A click only focuses an encoder:
+    // it must not move it. Both swipe signs are asserted, because a sign is a
+    // fact about this input path and nothing else in the build would notice
+    // if it flipped.
+    constexpr std::int32_t kKnobX = 118;
+    constexpr std::int32_t kKnobY = 168;
+    view.push(MPVST_UI_INPUT_POINTER_MOVE, 0U, kKnobX, kKnobY, 0, 0);
+    view.push(MPVST_UI_INPUT_POINTER_DOWN, 1U, kKnobX, kKnobY, 0, 0);
+    view.push(MPVST_UI_INPUT_POINTER_UP, 0U, kKnobX, kKnobY, 0, 0);
     if (!pump(30))
         return false;
     auto edits = view.drainEdits();
-    if (edits.empty() || std::get<1>(edits.front()) != 100U)
+    if (!edits.empty())
     {
-        std::cerr << "HOOK editor.click FAIL: no edit on the first macro\n";
+        std::cerr << "HOOK editor.click FAIL: a click moved parameter "
+                  << std::get<1>(edits.front()) << '\n';
         return false;
     }
-    const auto afterClick = std::get<2>(edits.back());
-    std::cout << "HOOK editor.click OK: macro 100 = " << afterClick << '\n';
+    // A fresh instance with no patches opens every macro at 64.
+    const auto afterClick = 64.0F / 127.0F;
+    std::cout << "HOOK editor.click OK: the first encoder has focus, nothing moved\n";
 
     for (int notch = 0; notch < 5; ++notch)
         view.push(MPVST_UI_INPUT_WHEEL, 0U, 0, 0, 0, MPVST_UI_WHEEL_NOTCH);
