@@ -74,7 +74,7 @@ ENGINE_PATHS = {
 RECORD = "pydevices-build.json"
 
 REBUILD = ("../micropython-pydevices/build_mp.py --port {port} --variant vst3-engine "
-           "--modules audioinstruments,audioeffects,audiodsp,audioif,lvgl-micropython,pydevices,ulab,{repo}{extra}")
+           "--modules audioinstruments,audioeffects,audiodsp,audioif,lvgl,pydevices,ulab,{repo}{extra}")
 
 # Any audiodsp module carries the stamp; ask three, and require that they
 # agree. They are all compiled from one tree, so a disagreement is its own

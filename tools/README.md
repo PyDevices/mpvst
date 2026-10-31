@@ -50,7 +50,7 @@ see [`../reaper/README.md`](../reaper/README.md) and the root
   sibling checkout on `sys.path`, which used to win silently over the
   wheel); the components come from `MPVST_COMPONENTS_LIB`.
 - **`test-instruments-lib.py [name ...]`** - runs every instrument
-  script against `harness.py` - the 53 library instruments, whose loader
+  script against `harness.py` - the 33 library instruments, whose loader
   scripts it synthesizes exactly as the plug-in does, and the
   soundtrack's 40 piece-private instruments: sweeps each declared macro through
   `0.0/0.5/1.0` under held notes, then checks a fresh instance produces

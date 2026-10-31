@@ -88,21 +88,21 @@ each step individually.
 The MicroPython sidecar is a MicroPython build like any other:
 micropython-pydevices' `build_mp.py` with the `vst3-engine` variant (no
 sockets, SSL or FFI; see [What the shipped engine cannot do](docs/how-it-works/security.md)) and this repository
-among its modules, by path. It carries audiocomponents' instruments and
-effects frozen in, pydevices (the editor's `appdev` and `multimer`),
+among its modules, by path. It carries the `audioinstruments` and
+`audioeffects` packages frozen in, pydevices (the editor's `appdev` and `multimer`),
 audiodsp's DSP, audioif, LVGL and ulab:
 
 ```bash
 ../micropython-pydevices/build_mp.py --port windows --variant vst3-engine \
-    --modules audiocomponents,audiodsp,audioif,lvgl,pydevices,ulab,$PWD \
+    --modules audioinstruments,audioeffects,audiodsp,audioif,lvgl,pydevices,ulab,$PWD \
     ENGINE_ICON=$PWD/installer/art/mpvst.ico
 ../micropython-pydevices/build_mp.py --port unix --variant vst3-engine \
-    --modules audiocomponents,audiodsp,audioif,lvgl,pydevices,ulab,$PWD
+    --modules audioinstruments,audioeffects,audiodsp,audioif,lvgl,pydevices,ulab,$PWD
 ```
 
 It lands in `../micropython-pydevices/builds/<port>/vst3-engine/`, and the
 plug-in build stages it from there (`MPVST_ENGINE_BUILDS` moves that). Rebuild
-it when `usermods/`, audiodsp's C or audiocomponents' packages change. CMake
+it when `usermods/`, audiodsp's C or the audioinstruments and audioeffects packages change. CMake
 never notices a stale engine itself, but the `mpvst_engine_provenance` ctest
 refuses one, from the record `build_mp.py` writes beside it.
 
@@ -124,8 +124,8 @@ DAW scans:
 
 ### A Python-only change needs no compiler
 
-Adding an instrument to audiocomponents, editing a script, or changing what
-the catalog says does not touch the plug-in binary. audiocomponents is frozen
+Adding an instrument to audioinstruments, editing a script, or changing what
+the catalog says does not touch the plug-in binary. The packages are frozen
 into the engine, but the bundle's own directory comes before the frozen
 modules on the sidecar's `sys.path`, so packages staged into an installed
 bundle override the engine's copy. To try a change without rebuilding the
@@ -137,7 +137,7 @@ engine is rebuilt, or they keep shadowing it):
 B="$WIN_LOCALAPPDATA/Programs/Common/VST3/MPVST.vst3/Contents/x86_64-win"
 for pkg in audioinstruments audioeffects; do
     rm -rf "$B/$pkg" && mkdir -p "$B/$pkg"
-    (cd ../audiocomponents/lib/$pkg && tar -cf - --exclude=__pycache__ \
+    (cd ../$pkg/lib/$pkg && tar -cf - --exclude=__pycache__ \
         --exclude='*.egg-info' --exclude=pyproject.toml .) | (cd "$B/$pkg" && tar -xf -)
 done
 (cd "$B" && ./mpvst-engine.exe -X heapsize=64M mpvst_scan_plugins.py \
