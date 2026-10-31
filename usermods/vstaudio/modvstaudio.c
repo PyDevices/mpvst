@@ -251,9 +251,58 @@ static void engine_yield(void) {
 // steps up to a quarter of a millisecond. The first block after a quiet
 // stretch can be that late; the pipeline several blocks deep absorbs it, and
 // the next block finds the engine spinning again.
+#if defined(_WIN32)
+// Windows timers wake no finer than about half a millisecond, and measured
+// 128 and 512 frame blocks arrived late when the engine slept between them, so
+// it spins through the gap of any block up to a few thousand frames and only
+// then backs off.
+#define VSTAUDIO_SPIN_NS 25000000ull
+#define VSTAUDIO_SLEEP_MIN_NS 500000ull
+#define VSTAUDIO_SLEEP_MAX_NS 1000000ull
+#else
 #define VSTAUDIO_SPIN_NS 3000000ull
 #define VSTAUDIO_SLEEP_MIN_NS 20000ull
 #define VSTAUDIO_SLEEP_MAX_NS 250000ull
+#endif
+
+#if defined(_WIN32)
+// Sleep(1) rounds up to a whole scheduler tick, often 15.6 ms, unless the
+// process raised the timer resolution, which would make a 10 ms block late.
+// A high-resolution waitable timer (Windows 10 1803 and later) sleeps for what
+// it is asked. Where that is missing, raise the system timer to 1 ms for the
+// life of the process and use Sleep(1).
+#ifndef CREATE_WAITABLE_TIMER_HIGH_RESOLUTION
+#define CREATE_WAITABLE_TIMER_HIGH_RESOLUTION 0x00000002
+#endif
+static HANDLE vstaudio_wait_timer;
+static bool vstaudio_timer_probed;
+
+static void windows_sleep_ns(uint64_t ns) {
+    if (!vstaudio_timer_probed) {
+        vstaudio_timer_probed = true;
+        vstaudio_wait_timer = CreateWaitableTimerExW(NULL, NULL,
+            CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
+        if (vstaudio_wait_timer == NULL) {
+            typedef unsigned int (WINAPI *time_begin_period_t)(unsigned int);
+            HMODULE winmm = LoadLibraryA("winmm.dll");
+            time_begin_period_t begin = winmm == NULL ? NULL
+                : (time_begin_period_t)(void *)GetProcAddress(winmm, "timeBeginPeriod");
+            if (begin != NULL) {
+                (void)begin(1u);
+            }
+        }
+    }
+    if (vstaudio_wait_timer != NULL) {
+        LARGE_INTEGER due;
+        due.QuadPart = -(LONGLONG)(ns / 100u);
+        if (SetWaitableTimer(vstaudio_wait_timer, &due, 0, NULL, NULL, FALSE)) {
+            (void)WaitForSingleObject(vstaudio_wait_timer, 100);
+            return;
+        }
+    }
+    Sleep(1);
+}
+#endif
 
 static uint64_t vstaudio_wait_started_ns;
 static uint64_t vstaudio_sleep_ns;
@@ -274,17 +323,17 @@ static void engine_wait_for_work(void) {
         return;
     }
 #if defined(_WIN32)
-    Sleep(1);
+    windows_sleep_ns(vstaudio_sleep_ns);
 #else
     const struct timespec delay = {0, (long)vstaudio_sleep_ns};
     (void)nanosleep(&delay, NULL);
+#endif
     if (vstaudio_sleep_ns < VSTAUDIO_SLEEP_MAX_NS) {
         vstaudio_sleep_ns *= 2u;
         if (vstaudio_sleep_ns > VSTAUDIO_SLEEP_MAX_NS) {
             vstaudio_sleep_ns = VSTAUDIO_SLEEP_MAX_NS;
         }
     }
-#endif
 }
 
 // The host owns this engine. When the host ends without closing the instance

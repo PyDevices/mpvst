@@ -2,7 +2,10 @@
 // engine's rendered output. Not a pass/fail test; it prints percentiles so a
 // change to the engine's idle wait can show it did not slow blocks down.
 //
-//   mpvst_roundtrip_bench <engine> [frames] [blocks]
+//   mpvst_roundtrip_bench <engine> [frames] [blocks] [host]
+//
+// With "host" it starts an instance, sends no blocks and waits, for watching
+// the idle engine from outside.
 //
 // "flat out" sends the next block as soon as the last returns. "paced" sleeps
 // until the block's real-time slot, so the engine has been idle in between,
@@ -19,6 +22,11 @@
 #include <string>
 #include <thread>
 #include <vector>
+
+#if defined(_WIN32)
+#define setenv(name, value, overwrite) _putenv_s(name, value)
+#define unsetenv(name) _putenv_s(name, "")
+#endif
 
 using PyDevices::MPVST::SidecarTransport;
 using Clock = std::chrono::steady_clock;
@@ -47,6 +55,14 @@ int main(int argc, char** argv)
     transport.configure(48000.0, frames, 0U);
     if (!transport.start())
         return 4;
+    if (argc > 4 && std::string(argv[4]) == "host")
+    {
+        // Stand in for a host that is alive but not processing audio, so an
+        // outside tool can watch the engine's CPU and then kill this process.
+        std::cout << "ready" << std::endl;
+        for (;;)
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
     std::vector<float> left(frames), right(frames);
     for (int i = 0; i < 200; ++i)
         transport.process(left.data(), right.data(), frames, false, nullptr, 0U, true);
