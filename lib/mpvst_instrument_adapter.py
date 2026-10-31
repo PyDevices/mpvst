@@ -18,6 +18,14 @@ their bodies and call `attach(create)` from a `__main__` guard instead,
 because those files *are* the patches and are meant to be read and edited
 in place.
 
+Some instruments render ahead of the pull rather than inside it - a ring a
+background step keeps full, or a graph whose notes and knobs land on its
+next control pass. They say so with a `fill()` method. This seam calls it
+after every event, so a note reaches the sound in the same block, and the
+bootstrap calls `tick()` from the engine's housekeeping step, so the
+instrument keeps moving while no events arrive. Instruments without `fill`
+are untouched.
+
 Units are the reason this file exists. `vstaudio` hands out normalized
 0.0-1.0 floats, which is what the VST3 parameter API speaks; the
 instrument API speaks MIDI 0-127, which is what a keyboard, a sequencer
@@ -39,6 +47,9 @@ import vstaudio
 instrument = None
 module_name = None
 
+# The attached instrument's `fill`, or None when it has none.
+_fill = None
+
 
 def _midi_byte(value):
     """Convert a normalized VST scalar to the provider's MIDI data byte."""
@@ -52,8 +63,10 @@ def attach(create):
     Returns the instrument, so a private script can keep a reference and
     poke at it - the soundtrack's `check_pump.py` does exactly that.
     """
-    global instrument
+    global instrument, _fill
+    _fill = None
     instrument = create(vstaudio.sample_rate(), transport=vstaudio.transport)
+    fill = getattr(instrument, "fill", None)
     labels = getattr(instrument, "MACRO_LABELS", None)
     if labels is None:
         labels = getattr(instrument, "macro_labels", ())
@@ -92,10 +105,30 @@ def attach(create):
         # TRANSPORT is not an event to these instruments. The ones that sync
         # to tempo call the `transport` callable when they need a reading,
         # which is why it is passed to `create` above.
+        if fill is not None:
+            fill()
 
     vstaudio.on_event(dispatch)
     vstaudio.output(instrument.output)
+    _fill = fill
     return instrument
+
+
+def tick():
+    """One housekeeping pass for the attached instrument: call its `fill`.
+
+    A `fill` that raises is dropped, and the error reported the way a script
+    error is; the engine goes on rendering what the instrument already has.
+    """
+    global _fill
+    fill = _fill
+    if fill is None:
+        return
+    try:
+        fill()
+    except Exception as exc:  # noqa: BLE001 - a broken fill must not stop the engine
+        _fill = None
+        vstaudio.error("{}: {}".format(type(exc).__name__, exc))
 
 
 def run(name):
