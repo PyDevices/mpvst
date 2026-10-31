@@ -19,11 +19,11 @@ not in the library yet. With no script pointed at it that slot produces no
 audio, so a slot you did not choose is obvious rather than sounding like an
 instrument you meant to load.
 
-The plug-in has an editor of its own: a patch selector, a Reload button, a
-Bypass switch, an engine-status light, and a slider per macro, labelled with
-whatever names the script declares. Click a control to focus it, then scroll
-or swipe - sideways adjusts the focused control, up and down moves between
-them. A drag or a burst of scrolling is recorded as one automation edit.
+The plug-in has an editor of its own: patch pads, FINE, Bypass and Reload
+buttons, an engine light, and an encoder with an LED ring per macro, labelled
+with whatever names the script declares. Drag an encoder up to turn it, or
+click a control to focus it, then scroll or swipe - sideways adjusts the
+focused control, up and down moves between them. A drag or a burst of scrolling is recorded as one automation edit.
 
 The same parameters are all there in the host's generic editor: `Bypass`,
 `Reload Script`, `Patch`, and `Macro 01` through `Macro 16` (or the script's
