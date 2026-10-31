@@ -168,7 +168,7 @@ It does not interpret the widgets or reconstruct the UI. The seam is:
 [`usermods/vstui/modvstui.c`](../../usermods/vstui/modvstui.c) exposes the shared framebuffer, input, open-state,
 edit, and error operations. [`lib/mpvst_board_config.py`](../../lib/mpvst_board_config.py) adapts those operations
 to the normal PyDevices display contract, and [`lib/mpvst_editor.py`](../../lib/mpvst_editor.py) and
-[`lib/mpvst_panel/`](../../lib/mpvst_panel/) implement the product panel. [The editor](editor.md) covers what the panel does and how it fails.
+[`lib/mpvst_panel/`](../../lib/mpvst_panel/) connect the engine to the panel, the `controlpanel` package frozen into the engine. [The editor](editor.md) covers what the panel does and how it fails.
 
 ## Parameters, scripts, and state
 
