@@ -73,35 +73,40 @@ def attach(create):
 
     def dispatch(event_type, channel, note_id, data0, value0, value1,
                  sample_position):
+        # vstaudio calls this on the frame the event falls on, before it
+        # pulls that frame, so to the instrument the event is now: offset 0,
+        # which is what the instrument API's `sample_position` means. The
+        # host's absolute position is not an offset, and an instrument that
+        # schedules by it would hold every note that many frames back.
         if event_type == vstaudio.EVENT_NOTE_ON:
             # `value1` is a fractional pitch offset in semitones, already in
             # the units the instrument API wants - the host's own detune,
             # not something scaled to a controller range.
             instrument.note_on(data0, _midi_byte(value0), value1, channel,
-                               note_id, sample_position)
+                               note_id, 0)
         elif event_type == vstaudio.EVENT_NOTE_OFF:
-            instrument.note_off(data0, channel, note_id, sample_position)
+            instrument.note_off(data0, channel, note_id, 0)
         elif event_type == vstaudio.EVENT_PARAMETER:
             if 0 <= data0 < len(labels):
                 instrument.set_macro(data0, value0 * 127.0, channel, note_id,
-                                     sample_position)
+                                     0)
         elif event_type == vstaudio.EVENT_PROGRAM_CHANGE:
             instrument.program_change(data0, channel, note_id,
-                                      sample_position)
+                                      0)
         elif event_type == vstaudio.EVENT_PITCH_BEND:
             instrument.pitch_bend(int(max(0.0, min(1.0, float(value0))) *
                                     16383.0 + 0.5), channel,
-                                  sample_position)
+                                  0)
         elif event_type == vstaudio.EVENT_CONTROL_CHANGE:
             instrument.control_change(data0, _midi_byte(value0), channel,
-                                      sample_position)
+                                      0)
         elif event_type == vstaudio.EVENT_CHANNEL_PRESSURE:
             instrument.channel_pressure(_midi_byte(value0), channel,
-                                        sample_position)
+                                        0)
         elif event_type == vstaudio.EVENT_POLY_PRESSURE:
             instrument.poly_pressure(data0, _midi_byte(value0), channel,
                                      note_id,
-                                     sample_position)
+                                     0)
         # TRANSPORT is not an event to these instruments. The ones that sync
         # to tempo call the `transport` callable when they need a reading,
         # which is why it is passed to `create` above.
