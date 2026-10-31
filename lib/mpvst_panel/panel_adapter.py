@@ -50,6 +50,10 @@ class EngineAdapter:
         self.macro_values = [64] * MACRO_COUNT
         self.patches = _patch_names()
         self.patch_index = 0
+        # Patch 0 is the sound a fresh instance makes, so its macros are what
+        # the sliders start on, not the middle of the range.
+        for macro, value in enumerate(_patch_values(0)[:MACRO_COUNT]):
+            self.macro_values[macro] = min(max(int(value), 0), 127)
         self.bypass = False
         self.engine_ready = True
         self.engine_error = 0
@@ -81,6 +85,7 @@ class EngineAdapter:
             return
         self.patch_index = index
         self._notify("patch", index, index)
+        self._load_patch(index)
 
     def _notify(self, kind, index, value):
         for listener in self._listeners:
@@ -98,6 +103,19 @@ class EngineAdapter:
         # a complete edit so the host records one change rather than waiting
         # out a quiescence timer for something that will never move again.
         self._discrete(PATCH, index / float(PATCH_COUNT - 1))
+        self._load_patch(index)
+
+    def _load_patch(self, index):
+        """Show the macros a patch sets. The instrument applies them itself
+        on the program change, so this only mirrors them: they go to the
+        listeners, the same as automation, and never back to the host."""
+        values = _patch_values(index)
+        for macro, value in enumerate(values[:MACRO_COUNT]):
+            value = min(max(int(value), 0), 127)
+            if self.macro_values[macro] == value:
+                continue
+            self.macro_values[macro] = value
+            self._notify("macro", macro, value)
 
     def set_bypass(self, enabled):
         self.bypass = bool(enabled)
@@ -219,6 +237,17 @@ def _patch_names():
         if 0 <= index < count and entry:
             names[index] = str(entry[0])
     return names
+
+
+def _patch_values(index):
+    """The macro values, MIDI 0-127, that declared patch `index` sets."""
+    declared = _declared("PATCHES")
+    if not isinstance(declared, dict):
+        return ()
+    entry = declared.get(index)
+    if not entry or len(entry) < 2:
+        return ()
+    return tuple(entry[1])
 
 
 def _declared(name):
