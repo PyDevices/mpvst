@@ -34,7 +34,7 @@ import mpvst_effect_adapter
 mpvst_effect_adapter.run("TapeDelay", mix=0.5, feedback=0.4)
 ```
 
-Instruments have the same adapter, `mpvst_instrument_adapter.run("audioinstruments.minimoog")`. Reach for the adapters when your script has to survive macro changes without dropouts. For a fixed chain with no macros you can build the effect yourself:
+Instruments have the same adapter, `mpvst_instrument_adapter.run("audioinstruments.mono_synth")`. Reach for the adapters when your script has to survive macro changes without dropouts. For a fixed chain with no macros you can build the effect yourself:
 
 ```python
 import audioeffects

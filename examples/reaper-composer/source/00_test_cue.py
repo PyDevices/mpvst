@@ -4,7 +4,7 @@
 """Write a small test project that uses every part of the pipeline.
 
 Builds eight bars, about sixteen seconds, with four instrument tracks
-(TR-808, Minimoog, Juno-106, SH-101), two insert effects, a sidechain duck
+(Rhythm808, MonoSynth, Poly106, Mono101), two insert effects, a sidechain duck
 and an effect on the master. It is small enough to render in a couple of
 seconds and complete enough that, if it comes out clean, the routing works.
 Swap instruments and effects into it to measure them. The program writes a
@@ -18,8 +18,8 @@ Run it:
     python source/00_test_cue.py
 
 Tested on: CPython 3.12.3 on Linux (WSL 2) with pydevices-audiodsp 0.6.7 and
-audiocomponents 0.4.1; the project it wrote rendered in REAPER 7.79 through
-`bounce.py`.
+audioinstruments 0.5.0; rendered through the offline backend with every
+track sounding. The Reaper project it writes was not opened in REAPER.
 """
 
 import os
@@ -58,19 +58,19 @@ def main():
     song.render_file = os.path.join(BOUNCE_DIR, f"{STEM}.wav")
 
     # Four instrument tracks, with their levels and pan positions.
-    drums = song.add_track("TR-808", instrument="tr808", patch="Default")
+    drums = song.add_track("Drums", instrument="rhythm808", patch="Classic")
     drums.volume = 0.34
     drums.pan = 0.0
 
-    bass = song.add_track("Minimoog Bass", instrument="minimoog", patch="Deep Bass")
+    bass = song.add_track("Bass", instrument="mono_synth", patch="Fat Bass")
     bass.volume = 0.26
     bass.pan = 0.0
 
-    pad = song.add_track("Juno Pad", instrument="juno106", patch="Default")
+    pad = song.add_track("Pad", instrument="poly106", patch="Warm Pad")
     pad.volume = 0.16
     pad.pan = -0.08
 
-    lead = song.add_track("SH-101 Hook", instrument="sh101", patch="Default")
+    lead = song.add_track("Hook", instrument="mono101", patch="Vibrato Lead")
     lead.volume = 0.20
     lead.pan = 0.12
 

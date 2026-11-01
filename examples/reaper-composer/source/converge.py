@@ -28,8 +28,8 @@ Run it:
 Success is "The two routes converge." and two matching digests.
 
 Tested on: CPython 3.12.3 on Linux (WSL 2) with PyYAML 6.0.3, numpy 2.5.4
-and pydevices-audiodsp 0.6.7 and audiocomponents 0.4.1. Ran with `--rpp`;
-the two renders matched.
+and pydevices-audiodsp 0.6.7 and audioinstruments 0.5.0. Ran without
+`--rpp`; the two renders matched.
 """
 
 from __future__ import annotations
@@ -130,23 +130,23 @@ def pattern_of(rows, bar):
     return cell
 
 
-#: name, instrument, gain dB, pan, and the cell each section gets.
+#: name, instrument, patch, gain dB, pan, and the cell each section gets.
 #:
 #: Seven sections of four bars: together, fanning out, everything at once,
 #: then collapsing back. A voice with None in a section sits that one out.
 #: Read down a column to see what is playing, across a row to see what one
 #: voice does.
 VOICES = [
-    # name        instrument   gain   pan   bars 1-4        5-8              9-12             13-16            17-20            21-24            25-28
-    ("Pedal",     "taurus",    -7.0,  0.0, [pedal(2.0, 2), pedal(2.0, 2),   pedal(1.0, 2),   pedal(1.0, 2),   pedal(1.0, 2),   pedal(2.0, 2),   pedal(2.0, 2)]),
-    ("Bass",      "minimoog",  -9.0, -0.2, [line(2.0, 3),  line(2.0, 3),    line(2.0, 3),    line(2.0, 3),    line(2.0, 3),    line(2.0, 3),    line(2.0, 3)]),
-    ("Strings",   "solina",   -12.0, -0.5, [line(2.0, 4),  line(2.0, 4),    chords(4),       chords(4),       chords(4),       line(2.0, 4),    line(2.0, 4)]),
-    ("Rhodes",    "rhodes",   -13.0,  0.4, [line(2.0, 4),  line(1.0, 4),    line(1.0, 4),    line(1.0, 4),    line(1.0, 4),    line(2.0, 4),    line(2.0, 4)]),
-    ("Juno",      "juno106",  -14.0,  0.6, [None,          line(0.5, 5),    line(0.5, 5),    line(0.5, 5),    line(0.5, 5),    None,            None]),
-    ("Pluck",     "karplus",  -15.0, -0.7, [None,          None,            cascade(5),      cascade(5),      cascade(5),      None,            None]),
-    ("Pad",       "jupiter8", -15.0,  0.0, [None,          chords(3),       chords(3),       chords(3),       chords(3),       chords(3),       None]),
-    ("Bells",     "polysix",  -17.0,  0.7, [None,          None,            line(1.0, 6),    line(0.5, 6),    line(1.0, 6),    None,            None]),
-    ("Lead",      "prophet5", -13.0,  0.0, [None,          None,            None,            line(1.0, 5),    line(1.0, 5),    line(2.0, 5),    line(2.0, 5)]),
+    # name        instrument      patch           gain   pan   bars 1-4        5-8              9-12             13-16            17-20            21-24            25-28
+    ("Pedal",     "bass_pedals", "Soft Thump",    -7.0,  0.0, [pedal(2.0, 2), pedal(2.0, 2),   pedal(1.0, 2),   pedal(1.0, 2),   pedal(1.0, 2),   pedal(2.0, 2),   pedal(2.0, 2)]),
+    ("Bass",      "mono_synth", "Fat Bass",  -9.0, -0.2, [line(2.0, 3),  line(2.0, 3),    line(2.0, 3),    line(2.0, 3),    line(2.0, 3),    line(2.0, 3),    line(2.0, 3)]),
+    ("Strings",   "string_ensemble", "Full Strings",   -12.0, -0.5, [line(2.0, 4),  line(2.0, 4),    chords(4),       chords(4),       chords(4),       line(2.0, 4),    line(2.0, 4)]),
+    ("Rhodes",    "electric_piano", "Suitcase",   -13.0,  0.4, [line(2.0, 4),  line(1.0, 4),    line(1.0, 4),    line(1.0, 4),    line(1.0, 4),    line(2.0, 4),    line(2.0, 4)]),
+    ("Juno",      "poly106", "Poly Keys",  -14.0,  0.6, [None,          line(0.5, 5),    line(0.5, 5),    line(0.5, 5),    line(0.5, 5),    None,            None]),
+    ("Pluck",     "clavichord", "Muted",  -15.0, -0.7, [None,          None,            cascade(5),      cascade(5),      cascade(5),      None,            None]),
+    ("Pad",       "poly8", "Airy Pad", -15.0,  0.0, [None,          chords(3),       chords(3),       chords(3),       chords(3),       chords(3),       None]),
+    ("Bells",     "poly5", "FM Bell",  -17.0,  0.7, [None,          None,            line(1.0, 6),    line(0.5, 6),    line(1.0, 6),    None,            None]),
+    ("Lead",      "poly5", "Unison Lead", -13.0,  0.0, [None,          None,            None,            line(1.0, 5),    line(1.0, 5),    line(2.0, 5),    line(2.0, 5)]),
 ]
 
 
@@ -163,8 +163,8 @@ def build() -> Project:
                               mix=2.0)
 
     # Add each voice and place its cell in each section it plays.
-    for name, instrument, gain_db, pan, sections in VOICES:
-        track = song.add_track(name, instrument=instrument)
+    for name, instrument, patch, gain_db, pan, sections in VOICES:
+        track = song.add_track(name, instrument=instrument, patch=patch)
         track.volume = 10.0 ** (gain_db / 20.0)
         track.pan = pan
         track.add_send(hall, 0.30)

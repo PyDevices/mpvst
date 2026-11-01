@@ -4,11 +4,9 @@ Example audio performed entirely by the MPVST instrument - no
 third-party plug-ins, no samples. Every sound is a MicroPython script
 running synthio and the audiodsp effects inside its own sidecar process.
 
-Each piece is a subdirectory holding its own `composition.py`. Historical
-pieces also own private `instruments/`; newer compositions can opt into the
-shared `../lib/instruments/` collection - loaders for audiocomponents'
-`audioinstruments` package - and put `audioeffects` processors after any
-instrument. Nothing else here is infrastructure, and the
+Each piece is a subdirectory holding its own `composition.py`. Its tracks
+play instruments from the `audioinstruments` package and can put
+`audioeffects` processors after any instrument. Nothing else here is infrastructure, and the
 directory might be renamed, restructured, or replaced independently of the
 tooling that generates, renders, and verifies a piece. Resolving and
 previewing a piece offline lives in `composer/` here, alongside the rest of
@@ -18,23 +16,20 @@ turning it into a real REAPER project and driving REAPER itself lives in
 [`../reaper/README.md`](../../reaper/README.md). Which render path answers
 which question is [`../../docs/guides/hear-what-you-wrote.md`](../../docs/guides/hear-what-you-wrote.md).
 
-## Frozen patches and the shared library
+## Instruments and patches
 
-Instrument scripts are patches, and generated REAPER projects embed them
-byte-for-byte. Perihelion and Automata therefore keep the private patches they
-were written against: Automata's `strings.py`, `choir.py`, and `glass.py`
-began as copies from Perihelion, while its `riser.py` and `brass_stabs.py` are
-deliberate mutations. Velvet Circuit is the first shared-library piece. Its
-composition declares `INSTRUMENTS_DIR = "../../lib/instruments"`, and each of
-its effect racks instantiates only public classes from `audioeffects`. The
-generated project still embeds every chosen script, so the playable `.RPP`
-remains self-contained.
+A track's `"script"` names an `audioinstruments` module, such as
+`mono_synth.py`. Its optional `"programs"` list picks a patch by index at a
+beat, and a macro the piece does not set takes the value of patch 0 (or of the
+patch a program change has just loaded). Macro numbers and patch names belong
+to each instrument, so read its `MACRO_LABELS` and `PATCHES` before
+automating one. A drum part's note numbers are General MIDI positions that
+each machine's `NOTE_MAP` answers; a note a machine does not map is silent.
 
 ## The pieces
 
-**Perihelion** - D minor, five sections: sub drone, Moog bass ostinato,
-string and brass ensembles, choir, timpani, impacts, nineteen automation
-envelopes of filter motion, resolving through a Picardy third.
+**Perihelion** - D minor, five sections: sub drone, bass ostinato,
+string and brass ensembles, choir, timpani, impacts, resolving through a Picardy third.
 
 **Automata** - five movements, 4,600+ notes:
 
@@ -52,16 +47,17 @@ swing, humanization, ghost notes and fills; a 303-style acid bass whose
 overlapping notes become genuine slides; transport-aware instruments
 (the sidechain pad phase-locks its duck to the beat and every echo tunes
 itself to the host tempo through `vstaudio.transport()`); a meter change,
-three tempos, a key modulation, twenty-seven automation envelopes, and a
-closing tape stop.
+three tempos, a key modulation, and a closing tape stop.
 
 **Velvet Circuit** - 4:28 of retro-future jazz/prog written as the main title
 to an imaginary 1978 crime series discovered on a satellite in 2049. Its
 seven scenes move from an F-minor 5/4 horn hook through a lyrical Ab-major 6/8
 middle, an E-Dorian 7/8 rooftop chase, a contrapuntal title reprise, and an
-ambiguous lounge-credits cadence. Eleven shared hardware emulations perform
-6,480 notes: LinnDrum, Minimoog, Rhodes, Clavinet, B3, Karplus guitar, VL1,
-OB-Xa, CS-80, Solina, and Mellotron. Every track has a real MPVST Effect
+ambiguous lounge-credits cadence. Twelve tracks perform
+6,480 notes: Rhythm808 (with Rhythm78 for the tambourine), MonoSynth,
+ElectricPiano, Clavichord (twice, one of them as the plucked guitar),
+Tonewheel3, ComboOrgan as the reed tenor, PolyXa, Poly80, StringEnsemble and
+CompactOrgan as the flute. Every track has a real MPVST Effect
 insert built only from the shared library—saturation, overdrive, chorus,
 phaser, tape/slap delays, spring/plate/hall reverbs, and subtle vibrato.
 
@@ -76,33 +72,35 @@ inserts place the shared instruments in depth without turning the piece into
 an effects showcase.
 
 **Neon Meridian** - 2:56 of 80s synthwave in A minor, three sections at
-100/106 bpm. A Juno-106 pad opens alone and the harmonic rhythm accelerates
-from four bars per chord to one, pulling into a Minimoog eighth-note ostinato
-under the full LinnDrum. A Prophet-5 states the theme twice, a four-bar
-breakdown strips everything back to a rimshot pulse and the DX7 signal motif,
+100/106 bpm. A Poly106 pad opens alone and the harmonic rhythm accelerates
+from four bars per chord to one, pulling into a MonoSynth eighth-note ostinato
+under the full Rhythm808. A Poly5 states the theme twice, a four-bar
+breakdown strips everything back to a rimshot pulse and the FM-bell signal motif,
 and the climax lifts through the relative major before a ritard onto a held
 Am(add9). Every chord is a triad plus an added ninth; the C-major excursion at
-bar 61 is the only modulation. Nine shared instruments - LinnDrum, Minimoog,
-Taurus, Juno-106, SH-101, Solina, OB-Xa, Prophet-5, DX7 - and **no effect
-inserts at all**: the Juno's bucket-brigade chorus, the Solina's ensemble and
-the Minimoog's overdrive are part of the instruments, exactly as they were
-part of the hardware.
+bar 61 is the only modulation. Nine instruments - Rhythm808, MonoSynth,
+BassPedals, Poly106, Mono101, StringEnsemble, PolyXa and Poly5 (twice) - and
+**no effect inserts at all**: the Poly106's chorus and the StringEnsemble's
+ensemble are part of the instruments.
 
 ## Fixtures
 
-Two directories are test fixtures, not pieces of music, and exist to
+Three directories are test fixtures, not pieces of music, and exist to
 exercise something specific rather than to be listened to for their own
 sake:
 
-**PatchTest** - one Minimoog, one program change, nothing else. Bars 1-8
+**PatchTest** - one MonoSynth, one program change, nothing else. Bars 1-8
 and 9-16 play byte-identical material, so any measured difference between
 them can only have come from the patch change at bar 9 - proof that a MIDI
 Program Change reaches an instrument script and re-applies its patch.
 
-**ShimmerLab** - four ways to make the Perihelion "Air Shimmer" sound
-musical, stacked on four tracks over the same sixteen bars so switching
+**ShimmerLab** - four ways to make a shimmer sound musical, stacked on four tracks over the same sixteen bars so switching
 between them is a solo button rather than a seek - an A/B listening rig,
 not a finished cue.
+
+**KitTour** - one drum groove that never changes, played by each of the
+package's five drum machines for four bars, so everything you hear change is
+the machine.
 
 ## Listening
 

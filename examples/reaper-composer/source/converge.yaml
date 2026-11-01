@@ -166,7 +166,8 @@ patterns:
   - [14, 2, 1, 5]
 tracks:
 - name: Pedal
-  instrument: taurus
+  instrument: bass_pedals
+  patch: Soft Thump
   gain_db: -7
   sends:
   - {to: Hall, level: 0.3}
@@ -179,7 +180,8 @@ tracks:
   - {bar: 21, pattern: pedal}
   - {bar: 25, pattern: pedal}
 - name: Bass
-  instrument: minimoog
+  instrument: mono_synth
+  patch: Fat Bass
   gain_db: -9
   pan: -0.2
   sends:
@@ -193,7 +195,8 @@ tracks:
   - {bar: 21, pattern: bass}
   - {bar: 25, pattern: bass}
 - name: Strings
-  instrument: solina
+  instrument: string_ensemble
+  patch: Full Strings
   gain_db: -12
   pan: -0.5
   sends:
@@ -207,7 +210,8 @@ tracks:
   - {bar: 21, pattern: strings}
   - {bar: 25, pattern: strings}
 - name: Rhodes
-  instrument: rhodes
+  instrument: electric_piano
+  patch: Suitcase
   gain_db: -13
   pan: 0.4
   sends:
@@ -221,7 +225,8 @@ tracks:
   - {bar: 21, pattern: strings}
   - {bar: 25, pattern: strings}
 - name: Juno
-  instrument: juno106
+  instrument: poly106
+  patch: Poly Keys
   gain_db: -14
   pan: 0.6
   sends:
@@ -232,7 +237,8 @@ tracks:
   - {bar: 13, pattern: juno, repeat: 4}
   - {bar: 17, pattern: juno, repeat: 4}
 - name: Pluck
-  instrument: karplus
+  instrument: clavichord
+  patch: Muted
   gain_db: -15
   pan: -0.7
   sends:
@@ -242,7 +248,8 @@ tracks:
   - {bar: 13, pattern: pluck}
   - {bar: 17, pattern: pluck}
 - name: Pad
-  instrument: jupiter8
+  instrument: poly8
+  patch: Airy Pad
   gain_db: -15
   sends:
   - {to: Hall, level: 0.3}
@@ -253,7 +260,8 @@ tracks:
   - {bar: 17, pattern: pad}
   - {bar: 21, pattern: pad}
 - name: Bells
-  instrument: polysix
+  instrument: poly5
+  patch: FM Bell
   gain_db: -17
   pan: 0.7
   sends:
@@ -263,7 +271,8 @@ tracks:
   - {bar: 13, pattern: bells_2, repeat: 4}
   - {bar: 17, pattern: bells, repeat: 2}
 - name: Lead
-  instrument: prophet5
+  instrument: poly5
+  patch: Unison Lead
   gain_db: -13
   sends:
   - {to: Hall, level: 0.3}

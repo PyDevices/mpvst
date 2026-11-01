@@ -116,13 +116,15 @@ aux_tracks:
 tracks:
 
   - name: Ground
-    instrument: mellotron
+    instrument: string_ensemble
+    patch: Dark Violas
     gain_db: 4.0
     play:
       - {bar: 1, pattern: ground, repeat: 8}
 
   - name: Violin I
-    instrument: solina
+    instrument: string_ensemble
+    patch: High Violins
     gain_db: -2.0
     pan: -0.35
     sends: [{to: Chapel, level: 0.4}]
@@ -133,7 +135,8 @@ tracks:
       - {bar: 17, pattern: var_4}
 
   - name: Violin II
-    instrument: solina
+    instrument: string_ensemble
+    patch: High Violins
     gain_db: -3.0
     sends: [{to: Chapel, level: 0.4}]
     play:
@@ -143,7 +146,8 @@ tracks:
       - {bar: 21, pattern: var_4}
 
   - name: Violin III
-    instrument: solina
+    instrument: string_ensemble
+    patch: High Violins
     gain_db: -3.0
     pan: 0.35
     sends: [{to: Chapel, level: 0.4}]

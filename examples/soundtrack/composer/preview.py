@@ -22,7 +22,7 @@ Run it: from the `soundtrack` folder,
     python composer/preview.py --piece Automata automata.wav --stems stems
 
 Tested on: CPython 3.12.3 on Linux (WSL 2) with pydevices-audiodsp 0.6.7 and
-audiocomponents 0.4.1; `preview.py` and `reaper.py` run on several pieces.
+audioinstruments 0.5.0; `preview.py` and `reaper.py` run on several pieces.
 """
 
 import sys

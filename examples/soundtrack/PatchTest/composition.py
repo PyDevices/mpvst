@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Brad Barnett
 #
 # SPDX-License-Identifier: MIT
-"""Render a Minimoog line that changes patch halfway.
+"""Render a MonoSynth line that changes patch halfway.
 
 A test fixture rather than a piece of music. It exists to prove that a MIDI
 Program Change reaches an instrument script and re-applies its patch.
@@ -11,16 +11,16 @@ The design point is that both halves play *exactly the same notes*. Bars
 between them can only have come from the patch change at bar 9. If the
 program change did nothing, the two halves would measure the same.
 
-  bars 1-8   Patch 2 "Deep Bass"      cutoff 0.2,  resonance 0.35, drive 0.15
-  bars 9-16  Patch 3 "Screaming Lead" cutoff 0.55, resonance 0.75, drive 0.6
+  bars 1-8   Patch 1 "Fat Bass"   cutoff 0.38, emphasis 0.24, contour 0.45
+  bars 9-16  Patch 5 "Fifth Lead" cutoff 0.64, emphasis 0.30, contour 0.35
 
-(Program Change 1 selects Patch 2: the wire value is zero-based, and DAWs
-display it one-based.) Those two patches differ mostly in the filter, so
-the expected evidence is a large jump in high-frequency energy at bar 9,
-with the note material unchanged.
+(Program Change 1 selects the second patch: the wire value is zero-based,
+and DAWs display it one-based.) Those two patches differ in the filter and
+in the second oscillator, which sits a fifth up in the lead, so the expected
+evidence is a jump in high-frequency energy at bar 9, with the note material
+unchanged.
 
-Minimoog is monophonic - MAX_VOICES = 1 - so this is a single line with no
-overlaps anywhere.
+MonoSynth is monophonic, so this is a single line with no overlaps anywhere.
 
 Needs: Python 3 with numpy and `pydevices-audiodsp`,
 `pydevices-audioinstruments` and `pydevices-audioeffects`, and an MPVST
@@ -36,8 +36,8 @@ Reaper project.
 Success is a level report ending in "wrote patchtest.wav" with no failed checks.
 
 Tested on: CPython 3.12.3 on Linux (WSL 2), rendered with
-`composer/preview.py` using pydevices-audiodsp 0.6.7 and audiocomponents
-0.4.1.
+`composer/preview.py` using pydevices-audiodsp 0.6.7 and
+audioinstruments 0.5.0.
 """
 
 # Change these to suit the piece.
@@ -46,7 +46,7 @@ INSTRUMENTS_DIR = "../../lib/instruments"
 SAMPLE_RATE = 48000
 MASTER_GAIN_DB = -3.0
 ACTIVE_LIMIT = 1
-CLIMAX_SECTION = "B Screaming Lead"
+CLIMAX_SECTION = "B Fifth Lead"
 BEATS_PER_BAR = 4
 TOTAL_BARS = 16
 TAIL_SECONDS = 4.0
@@ -100,18 +100,18 @@ def riff_notes():
 
 TRACKS = [
     {
-        "name": "Minimoog", "script": "minimoog.py", "gain_db": -6.0,
+        "name": "MonoSynth", "script": "mono_synth.py", "gain_db": -6.0,
         "pan": 0.0, "notes": riff_notes(),
         # No macros set at all: every one resolves to the instrument's
         # Patch 0, and the program changes below replace them wholesale.
         # That is the point - if patches did not work, this would be
-        # sixteen macros of whatever the fallback happened to be.
+        # ten macros of whatever the fallback happened to be.
         "macros": {},
         "vol": [(bar(1), 1.0)],
         "macro_env": {},
-        # (beat, program). Zero-based on the wire: 1 is "Deep Bass",
-        # 2 is "Screaming Lead".
-        "programs": [(bar(1), 1), (bar(9), 2)],
+        # (beat, program). Zero-based on the wire: 1 is "Fat Bass",
+        # 5 is "Fifth Lead".
+        "programs": [(bar(1), 1), (bar(9), 5)],
     },
 ]
 
@@ -165,6 +165,6 @@ def active_track_count(beat):
 
 
 SECTIONS = [
-    ("A Deep Bass", bar(1), bar(9)),
-    ("B Screaming Lead", bar(9), bar(17)),
+    ("A Fat Bass", bar(1), bar(9)),
+    ("B Fifth Lead", bar(9), bar(17)),
 ]

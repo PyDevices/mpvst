@@ -3,10 +3,10 @@
 # SPDX-License-Identifier: MIT
 """Render four takes of a shimmer to compare side by side.
 
-A listening fixture, not a piece of music. The Perihelion track called "Air
-Shimmer" is band-passed noise with a rising center: a reverse-cymbal, which
-is a sound effect that arrives on a downbeat rather than something that sits
-in a chord. This exists to audition alternatives side by side.
+A listening fixture, not a piece of music. A shimmer can be a sound effect
+that arrives on a downbeat, like a reverse cymbal, or something that sits in
+a chord. This exists to audition four ways to build the second kind side by
+side.
 
 Every variant plays the *same two chords over the same sixteen bars* -
 eight of D minor, then eight of B flat - stacked on four tracks rather than
@@ -15,14 +15,14 @@ point: it means one loop region covers every take, so switching between
 them is a solo button rather than a seek. That is how an A/B actually gets
 done at a desk.
 
-  A  Air Swell        what Perihelion had
-  B  Tuned Air        the same noise engine, band on the note
-  C  Choir Shimmer    VP-330 choir through an octave-up hall
-  D  String Shimmer   Solina strings through the same
+  A  Air Swell        a gliding polysynth pad (Poly80)
+  B  Tuned Air        a whispered vocoder, so the air sits on the note
+  C  Choir Shimmer    Vocoder330 choir through an octave-up hall
+  D  String Shimmer   StringEnsemble strings through the same
 
-A and B are the cheap answers: same family, one keeps the piece's identity.
-C and D replace the instrument outright and use the real trick - a copy an
-octave up fed into a long reverb, which is what "shimmer" names.
+A and B are the cheap answers: an instrument with air in it, played through
+a plain space. C and D use the real trick - a copy an octave up fed into a
+long reverb, which is what "shimmer" names.
 
 The gains here are deliberately NOT Perihelion's. There the shimmer sits 50
 to 60 dB down and you have to solo it and turn everything up to hear it at
@@ -160,8 +160,8 @@ FX_SHIMMER_WIDE = {
 
 TRACKS = [
     {
-        # Exactly Perihelion's settings, only louder and on its own.
-        "name": "A Air Swell", "script": "cs80.py", "gain_db": -9.3,
+        "name": "A Air Swell", "script": "poly80.py", "gain_db": -6.6,
+        "programs": [(0.0, 10)],
         "pan": 0.1, "notes": variant_notes(),
         "macros": {},
         "vol": [(bar(1), 1.0)],
@@ -169,8 +169,10 @@ TRACKS = [
         "effects": [FX_SPACE],
     },
     {
-        # Same noise engine, band tracking the note, focused enough to sing.
-        "name": "B Tuned Air", "script": "fs1r.py", "gain_db": -8.8,
+        # A whisper vocoder: the noise follows the note, focused enough to
+        # sing.
+        "name": "B Tuned Air", "script": "vocoder330.py", "gain_db": -9.9,
+        "programs": [(0.0, 10)],
         "pan": -0.1, "notes": variant_notes(),
         "macros": {},
         "vol": [(bar(1), 1.0)],
@@ -178,24 +180,20 @@ TRACKS = [
         "effects": [FX_SPACE_OPEN],
     },
     {
-        "name": "C Choir Shimmer", "script": "vp330.py", "gain_db": -2.2,
+        "name": "C Choir Shimmer", "script": "vocoder330.py", "gain_db": -17.5,
+        "programs": [(0.0, 5)],
         "pan": 0.05, "notes": variant_notes(velocity=0.8),
-        # Volume, male choir, female choir, chorus depth, attack, release,
-        # formant, vibrato rate, vibrato depth, brilliance, bass, tune.
-        # Bass at zero on purpose. The VP-330's bass layer doubles an
-        # octave down, which measured as the loudest thing in the variant -
-        # 87 Hz under a chord whose lowest note is 147. A shimmer is the air
-        # above a mix, not another thing competing with the bass in it.
+        # Program 5 is the full choir.
         "macros": {},
         "vol": [(bar(1), 1.0)],
         "macro_env": {},
         "effects": [FX_SHIMMER],
     },
     {
-        "name": "D String Shimmer", "script": "solina.py", "gain_db": -5.3,
+        "name": "D String Shimmer", "script": "string_ensemble.py", "gain_db": -16.4,
+        "programs": [(0.0, 1)],
         "pan": -0.05, "notes": variant_notes(velocity=0.6),
-        # Volume, violin, viola, cello, chorus depth, attack, release,
-        # crescendo, tune.
+        # Program 1 is the full string section.
         "macros": {},
         "vol": [(bar(1), 1.0)],
         "macro_env": {},

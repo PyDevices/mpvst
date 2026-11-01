@@ -305,7 +305,7 @@ class Project:
 
         Two sources, because the question has two halves. What a component
         *is* - its macro labels and ranges, its patches, which key plays which
-        drum - belongs to audiocomponents, and the packages answer for
+        drum - belongs to audioinstruments and audioeffects, and the packages answer for
         themselves when they are installed. What MPVST *calls* it - the VST3
         class ID a project file has to name - is the plug-in's own assignment,
         and only the installed bundle's catalog.json has it.
@@ -336,7 +336,7 @@ class Project:
                       "MPVST or set MPVST_BUNDLE to write a Reaper project.")
             else:
                 print("Warning: no catalog.json in any VST3 folder and no "
-                      "audiocomponents packages installed. Named patches and "
+                      "audioinstruments or audioeffects packages installed. Named patches and "
                       "class IDs are unavailable; install MPVST, set "
                       "MPVST_BUNDLE, or pip install pydevices-audioinstruments "
                       "and pydevices-audioeffects.")
@@ -378,7 +378,7 @@ class Project:
             # renders of the same project disagree, which is exactly the
             # comparison OfflineRenderer exists to make - so say it out loud.
             print("Note: %d component(s) differ between the installed bundle "
-                  "and the audiocomponents packages (%s%s). Renders here "
+                  "and the installed packages (%s%s). Renders here "
                   "follow the packages; a Reaper bounce follows the bundle. "
                   "Reinstall MPVST to bring them back together."
                   % (len(stale), ", ".join(sorted(stale)[:4]),
@@ -386,7 +386,7 @@ class Project:
         self._load_reaper_numeric_ids()
 
     def _load_components(self):
-        """Component metadata from the audiocomponents packages, if installed.
+        """Component metadata from the audioinstruments and audioeffects packages, if installed.
 
         Reads the same declared attributes `lib/mpvst_catalog.py` reads when
         it builds catalog.json, because they are the source that file is

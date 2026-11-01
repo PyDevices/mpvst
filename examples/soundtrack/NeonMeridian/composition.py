@@ -3,22 +3,22 @@
 # SPDX-License-Identifier: MIT
 """Render Neon Meridian, an 80s synthwave piece.
 
-Nine shared hardware emulations, no effect inserts. The instruments carry
-their own character the way the hardware did: the Juno-106's bucket-brigade
-chorus, the Solina's ensemble, the Minimoog's overdrive, the LinnDrum's
-samples. Depth comes from arrangement, register, and pan - not from a rack.
+Nine shared instruments, no effect inserts. The instruments carry
+their own character the way the hardware did: the Poly106's chorus, the
+StringEnsemble's divide-down ensemble, the MonoSynth's drive, the
+Rhythm808's analog drums. Depth comes from arrangement, register, and pan - not from a rack.
 
 Times are in beats (4/4 throughout, one bar = 4 beats, bar 1 starts at
 beat 0). Velocities and macro values are 0..1.
 
 Form, in A minor:
-  A  "Nightfall"   bars  1-20  @100  Juno pad alone, bell motif, Taurus
-                                     pedal, SH-101 arp, hats then kick;
+  A  "Nightfall"   bars  1-20  @100  Poly106 pad alone, bell motif, bass
+                                     pedal, Mono101 arp, hats then kick;
                                      harmonic rhythm accelerates 4 bars
                                      per chord -> 1 bar per chord
-  B  "Neon Mile"   bars 21-52  @106  Minimoog ostinato and the full
-                                     LinnDrum; Prophet-5 states the theme
-                                     twice, Solina and OB-Xa join; a
+  B  "Neon Mile"   bars 21-52  @106  MonoSynth ostinato and the full
+                                     drum machine; Poly5 states the theme
+                                     twice, StringEnsemble and PolyXa join; a
                                      four-bar breakdown at 45 rebuilds
   C  "Afterburn"   bars 53-76  @106  theme at full weight, an eight-bar
                                      lift through the relative major,
@@ -42,8 +42,8 @@ Reaper project.
 Success is a level report ending in "wrote neonmeridian.wav" with no failed checks.
 
 Tested on: CPython 3.12.3 on Linux (WSL 2), rendered with
-`composer/preview.py` using pydevices-audiodsp 0.6.7 and audiocomponents
-0.4.1.
+`composer/preview.py` using pydevices-audiodsp 0.6.7 and
+audioinstruments 0.5.0.
 """
 
 # Change these to suit the piece.
@@ -98,7 +98,7 @@ C4, D4, E4, F4, G4, A4, B4 = 60, 62, 64, 65, 67, 69, 71
 C5, D5, E5, F5, G5, A5, B5 = 72, 74, 76, 77, 79, 81, 83
 C6, E6 = 84, 88
 
-# LinnDrum voices (General MIDI positions, as the emulation maps them).
+# Drum voices (General MIDI positions, as the Rhythm808 maps them).
 BD, SD, CLAP, RIM = 36, 38, 39, 37
 CH, PEDAL_H, OH = 42, 44, 46
 LT, MT, HT = 41, 45, 48
@@ -202,7 +202,7 @@ def held(start, beats, pitches, vel):
     return [(start, max(0.05, beats - GAP), p, vel) for p in pitches]
 
 
-# --- Juno-106 pad ------------------------------------------------------------
+# --- Poly106 pad ------------------------------------------------------------
 
 def pad_notes():
     """The bed, present from the first bar to the last."""
@@ -220,7 +220,7 @@ def pad_notes():
     return out
 
 
-# --- Solina string ensemble --------------------------------------------------
+# --- StringEnsemble strings --------------------------------------------------
 
 def strings_notes():
     """Upper sustain. Enters with the theme, carries the lift, then fades."""
@@ -236,10 +236,10 @@ def strings_notes():
     return out
 
 
-# --- Moog Taurus pedal -------------------------------------------------------
+# --- BassPedals pedal -------------------------------------------------------
 
 def sub_notes():
-    """Roots only, and only where the Minimoog isn't already playing them."""
+    """Roots only, and only where the MonoSynth isn't already playing them."""
     out = []
     for start, span, name in chord_spans(5, 20):
         out.append((bar(start), span * BEATS_PER_BAR - GAP,
@@ -255,7 +255,7 @@ def sub_notes():
     return out
 
 
-# --- Minimoog bass -----------------------------------------------------------
+# --- MonoSynth bass -----------------------------------------------------------
 
 # Straight eighths with an octave lift on the "and" of 2 and of 4 - the
 # engine of the whole piece.  Accent pattern, not pitch pattern, is what
@@ -290,7 +290,7 @@ def bass_notes():
     return out
 
 
-# --- SH-101 arpeggio ---------------------------------------------------------
+# --- Mono101 arpeggio ---------------------------------------------------------
 
 # Sixteenths, up-and-back across the chord's four tones.  Sixteenths are
 # 0.25 beats and each note is 0.2, so repeated tones never collide.
@@ -318,7 +318,7 @@ def arp_notes():
     return out
 
 
-# --- OB-Xa stabs -------------------------------------------------------------
+# --- PolyXa stabs -------------------------------------------------------------
 
 def stab_notes():
     """Offbeat eighth-note chords - the classic poly-brass push."""
@@ -336,7 +336,7 @@ def stab_notes():
     return out
 
 
-# --- Prophet-5 lead ----------------------------------------------------------
+# --- Poly5 lead ----------------------------------------------------------
 
 # The theme: eight bars over Am F C G Am F C G.  Written once, restated
 # with a different register and articulation each time it comes back.
@@ -388,7 +388,7 @@ def lead_notes():
     return out
 
 
-# --- DX7 bells ---------------------------------------------------------------
+# --- Poly5 bells ---------------------------------------------------------------
 
 # The four-note signal: E - D - C - A, the head of the theme. It opens the
 # piece, marks the breakdown, and closes it.
@@ -416,7 +416,7 @@ def bell_notes():
     return out
 
 
-# --- LinnDrum ---------------------------------------------------------------
+# --- Drums ---------------------------------------------------------------
 
 def hats(first_bar, last_bar, eighths=True, vel=0.4):
     out = []
@@ -513,141 +513,125 @@ def _db(x):
 
 TRACKS = [
     {
-        "name": "LinnDrum", "script": "linndrum.py", "gain_db": -7.0,
+        "name": "Drums", "script": "rhythm808.py", "gain_db": -7.0,
         "pan": 0.0, "notes": drum_notes(),
+        # The Rhythm808 maps every drum number this part uses; patch 0 is its
+        # classic kit.
         "macros": {},
         "vol": [(bar(13), 0.7), (bar(21), 1.0), (bar(45), 0.8),
                 (bar(49), 1.0), (bar(53), 1.08), (bar(73), 1.0)],
         "macro_env": {},
     },
     {
-        "name": "Moog Bass", "script": "minimoog.py", "gain_db": -8.0,
+        "name": "MonoSynth Bass", "script": "mono_synth.py", "gain_db": -8.0,
+        "programs": [(0.0, 3)],
         "pan": 0.0, "notes": bass_notes(),
-        # Glide (macro 4) stays at zero: this bass restates the root on
-        # every eighth, and any portamento at all smears the drive.
-        # Osc2/Osc3 sit about six cents either side of the root: enough for
-        # the Model D's thickness, not enough to blur the pitch centre.
-        # Noise Mix (7) off - the Model D mixes noise into the voice, and an
-        # unset 0.5 put hiss under every bass note.
-        "macros": {0: 0.7, 1: 0.35, 2: 0.35, 3: 0.55, 4: 0.0, 5: 0.62,
-                   6: 0.4, 7: 0.0, 8: 0.0, 9: 0.35, 10: 0.6, 11: 0.15,
-                   12: 0.05, 13: 0.35, 14: 0.3, 15: 0.3},
+        # Program 3, Drive Bass.
+        # The cutoff waves below are the gesture this voice is for.
+        "macros": {},
         "vol": [(bar(21), 0.9), (bar(29), 1.0), (bar(53), 1.08),
                 (bar(72), 1.0)],
         "macro_env": {
             # Four-bar cutoff waves that open a little further each
-            # section - the one gesture the Minimoog is really for.
-            1: [(bar(21), 0.28), (bar(25), 0.42), (bar(29), 0.34),
+            # section - the one gesture this voice is for.
+            0: [(bar(21), 0.28), (bar(25), 0.42), (bar(29), 0.34),
                 (bar(33), 0.5), (bar(37), 0.4), (bar(41), 0.58),
                 (bar(44), 0.64), (bar(49), 0.36), (bar(52), 0.6),
                 (bar(53), 0.46), (bar(57), 0.66), (bar(61), 0.54),
                 (bar(65), 0.72), (bar(69), 0.6), (bar(72), 0.4)],
-            15: [(bar(21), 0.2), (bar(37), 0.3), (bar(53), 0.42)],
-        },
+},
     },
     {
-        "name": "Taurus Sub", "script": "taurus.py", "gain_db": -11.0,
+        "name": "Pedal Sub", "script": "bass_pedals.py", "gain_db": -11.0,
+        "programs": [(0.0, 10)],
         "pan": 0.0, "notes": sub_notes(),
-        # Osc B Detune (1) and Beat Freq (6) stay low deliberately.  The
-        # Taurus beats its two oscillators against each other, and at a
-        # 55 Hz root even a 1 Hz beat is a third of a semitone - this is a
-        # pedal, so it wants a slow shimmer, not an audible interval.
-        "macros": {0: 0.6, 1: 0.15, 2: 0.1, 3: 0.25, 4: 0.3, 5: 0.3,
-                   6: 0.1, 7: 0.2, 8: 0.5, 9: 0.85, 10: 0.4},
+        # Program 10, Soft Thump. A pedal wants a slow shimmer, not an audible
+        # interval, so the patch keeps the second oscillator's beat low.
+        "macros": {},
         "vol": [(bar(5), 0.7), (bar(13), 0.95), (bar(45), 1.0),
                 (bar(53), 0.85), (bar(73), 0.8)],
-        "macro_env": {3: [(bar(5), 0.18), (bar(17), 0.3), (bar(45), 0.26),
+        "macro_env": {0: [(bar(5), 0.18), (bar(17), 0.3), (bar(45), 0.26),
                           (bar(53), 0.32), (bar(73), 0.2)]},
     },
     {
-        "name": "Juno Pad", "script": "juno106.py", "gain_db": -6.0,
+        "name": "Poly106 Pad", "script": "poly106.py", "gain_db": -6.0,
+        "programs": [(0.0, 1)],
         "pan": 0.0, "notes": pad_notes(),
-        # Noise Level (4) off: the Juno's noise source is mixed per voice, so
-        # an unset 0.5 put four noise oscillators under every pad chord.
-        # HPF (7) stays low so the sub-oscillator keeps its weight, and the
-        # LFO (9) is slow - it is wired to cutoff with a fixed depth here.
-        "macros": {0: 0.7, 1: 0.42, 2: 0.22, 3: 0.4, 4: 0.0, 5: 0.72,
-                   6: 0.3, 7: 0.1, 8: 0.35, 9: 0.2, 10: 0.35, 11: 0.35,
-                   12: 0.5, 13: 0.8, 14: 0.55, 15: 0.4},
+        # Program 1, Warm Pad. The intro is one long filter sunrise; it
+        # re-opens for the lift and closes again over the ritard.
+        "macros": {},
         "vol": [(bar(1), 0.55), (bar(9), 0.85), (bar(21), 0.8),
                 (bar(45), 0.95), (bar(53), 0.85), (bar(73), 0.9),
                 (bar(76, 4.0), 0.7)],
         "macro_env": {
             # The intro is one long filter sunrise; it re-opens for the
             # lift and closes again over the ritard.
-            1: [(bar(1), 0.14), (bar(13), 0.4), (bar(21), 0.46),
+            0: [(bar(1), 0.14), (bar(13), 0.4), (bar(21), 0.46),
                 (bar(45), 0.34), (bar(53), 0.5), (bar(61), 0.58),
                 (bar(69), 0.5), (bar(76), 0.24)],
         },
     },
     {
-        "name": "SH-101 Arp", "script": "sh101.py", "gain_db": -6.0,
+        "name": "Mono101 Arp", "script": "mono101.py", "gain_db": -6.0,
+        "programs": [(0.0, 9)],
         "pan": -0.22, "notes": arp_notes(),
-        "macros": {0: 0.6, 1: 0.4, 2: 0.4, 3: 0.4, 4: 0.5, 5: 0.6, 6: 0.7},
+        # Program 9, Pulsing Pluck.
+        "macros": {},
         "vol": [(bar(9), 0.5), (bar(17), 0.8), (bar(21), 0.9),
                 (bar(45), 0.5), (bar(49), 1.0), (bar(53), 1.0),
                 (bar(72), 0.85)],
         "macro_env": {
             # Two long cutoff builds: into B, and out of the breakdown.
-            3: [(bar(9), 0.2), (bar(20), 0.5), (bar(21), 0.38),
+            0: [(bar(9), 0.2), (bar(20), 0.5), (bar(21), 0.38),
                 (bar(44), 0.68), (bar(47), 0.24), (bar(52), 0.8),
                 (bar(53), 0.5), (bar(68), 0.74), (bar(72), 0.45)],
-            4: [(bar(9), 0.4), (bar(44), 0.6), (bar(53), 0.52)],
+            1: [(bar(9), 0.4), (bar(44), 0.6), (bar(53), 0.52)],
         },
     },
     {
-        "name": "Solina", "script": "solina.py", "gain_db": -1.5,
+        "name": "Strings", "script": "string_ensemble.py", "gain_db": -1.5,
+        "programs": [(0.0, 1)],
         "pan": 0.18, "notes": strings_notes(),
-        "macros": {0: 0.6, 1: 0.6, 2: 0.5, 3: 0.4, 4: 0.8, 5: 0.35,
-                   6: 0.5, 7: 0.4},
+        # Program 1, Full Strings.
+        "macros": {},
         "vol": [(bar(37), 0.75), (bar(53), 1.0), (bar(61), 1.1),
                 (bar(69), 0.9), (bar(73), 0.7)],
-        "macro_env": {7: [(bar(37), 0.3), (bar(53), 0.5), (bar(61), 0.62)]},
+        "macro_env": {0: [(bar(37), 0.3), (bar(53), 0.5), (bar(61), 0.62)]},
     },
     {
-        "name": "OB-Xa Stabs", "script": "obxa.py", "gain_db": -8.0,
+        "name": "PolyXa Stabs", "script": "polyxa.py", "gain_db": -8.0,
+        "programs": [(0.0, 1)],
         "pan": 0.24, "notes": stab_notes(),
-        "macros": {0: 0.6, 1: 0.45, 2: 0.5, 3: 0.3, 4: 0.55, 5: 0.15,
-                   6: 0.4, 7: 0.05, 8: 0.5, 9: 0.3},
+        # Program 1, Anthem Stab.
+        "macros": {},
         "vol": [(bar(37), 0.8), (bar(53), 1.05), (bar(69), 0.9)],
-        "macro_env": {2: [(bar(37), 0.42), (bar(53), 0.58), (bar(61), 0.66),
+        "macro_env": {0: [(bar(37), 0.42), (bar(53), 0.58), (bar(61), 0.66),
                           (bar(72), 0.45)]},
     },
     {
-        "name": "Prophet Lead", "script": "prophet5.py", "gain_db": -7.5,
+        "name": "Poly5 Lead", "script": "poly5.py", "gain_db": -7.5,
+        "programs": [(0.0, 6)],
         "pan": 0.06, "notes": lead_notes(),
-        # Poly Mod (4) and Sync (6) pinned off. Poly Mod multiplies osc B's
-        # frequency, so an unset 0.5 detuned it by most of a semitone and
-        # made the lead sound sour no matter what Osc2 Detune said.
-        "macros": {0: 0.7, 1: 0.5, 2: 0.3, 3: 0.5, 4: 0.0, 5: 0.62,
-                   6: 0.0, 7: 0.35, 8: 0.05, 9: 0.4, 10: 0.7, 11: 0.05,
-                   12: 0.4, 13: 0.5, 14: 0.35, 15: 0.12},
+        # Program 6, Unison Lead.
+        "macros": {},
         "vol": [(bar(29), 0.85), (bar(37), 0.95), (bar(53), 1.1),
                 (bar(61), 1.1), (bar(69), 0.9), (bar(73), 0.75)],
         "macro_env": {
-            1: [(bar(29), 0.42), (bar(36), 0.55), (bar(37), 0.5),
+            0: [(bar(29), 0.42), (bar(36), 0.55), (bar(37), 0.5),
                 (bar(44), 0.62), (bar(53), 0.6), (bar(61), 0.7),
                 (bar(69), 0.5), (bar(73), 0.36)],
-            15: [(bar(29), 0.1), (bar(53), 0.16), (bar(69), 0.22)],
-        },
+},
     },
     {
-        "name": "DX7 Bells", "script": "dx7.py", "gain_db": -2.0,
+        "name": "Bells", "script": "poly5.py", "gain_db": -2.0,
+        "programs": [(0.0, 4)],
         "pan": -0.12, "notes": bell_notes(),
-        # Vibrato Depth (12) is pinned off. Unset macros arrive at 0.5, and
-        # half-depth DX7 vibrato is ~12 cents of wobble - the last thing a
-        # bell motif stating the theme should have.
-        # Mod Ratio (2) is quantised to whole numbers - an unset 0.5 put the
-        # modulator on the 6th harmonic, which is where the clang came from.
-        # Ratio 3 with less FM, less brightness and no tremolo gives a tine
-        # that states the motif instead of fighting it. Vibrato (12) stays
-        # off; Tremolo Depth (11) is ring modulation here, so off as well.
-        "macros": {0: 0.55, 1: 0.25, 2: 0.2, 3: 0.1, 4: 0.45, 5: 0.25,
-                   6: 0.15, 7: 0.7, 8: 0.3, 9: 0.05, 10: 0.35, 11: 0.0,
-                   12: 0.0, 13: 0.4, 14: 0.3, 15: 0.5},
+        # Program 4, FM Bell: the bell motif states the theme, so the patch
+        # keeps vibrato and tremolo out of it.
+        "macros": {},
         "vol": [(bar(3), 0.8), (bar(45), 1.0), (bar(57), 0.7),
                 (bar(73), 1.0)],
-        "macro_env": {10: [(bar(3), 0.45), (bar(45), 0.6), (bar(73), 0.5)]},
+        "macro_env": {0: [(bar(3), 0.45), (bar(45), 0.6), (bar(73), 0.5)]},
     },
 ]
 

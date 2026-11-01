@@ -64,11 +64,11 @@ that name against `catalog.json` inside the installed plug-in, so the names
 are the ones the instrument itself declares.
 
 ```python
-bass_track = song.add_track("Synth Bass", instrument="minimoog", patch="Classic Lead")
+bass_track = song.add_track("Synth Bass", instrument="mono_synth", patch="Brass Lead")
 ```
 
-Patch names are per instrument - `minimoog` has *Classic Lead*, *Deep Bass*
-and *Screaming Lead*, while a drum machine may only have *Default*. If you
+Patch names are per instrument - `mono_synth` has *Fat Bass*, *Brass Lead*
+and *Fifth Lead*, while an instrument such as `acid303` has only *Init*. If you
 name one that does not exist you get patch 0 and a warning.
 
 ---

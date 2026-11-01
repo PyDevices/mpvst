@@ -36,7 +36,7 @@ Run it:
     song.render("song.wav", OfflineRenderer)
 
 Tested on: CPython 3.12.3 on Linux (WSL 2) with PyYAML 6.0.3, numpy 2.5.4
-and pydevices-audiodsp 0.6.7 and audiocomponents 0.4.1. Exercised by
+and pydevices-audiodsp 0.6.7 and audioinstruments 0.5.0. Exercised by
 `converge.py`, `canon_16.py` and `from_yaml.py`.
 """
 
@@ -220,7 +220,12 @@ class _Voice(audiorender.Voice):
     def deliver(self, event, sample_position):
         if event[1] == audiorender.MACRO and event[2] >= self._macro_count:
             return
-        audiorender.Voice.deliver(self, event, sample_position)
+        # The render loop delivers each event at the head of its block, so to
+        # the instrument the event is now: offset 0, as the plug-in's adapter
+        # passes it. An absolute position is not an offset, and a polyphonic
+        # instrument that schedules by it holds the note back by that many
+        # frames, which a long rest turns into silence.
+        audiorender.Voice.deliver(self, event, 0)
 
 
 class OfflineRenderer(BaseRenderer):

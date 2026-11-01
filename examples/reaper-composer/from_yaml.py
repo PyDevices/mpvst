@@ -27,7 +27,7 @@ A song file looks like this:
 
     tracks:
       - name: Pluck
-        instrument: karplus
+        instrument: clavichord
         gain_db: -6
         play:
           - {bar: 1, pattern: figure, repeat: 8}
@@ -53,8 +53,9 @@ Run it:
     python from_yaml.py source/interlock.yaml interlock.wav
 
 Tested on: CPython 3.12.3 on Linux (WSL 2) with PyYAML 6.0.3, numpy 2.5.4
-and pydevices-audiodsp 0.6.7 and audiocomponents 0.4.1. Wrote
-`interlock.rpp`.
+and pydevices-audiodsp 0.6.7 and audioinstruments 0.5.0. Rendered
+`interlock.yaml` to a WAV with every track sounding; the `.rpp` output was
+not written.
 """
 
 from __future__ import annotations

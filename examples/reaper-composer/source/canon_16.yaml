@@ -351,7 +351,8 @@ aux_tracks:
 - {name: Chapel, effect: Reverb, patch: Concert Hall, mix: 2.0}
 tracks:
 - name: Pedal
-  instrument: prophet5
+  instrument: poly5
+  patch: Glide Pad
   gain_db: -10.0
   pan: 0.0
   sends:
@@ -368,7 +369,8 @@ tracks:
   - {bar: 33, pattern: pedal}
   - {bar: 37, pattern: pedal}
 - name: Cello
-  instrument: mellotron
+  instrument: string_ensemble
+  patch: Dark Violas
   gain_db: -3.0
   pan: -0.1
   sends:
@@ -385,7 +387,8 @@ tracks:
   - {bar: 33, pattern: ground}
   - {bar: 37, pattern: ground}
 - name: Continuo
-  instrument: cp70
+  instrument: electric_grand70
+  patch: Stage Grand
   gain_db: -9.0
   pan: 0.1
   sends:
@@ -400,7 +403,8 @@ tracks:
   - {bar: 29, pattern: rf_quarter}
   - {bar: 33, pattern: rf_quarter}
 - name: Violin I
-  instrument: solina
+  instrument: string_ensemble
+  patch: High Violins
   gain_db: -8.0
   pan: -0.35
   sends:
@@ -416,7 +420,8 @@ tracks:
   - {bar: 33, pattern: half}
   - {bar: 37, pattern: half}
 - name: Violin II
-  instrument: solina
+  instrument: string_ensemble
+  patch: High Violins
   gain_db: -9.0
   pan: 0.0
   sends:
@@ -430,7 +435,8 @@ tracks:
   - {bar: 29, pattern: quarter}
   - {bar: 33, pattern: half}
 - name: Violin III
-  instrument: solina
+  instrument: string_ensemble
+  patch: High Violins
   gain_db: -9.0
   pan: 0.35
   sends:
@@ -442,7 +448,8 @@ tracks:
   - {bar: 25, pattern: sixteenth}
   - {bar: 29, pattern: eighth}
 - name: Pad
-  instrument: jupiter8
+  instrument: poly8
+  patch: Airy Pad
   gain_db: -14.0
   pan: -0.2
   sends:
@@ -455,7 +462,8 @@ tracks:
   - {bar: 29, pattern: pad}
   - {bar: 33, pattern: pad}
 - name: Chords
-  instrument: juno106
+  instrument: poly106
+  patch: Poly Keys
   gain_db: -13.0
   pan: 0.2
   sends:
@@ -468,7 +476,8 @@ tracks:
   - {bar: 25, pattern: chords_q}
   - {bar: 29, pattern: chords_q}
 - name: Pluck
-  instrument: karplus
+  instrument: clavichord
+  patch: Muted
   gain_db: -11.0
   pan: -0.45
   sends:
@@ -480,7 +489,8 @@ tracks:
   - {bar: 25, pattern: arp_e}
   - {bar: 29, pattern: arp_e}
 - name: Bells
-  instrument: music_easel
+  instrument: west_coast_synth
+  patch: Init
   gain_db: -13.0
   pan: 0.45
   sends:
@@ -491,7 +501,8 @@ tracks:
   - {bar: 29, pattern: accents}
   - {bar: 33, pattern: accents}
 - name: Counter
-  instrument: rhodes
+  instrument: electric_piano
+  patch: Suitcase
   gain_db: -13.0
   pan: 0.15
   sends:
@@ -502,7 +513,8 @@ tracks:
   - {bar: 25, pattern: chords_q}
   - {bar: 29, pattern: chords_q}
 - name: Choir
-  instrument: vp330
+  instrument: vocoder330
+  patch: Full Choir
   gain_db: -15.0
   pan: 0.0
   sends:
@@ -513,7 +525,8 @@ tracks:
   - {bar: 29, pattern: pad}
   - {bar: 33, pattern: pad}
 - name: Ostinato
-  instrument: clavinet
+  instrument: clavichord
+  patch: Funk
   gain_db: -14.0
   pan: -0.25
   sends:
@@ -524,7 +537,8 @@ tracks:
   - {bar: 25, pattern: rf_sixteenth}
   - {bar: 29, pattern: rf_sixteenth}
 - name: Accent
-  instrument: dx7
+  instrument: poly5
+  patch: FM Bell
   gain_db: -15.0
   pan: 0.3
   sends:
@@ -533,7 +547,8 @@ tracks:
   - {bar: 25, pattern: accents}
   - {bar: 29, pattern: accents}
 - name: Pad 2
-  instrument: polysix
+  instrument: poly6
+  patch: PWM Pad
   gain_db: -15.0
   pan: -0.3
   sends:
@@ -543,7 +558,8 @@ tracks:
   - {bar: 29, pattern: pad}
   - {bar: 33, pattern: pad}
 - name: Lead
-  instrument: cs80
+  instrument: poly80
+  patch: Ribbon Lead
   gain_db: -11.0
   pan: 0.0
   sends:

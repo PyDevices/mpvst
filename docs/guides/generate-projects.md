@@ -24,7 +24,7 @@ limiter["cid"]           # 0700D6A78BFA9A03BA678484750C4B21
 limiter["macro_labels"]  # ['Ceiling', 'Gain', 'Lookahead', ...]
 limiter["macro_ranges"]  # [[-24.0, 0.0], [0.0, 24.0], ...]
 limiter["patches"]       # [{'index': 2, 'name': 'Loud', 'macros': [125, 64, ...]}, ...]
-by_name["tr808"]["note_map"]   # [[36, 'Bass Drum'], [38, 'Snare'], ...]
+by_name["rhythm808"]["note_map"]   # [[35, 'Bass Drum'], [36, 'Bass Drum 2'], [37, 'Rim Shot'], ...]
 ```
 
 Don't parse the `.py` files in the VST directory, and don't hardcode an ID out of a document, including this one. The catalog is written by the installer and is the only copy that cannot drift.
@@ -40,9 +40,9 @@ In the Python payload for an instance, don't instantiate effect or instrument cl
 
 ### Instruments
 ```python
-# mpvst-module: audioinstruments.minimoog
+# mpvst-module: audioinstruments.mono_synth
 import mpvst_instrument_adapter
-inst = mpvst_instrument_adapter.run('audioinstruments.minimoog')
+inst = mpvst_instrument_adapter.run('audioinstruments.mono_synth')
 inst.program_change(1)
 ```
 

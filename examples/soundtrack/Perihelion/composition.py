@@ -5,7 +5,7 @@
 
 Single source of truth for the piece: the tempo map, every note, the track
 gains and pans, the volume swells, and the macro automation that gives the
-synths their Moog-style motion. Both the offline preview renderer and the
+synths their motion. Both the offline preview renderer and the
 REAPER project generator read this module.
 
 Times are in beats (4/4, one bar = 4 beats, bar 1 starts at beat 0).
@@ -14,7 +14,7 @@ Velocities and macro values are 0..1.
 Form, in D minor:
   A  "Adrift"      bars  1-12  @76   sub drone, breathing pad, glass halo,
                                      the four-note signal motif in bells
-  B  "Ignition"    bars 13-28  @78   Moog ostinato ignites over a D pedal,
+  B  "Ignition"    bars 13-28  @78   pedal-bass ostinato ignites over a D pedal,
                                      low strings, pulse arp joins halfway
   C  "Approach"    bars 29-44  @80/82  theme in high strings, horns and
                                      timpani build, riser into the climax
@@ -37,8 +37,8 @@ Reaper project.
 Success is a level report ending in "wrote perihelion.wav" with no failed checks.
 
 Tested on: CPython 3.12.3 on Linux (WSL 2), rendered with
-`composer/preview.py` using pydevices-audiodsp 0.6.7 and audiocomponents
-0.4.1.
+`composer/preview.py` using pydevices-audiodsp 0.6.7 and
+audioinstruments 0.5.0.
 """
 
 # Change these to suit the piece.
@@ -120,7 +120,7 @@ def sub_drone_notes():
     ])
 
 
-# --- Moog bass ostinato ------------------------------------------------------
+# --- Bass ostinato ------------------------------------------------------
 
 # Eighth-note spin: root, root, +7, root, +12, +10, +7, root.
 OSTINATO_STEPS = (0, 0, 7, 0, 12, 10, 7, 0)
@@ -135,7 +135,7 @@ def ostinato_bar(start_beat, root, vel):
     return out
 
 
-def moog_bass_notes():
+def bass_ostinato_notes():
     out = []
     # B: two-bar harmonic rhythm  D D Bb Bb F F C C  (D pedal feel kept by
     # returning to D roots every other pattern)
@@ -403,8 +403,8 @@ def arp_notes():
 
 # --- Timpani -----------------------------------------------------------------
 
-# The timpani is a LinnDrum, and a LinnDrum reads a note number as "which
-# drum", not as a pitch. So the line uses drum numbers: the snare and the low
+# The timpani is a drum machine, and a drum machine reads a note number as
+# "which drum", not as a pitch. So the line uses drum numbers: the snare and the low
 # floor tom for the two roots, and the two tighter toms for the alternate
 # root and the pickup.
 TIMP_SNARE, TIMP_TOM_FLOOR = 38, 41
@@ -539,7 +539,8 @@ def _db(x):
 
 TRACKS = [
     {
-        "name": "Sub Drone", "script": "andromeda.py", "gain_db": -6.5,
+        "name": "Sub Drone", "script": "polya6.py", "gain_db": -6.5,
+        "programs": [(0.0, 3)],
         "pan": 0.0, "notes": sub_drone_notes(),
         "macros": {},
         "vol": [(bar(1), 0.6), (bar(5), 0.9), (bar(12), 1.0),
@@ -547,15 +548,17 @@ TRACKS = [
         "macro_env": {},
     },
     {
-        "name": "Moog Bass", "script": "taurus.py", "gain_db": -6.5,
-        "pan": 0.0, "notes": moog_bass_notes(),
+        "name": "Bass Pedals", "script": "bass_pedals.py", "gain_db": -6.5,
+        "programs": [(0.0, 3)],
+        "pan": 0.0, "notes": bass_ostinato_notes(),
         "macros": {},
         "vol": [(bar(13), 0.85), (bar(29), 0.95), (bar(45), 1.05),
                 (bar(60, 3.0), 1.0)],
         "macro_env": {},
     },
     {
-        "name": "Warm Pad", "script": "jupiter8.py", "gain_db": -3.5,
+        "name": "Warm Pad", "script": "poly8.py", "gain_db": -3.5,
+        "programs": [(0.0, 5)],
         "pan": 0.0, "notes": pad_warm_notes(),
         "macros": {},
         "vol": [(bar(1), 0.4), (bar(5), 0.7), (bar(9), 0.85),
@@ -564,7 +567,8 @@ TRACKS = [
         "macro_env": {},
     },
     {
-        "name": "Glass Pad", "script": "ppg_wave.py", "gain_db": -8.0,
+        "name": "Glass Pad", "script": "polya6.py", "gain_db": -8.0,
+        "programs": [(0.0, 6)],
         "pan": 0.1, "notes": pad_glass_notes(),
         "macros": {},
         "vol": [(bar(1), 0.58), (bar(10), 0.8), (bar(63), 0.7),
@@ -572,7 +576,8 @@ TRACKS = [
         "macro_env": {},
     },
     {
-        "name": "Low Strings", "script": "mellotron.py", "gain_db": -4.5,
+        "name": "Low Strings", "script": "string_ensemble.py", "gain_db": -4.5,
+        "programs": [(0.0, 4)],
         "pan": -0.15, "notes": strings_low_notes(),
         "macros": {},
         "vol": [(bar(17), 0.95), (bar(29), 0.95), (bar(37), 0.95),
@@ -580,7 +585,8 @@ TRACKS = [
         "macro_env": {},
     },
     {
-        "name": "High Strings", "script": "solina.py", "gain_db": -7.5,
+        "name": "High Strings", "script": "string_ensemble.py", "gain_db": -7.5,
+        "programs": [(0.0, 3)],
         "pan": 0.15, "notes": strings_high_notes(),
         "macros": {},
         "vol": [(bar(29), 0.85), (bar(36), 1.0), (bar(45), 1.15),
@@ -588,35 +594,40 @@ TRACKS = [
         "macro_env": {},
     },
     {
-        "name": "Horns", "script": "obxa.py", "gain_db": -4.5,
+        "name": "Horns", "script": "polyxa.py", "gain_db": -4.5,
+        "programs": [(0.0, 2)],
         "pan": -0.2, "notes": horns_notes(),
         "macros": {},
         "vol": [(bar(37), 0.8), (bar(43), 1.0), (bar(45), 1.0)],
         "macro_env": {},
     },
     {
-        "name": "High Brass", "script": "prophet5.py", "gain_db": -6.0,
+        "name": "High Brass", "script": "poly5.py", "gain_db": -6.0,
+        "programs": [(0.0, 1)],
         "pan": 0.2, "notes": brass_high_notes(),
         "macros": {},
         "vol": [(bar(45), 0.9), (bar(53), 1.0), (bar(60), 1.08)],
         "macro_env": {},
     },
     {
-        "name": "Choir", "script": "vp330.py", "gain_db": -3.5,
+        "name": "Choir", "script": "vocoder330.py", "gain_db": -3.5,
+        "programs": [(0.0, 5)],
         "pan": 0.0, "notes": choir_notes(),
         "macros": {},
         "vol": [(bar(65), 0.75), (bar(71), 0.9), (bar(74, 4.0), 0.65)],
         "macro_env": {},
     },
     {
-        "name": "Lead", "script": "minimoog.py", "gain_db": -7.5,
+        "name": "Lead", "script": "mono_synth.py", "gain_db": -7.5,
+        "programs": [(0.0, 4)],
         "pan": 0.05, "notes": lead_notes(),
         "macros": {},
         "vol": [(bar(53), 0.9), (bar(60), 1.0), (bar(69), 0.8)],
         "macro_env": {},
     },
     {
-        "name": "Pulse Arp", "script": "sh101.py", "gain_db": -10.5,
+        "name": "Pulse Arp", "script": "mono101.py", "gain_db": -10.5,
+        "programs": [(0.0, 9)],
         "pan": -0.1, "notes": arp_notes(),
         "macros": {},
         "vol": [(bar(21), 0.7), (bar(29), 0.9), (bar(45), 1.0),
@@ -624,7 +635,8 @@ TRACKS = [
         "macro_env": {},
     },
     {
-        "name": "Timpani", "script": "linndrum.py", "gain_db": -6.5,
+        "name": "Timpani", "script": "electronic_drums5.py", "gain_db": -6.5,
+        "programs": [(0.0, 1)],
         "pan": -0.05, "notes": timpani_notes(),
         "macros": {},
         "vol": [(bar(37), 0.7), (bar(44), 0.95), (bar(45), 0.95),
@@ -632,27 +644,28 @@ TRACKS = [
         "macro_env": {},
     },
     {
-        "name": "Impacts", "script": "simmons_sdsv.py", "gain_db": -5.5,
+        "name": "Impacts", "script": "rhythm909.py", "gain_db": -5.5,
+        "programs": [(0.0, 3)],
         "pan": 0.0, "notes": hits_notes(),
         "macros": {},
         "vol": [(bar(13), 0.85), (bar(45), 0.85), (bar(61), 0.7)],
         "macro_env": {},
     },
     {
-        "name": "Air Shimmer", "script": "vp330.py", "gain_db": -8.1,
+        "name": "Air Shimmer", "script": "vocoder330.py", "gain_db": -8.1,
+        "programs": [(0.0, 4)],
         "pan": 0.1, "notes": shimmer_notes(),
-        # Volume, male choir, female choir, chorus depth, attack, release,
-        # formant, vibrato rate, vibrato depth, brilliance, bass, tune.
-        # Bass at zero deliberately: the VP-330's bass layer doubles an
-        # octave down, and a shimmer is the air above a mix rather than
-        # another thing competing with the bass in it.
+        # Program 4 is the female choir, which has no bass layer under it:
+        # a shimmer is the air above a mix rather than another thing
+        # competing with the bass in it.
         "macros": {},
         "vol": [(bar(1), 0.9), (bar(43), 1.0), (bar(71), 0.8)],
         "macro_env": {},
         "effects": [FX_SHIMMER],
     },
     {
-        "name": "Aurora Bells", "script": "dx7.py", "gain_db": -8.5,
+        "name": "Aurora Bells", "script": "poly5.py", "gain_db": -8.5,
+        "programs": [(0.0, 4)],
         "pan": 0.25, "notes": bells_notes(),
         "macros": {},
         "vol": [(bar(3), 0.62), (bar(13), 0.85), (bar(63), 1.0),
@@ -660,7 +673,8 @@ TRACKS = [
         "macro_env": {},
     },
     {
-        "name": "Riser", "script": "microwave.py", "gain_db": -10.0,
+        "name": "Riser", "script": "poly8.py", "gain_db": -10.0,
+        "programs": [(0.0, 11)],
         "pan": 0.0, "notes": riser_notes(),
         "macros": {},
         "vol": [(bar(27), 0.8), (bar(43), 1.0)],
