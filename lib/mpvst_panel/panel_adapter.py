@@ -75,6 +75,8 @@ class EngineAdapter:
         self.engine_error = 0
         self.engine_message = ""
         self._reload_at = None
+        # True while RELOAD is held at 1, from a press until the reload ends.
+        self._reload_held = False
         # What the script declared, so a reload can tell whether a panel
         # built for the old script still describes the new one.
         self._declarations = _declarations()
@@ -105,6 +107,7 @@ class EngineAdapter:
         """The engine has run the script. `error` is empty when it loaded,
         or what it raised when it did not. Either way the reload is over."""
         self._reload_at = None
+        self._release_reload()
         self.engine_ready = True
         self.engine_error = ENGINE_ERROR_SCRIPT if error else 0
         self.engine_message = error or ""
@@ -156,10 +159,14 @@ class EngineAdapter:
         self._discrete(BYPASS, 1.0 if enabled else 0.0)
 
     def request_reload(self):
-        # The processor latches a rising edge and then fades, so the button
-        # has to return to zero for the next press to be seen at all.
+        # The processor acts on a rising edge, and reads only the last value
+        # a block carries. A host may deliver a 1 and a 0 sent together in
+        # one block - REAPER does - so the press holds RELOAD at 1 until the
+        # reload ends or is given up, and only then returns it to 0 so the
+        # next press is an edge again.
+        self._release_reload()
         self._discrete(RELOAD, 1.0)
-        self._discrete(RELOAD, 0.0)
+        self._reload_held = True
         # Not ready until the engine says it has loaded the script again.
         self.engine_ready = False
         self._reload_at = self._now()
@@ -171,6 +178,7 @@ class EngineAdapter:
             if self._now() - self._reload_at >= RELOAD_TIMEOUT_MS:
                 self._reload_at = None
                 self.engine_ready = True
+                self._release_reload()
         if not self._open:
             return
         now = self._now()
@@ -181,7 +189,9 @@ class EngineAdapter:
 
     def close_all(self):
         """End every open gesture immediately - editor closing, panel going
-        away. Leaving one open would strand an automation write in the host."""
+        away. Leaving one open would strand an automation write in the host,
+        and a RELOAD left at 1 would swallow the next press."""
+        self._release_reload()
         for parameter in list(self._open):
             del self._open[parameter]
             self._ui.edit(self._ui.EDIT_END, parameter, self._last(parameter))
@@ -203,6 +213,11 @@ class EngineAdapter:
         self._ui.edit(self._ui.EDIT_PERFORM, parameter, normalized)
         self._ui.edit(self._ui.EDIT_END, parameter, normalized)
         self._open.pop(parameter, None)
+
+    def _release_reload(self):
+        if self._reload_held:
+            self._reload_held = False
+            self._discrete(RELOAD, 0.0)
 
     def _last(self, parameter):
         return self._values.get(parameter, 0.0)

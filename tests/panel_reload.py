@@ -72,21 +72,31 @@ def adapter():
     return EngineAdapter(FakeUi(), "probe.py", ticks_ms=clock), clock
 
 
+def reload_values(engine):
+    return [edit[2] for edit in engine._ui.edits
+            if edit[1] == RELOAD and edit[0] == FakeUi.EDIT_PERFORM]
+
+
 def test_success():
     engine, clock = adapter()
     check(engine.engine_ready and engine.engine_error == 0,
           "a fresh adapter is ready with no error")
     engine.request_reload()
-    reload_edits = [edit for edit in engine._ui.edits if edit[1] == RELOAD]
-    check([edit[2] for edit in reload_edits if edit[0] == FakeUi.EDIT_PERFORM]
-          == [1.0, 0.0], "a press still pulses the RELOAD parameter")
+    check(reload_values(engine) == [1.0],
+          "a press holds RELOAD at 1, so a host batching edits keeps the edge")
     check(not engine.engine_ready, "not ready once a reload is requested")
     clock.now += 500
     engine.tick()
     check(not engine.engine_ready, "still not ready while the reload is pending")
+    check(reload_values(engine) == [1.0], "RELOAD stays held while pending")
     engine.note_loaded("")
     check(engine.engine_ready and engine.engine_error == 0,
           "ready again, no error, once the engine has loaded the script")
+    check(reload_values(engine) == [1.0, 0.0],
+          "RELOAD returns to 0 once the reload ends")
+    engine.request_reload()
+    check(reload_values(engine) == [1.0, 0.0, 1.0],
+          "the next press is a fresh edge")
 
 
 def test_failure():
@@ -117,6 +127,16 @@ def test_dropped_press():
     engine.tick()
     check(engine.engine_ready and engine.engine_error == 0,
           "a reload that never comes is given up after the timeout")
+    check(reload_values(engine) == [1.0, 0.0],
+          "giving up returns RELOAD to 0")
+
+
+def test_close_releases_reload():
+    engine, _clock = adapter()
+    engine.request_reload()
+    engine.close_all()
+    check(reload_values(engine) == [1.0, 0.0],
+          "closing the panel mid-reload returns RELOAD to 0")
 
 
 def test_editor_keeps_panel():
@@ -168,7 +188,7 @@ def test_initial_load():
           "a first load that failed is kept for the panel built later")
 
 
-for test in (test_success, test_failure, test_dropped_press,
+for test in (test_success, test_failure, test_dropped_press, test_close_releases_reload,
              test_editor_keeps_panel, test_editor_rebuilds_panel,
              test_initial_load):
     test()
