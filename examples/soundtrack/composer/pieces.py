@@ -99,7 +99,7 @@ def instrument_source(script_path):
     if not source.is_file():
         raise SystemExit(
             "%s loads %s, which is not at %s.\n"
-            "Set MPVST_COMPONENTS_LIB to audiocomponents' lib/ directory."
+            "Set MPVST_COMPONENTS_LIB to audioinstruments' lib/ directory."
             % (Path(script_path).name, name, source))
     return source
 
@@ -155,7 +155,7 @@ def _literal_metadata(path):
 def shared_instruments():
     """Materialize loaders for the shared instrument library when requested.
 
-    The plug-in stages audiocomponents' packages directly and discovers them
+    The plug-in stages the component packages directly and discovers them
     from moduleinfo; it does not need a checked-in lib/instruments mirror.
     Project generation and the preview renderer still need a script file to
     embed or exec, so create the same tiny loader in a temporary directory.
@@ -169,7 +169,7 @@ def shared_instruments():
     if not package_dir.is_dir():
         raise SystemExit(
             "shared instrument directory is missing: %s\n"
-            "Set MPVST_COMPONENTS_LIB to audiocomponents' lib/ directory."
+            "Set MPVST_COMPONENTS_LIB to audioinstruments' lib/ directory."
             % package_dir)
     # Write one loader per library instrument into a temporary folder.
     output = Path(tempfile.mkdtemp(prefix="mpvst-instruments-"))

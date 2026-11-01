@@ -24,8 +24,9 @@ endif()
 # Clear only the entries this source root owns. The destination is the
 # bundle directory itself, which also holds the plug-in binary and the
 # engine, so wiping all of it would delete the build. Two invocations
-# stage into the same bundle - this repository's lib/ and audiocomponents'
-# - so neither may touch what it did not put there.
+# stage into the same bundle - this repository's lib/ and, before they were
+# frozen into the engine, the component packages - so neither may touch
+# what it did not put there.
 #
 # What it staged last time is recorded beside the bundle, which is what
 # lets a top-level entry *deleted* from the source be removed as well.

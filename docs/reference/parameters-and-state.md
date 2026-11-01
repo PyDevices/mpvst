@@ -44,4 +44,4 @@ Host transport position, tempo and time signature reach the script. Locates, loo
 | `MPVST_ENGINE_PATH` | Overrides which engine binary is launched. |
 | `MPVST_DEFAULT_INSTRUMENT_AUDIBLE` | Any non-empty value lets the empty-slot instrument press notes. |
 | `MPVST_BUNDLE` | Offline tools only: where an installed bundle is, if it isn't in the usual place. |
-| `MPVST_COMPONENTS_LIB` | Offline soundtrack tools only: the `lib/` directory of an audiocomponents checkout. |
+| `MPVST_COMPONENTS_LIB` | Offline soundtrack tools only: the `lib/` directory of an audioinstruments checkout. |
