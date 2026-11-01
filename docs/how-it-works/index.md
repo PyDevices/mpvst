@@ -176,8 +176,8 @@ to the normal PyDevices display contract, and [`lib/mpvst_editor.py`](../../lib/
 
 The host-visible parameter surface (listed in the [reference](../reference/parameters-and-state.md)) contains bypass, Reload Script, read-only engine
 ready and error values, a patch selector, 16 macros, and the MIDI channel the
-instance listens to. A further 130 hidden parameters carry that channel's MIDI
-controllers through VST3's MIDI mapping. Macro IDs are permanently
+instance listens to, all or one. A further 130 hidden parameters carry those
+channels' MIDI controllers through VST3's MIDI mapping. Macro IDs are permanently
 100 through 115; their labels are metadata and may change without breaking
 saved automation.
 

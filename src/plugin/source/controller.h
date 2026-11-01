@@ -35,9 +35,8 @@ public:
     void editorClosed (Editor* editor);
 
 private:
-    // The channel the instance listens to, 0-15, as the MIDI Channel
-    // parameter says.
-    std::uint16_t midiChannel ();
+    // The MIDI Channel parameter's step: 0 for All, 1-16 for one channel.
+    std::uint32_t midiListen ();
 
     // The mapping the processor reported. Held whether or not a view exists,
     // because the report and the host's decision to open an editor arrive in
