@@ -20,6 +20,12 @@ A slider drag is reported to your host as one begin, a stream of changes, and on
 
 The panel edits the patch selector, the 16 macros, bypass and reload. All of them are ordinary automatable parameters your host's generic editor shows as well.
 
+## Reload
+
+The reload button runs your script again. From the press until the engine has run it, the panel reports the engine as not ready. If the script raises, the engine-status light shows an error (code 1, as on the `Engine Error` parameter) until a reload loads cleanly. A press the processor never acts on, such as one while the host isn't processing, stops counting as a reload after three seconds.
+
+When the reloaded script declares the same name, macro labels and patches, the panel stays as it was, focus and all. When any of those changed, the panel rebuilds around the new declarations.
+
 ## When the panel fails
 
 A Python error in the panel is caught, the panel is torn down, and audio is unaffected. The view draws "Editor unavailable" instead of freezing, and the instance keeps playing. A host that provides no run loop (on Linux) gets no editor, and the generic parameter editor still works.

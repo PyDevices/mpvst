@@ -30,6 +30,19 @@ PATCH_COUNT = 128
 # slider records an edit that ends when it looks like it ended.
 GESTURE_IDLE_MS = 180
 
+# The engine's diagnostic code for a script that raised while loading, the
+# same number the plug-in reports as its Engine Error parameter.
+ENGINE_ERROR_SCRIPT = 1
+
+# How long a requested reload may go unanswered before the panel stops
+# waiting for it. The processor starts a reload within a block or two of the
+# press, so one that has not happened by now was dropped, not delayed: the
+# processor ignores a press that lands while it is still fading back in from
+# the last reload, and a host that has stopped processing never starts one.
+# A reload that is running blocks this process, so a slow script cannot trip
+# this.
+RELOAD_TIMEOUT_MS = 3000
+
 
 class EngineAdapter:
     """Bridges the panel to the engine's shared-memory edit and event paths."""
@@ -55,8 +68,16 @@ class EngineAdapter:
         for macro, value in enumerate(_patch_values(0)[:MACRO_COUNT]):
             self.macro_values[macro] = min(max(int(value), 0), 127)
         self.bypass = False
+        # False from a reload request until the engine has run the script
+        # again. engine_error is ENGINE_ERROR_SCRIPT while the last load
+        # failed, and engine_message says what it raised.
         self.engine_ready = True
         self.engine_error = 0
+        self.engine_message = ""
+        self._reload_at = None
+        # What the script declared, so a reload can tell whether a panel
+        # built for the old script still describes the new one.
+        self._declarations = _declarations()
 
     # ---- what the engine tells us -------------------------------------
 
@@ -79,6 +100,19 @@ class EngineAdapter:
             return
         self.macro_values[index] = value
         self._notify("macro", index, value)
+
+    def note_loaded(self, error=""):
+        """The engine has run the script. `error` is empty when it loaded,
+        or what it raised when it did not. Either way the reload is over."""
+        self._reload_at = None
+        self.engine_ready = True
+        self.engine_error = ENGINE_ERROR_SCRIPT if error else 0
+        self.engine_message = error or ""
+
+    def describes_current_script(self):
+        """True while the script's declarations match the ones this adapter
+        was built from: the same name, macro labels and patches."""
+        return self._declarations == _declarations()
 
     def note_program(self, index):
         if index < 0 or index >= PATCH_COUNT or self.patch_index == index:
@@ -126,9 +160,17 @@ class EngineAdapter:
         # has to return to zero for the next press to be seen at all.
         self._discrete(RELOAD, 1.0)
         self._discrete(RELOAD, 0.0)
+        # Not ready until the engine says it has loaded the script again.
+        self.engine_ready = False
+        self._reload_at = self._now()
 
     def tick(self):
-        """Close gestures that have gone quiet. Called every UI tick."""
+        """Close gestures that have gone quiet, and give up on a reload that
+        never came. Called every UI tick."""
+        if self._reload_at is not None:
+            if self._now() - self._reload_at >= RELOAD_TIMEOUT_MS:
+                self._reload_at = None
+                self.engine_ready = True
         if not self._open:
             return
         now = self._now()
@@ -184,6 +226,11 @@ def _bounded(value):
 def _to_midi(normalized):
     value = int(_bounded(normalized) * 127.0 + 0.5)
     return 0 if value < 0 else (127 if value > 127 else value)
+
+
+def _declarations():
+    return (_declared("DISPLAY_NAME"), _declared("NAME"),
+            _declared("MACRO_LABELS"), _declared("PATCHES"))
 
 
 def _script_name(script_path):

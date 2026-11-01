@@ -213,6 +213,13 @@ if(MPVST_PYTHON)
         ENVIRONMENT
         "MPVST_BUNDLE=$<TARGET_FILE_DIR:MPVST>/../..")
 
+    # The panel's view of the engine across a reload: not ready from the
+    # press until the script has loaded, an error when it raised, cleared by
+    # the next good load. Stand-ins for the engine modules, so no engine.
+    add_test(NAME mpvst_panel_reload COMMAND ${MPVST_PYTHON}
+        ${CMAKE_CURRENT_SOURCE_DIR}/panel_reload.py)
+    set_tests_properties(mpvst_panel_reload PROPERTIES TIMEOUT 60)
+
     # Defect linting for the Python half of the repository - the tools, the
     # instrument and effect scripts, the composition modules. Configured in
     # .flake8 to pyflakes-level checks only, so it reports bugs rather than
