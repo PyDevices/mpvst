@@ -155,7 +155,9 @@ class Editor:
             group.remove_all_objs()
         self._adapter = EngineAdapter(vstui, self._script_path)
         vstaudio.observe(self._observe)
-        self._panel = build(self._adapter, group=group)
+        # The wheel mapping above moves focus with one wheel, so the panel
+        # keeps its encoders in edit mode for the other.
+        self._panel = build(self._adapter, group=group, two_wheels=True)
         vstui.error(vstui.ERROR_NONE)
 
     def _observe(self, event_type, channel, note_id, data0, value0, value1,
