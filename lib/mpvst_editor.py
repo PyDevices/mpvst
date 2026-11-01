@@ -48,6 +48,9 @@ class Editor:
         self._pump = None
         self._failed = False
         self._was_open = False
+        # What the last load of the script raised, or "" when it loaded. A
+        # panel built later still has to show it.
+        self._load_error = ""
 
     # ---- the engine's housekeeping step --------------------------------
 
@@ -79,17 +82,36 @@ class Editor:
         except Exception as exc:  # noqa: BLE001 - the panel must not be fatal
             self._fail(exc)
 
-    def script_reloaded(self, script_path=None):
+    def script_loaded(self, error=""):
+        """The engine ran the script: `error` is "" when it loaded, else what
+        it raised. The panel shows it from the engine light."""
+        self._load_error = error or ""
+        if self._adapter is not None:
+            self._adapter.note_loaded(self._load_error)
+
+    def script_reloaded(self, script_path=None, error=""):
         """The instance script was replaced. Rebuild the panel around it.
 
-        Labels and the patch list come from the script, so keeping the old
-        panel would leave the editor describing code that is no longer
-        running. Only the widgets are rebuilt: LVGL, the board and the app
-        belong to the process, not to the script, and tearing them down would
-        make a reload cost what the first open cost.
+        Labels and the patch list come from the script, so a panel built for
+        declarations the new script no longer makes would describe code that
+        is no longer running. When they are unchanged, which is the usual
+        edit-and-reload, the panel stays, so it can show the reload end:
+        RELOAD's LED goes out and the engine light reports the result. Only
+        the widgets are ever rebuilt: LVGL, the board and the app belong to
+        the process, not to the script, and tearing them down would make a
+        reload cost what the first open cost.
         """
         if script_path is not None:
             self._script_path = script_path
+        adapter = self._adapter
+        if (adapter is not None and self._panel is not None and
+                not self._failed and adapter.describes_current_script()):
+            # The load cleared the observer along with the old script's
+            # output, so the kept panel has to register it again.
+            vstaudio.observe(self._observe)
+            self.script_loaded(error)
+            return
+        self._load_error = error or ""
         self._release_panel()
         # A panel that failed against the old script deserves a fresh try
         # against the new one - editing the script is how a user fixes it.
@@ -154,6 +176,7 @@ class Editor:
         if group is not None:
             group.remove_all_objs()
         self._adapter = EngineAdapter(vstui, self._script_path)
+        self._adapter.note_loaded(self._load_error)
         vstaudio.observe(self._observe)
         self._panel = build(self._adapter, group=group)
         vstui.error(vstui.ERROR_NONE)

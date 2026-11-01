@@ -43,6 +43,7 @@ def main():
             editor = None
 
     def load_script():
+        """Run the script. Returns "" when it loaded, else what it raised."""
         vstaudio.clear_output()
         try:
             namespace = {"__name__": "__main__", "__file__": script_path}
@@ -52,18 +53,20 @@ def main():
             # What the script declared about itself, for the panel to read.
             mpvst_script_namespace.namespace = namespace
         except Exception as exc:
-            vstaudio.error("{}: {}".format(type(exc).__name__, exc))
-            return False
+            error = "{}: {}".format(type(exc).__name__, exc)
+            vstaudio.error(error)
+            return error
         vstaudio.error("")
-        return True
+        return ""
 
     def reload_script():
         # The editor is told after the load either way, so a script that
-        # failed still gets a panel describing what is actually running.
-        loaded = load_script()
+        # failed still gets a panel describing what is actually running, and
+        # the panel learns the reload is over.
+        error = load_script()
         if editor is not None:
-            editor.script_reloaded(script_path)
-        return loaded
+            editor.script_reloaded(script_path, error)
+        return not error
 
     def housekeeping():
         # The instrument first: it is audio, the panel is optional. Looked up
@@ -75,7 +78,9 @@ def main():
         if editor is not None:
             editor.tick()
 
-    load_script()
+    error = load_script()
+    if editor is not None:
+        editor.script_loaded(error)
     try:
         vstaudio.run(reload_script, housekeeping)
     finally:
