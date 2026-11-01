@@ -96,8 +96,9 @@ private:
     // merely defaulted to never overwrites what the script built itself.
     std::atomic<Steinberg::uint32> macrosKnown_ {0};
     std::array<std::atomic<float>, kMacroParameterCount> macros_ {};
-    // The one MIDI channel, 0-15, whose events reach the script.
-    std::atomic<Steinberg::uint32> midiChannel_ {0};
+    // The MIDI Channel step whose events reach the script: 0 for All, 1-16
+    // for one channel.
+    std::atomic<Steinberg::uint32> midiListen_ {kMidiListenAll};
     std::string scriptSource_;
     Steinberg::int32 pipelineBlocks_ {kDefaultPipelineBlocks};
     float publishedReady_ {-1.0F};

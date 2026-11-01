@@ -153,7 +153,7 @@ if(TARGET mpvst-stage-micropython-engine)
         $<TARGET_FILE_DIR:MPVST>/../.. --expect-tempo-follow)
     add_test(NAME mpvst_patch_select_smoke COMMAND mpvst_smoke_host
         $<TARGET_FILE_DIR:MPVST>/../.. --expect-patch-select)
-    # One MIDI channel: the parameter layout, the controller mapping, which
+    # MIDI Channel, All or one: the parameter layout, the controller mapping, which
     # notes reach the script and as which channel, and the saved choice.
     add_test(NAME mpvst_midi_channel_smoke COMMAND mpvst_smoke_host
         $<TARGET_FILE_DIR:MPVST>/../.. --expect-midi-channel)

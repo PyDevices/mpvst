@@ -17,13 +17,15 @@ constexpr Steinberg::Vst::ParamID kEngineErrorParameter = 3;
 // this kIsProgramChange-flagged parameter instead.
 constexpr Steinberg::Vst::ParamID kPatchParameter = 4;
 constexpr std::size_t kPatchCount = 128;
-// Which of the 16 MIDI channels the instance listens to: a list parameter
-// whose steps are channels 1 to 16. Added after the MIDI controller set, so
-// every parameter that existed before it keeps its index as well as its ID.
+// Which MIDI channels the instance listens to: a list parameter whose first
+// step is All and whose other sixteen are channels 1 to 16. Added after the
+// MIDI controller set, so every parameter that existed before it keeps its
+// index as well as its ID.
 constexpr Steinberg::Vst::ParamID kMidiChannelParameter = 5;
 constexpr Steinberg::Vst::ParamID kFirstMacroParameter = 100;
 constexpr std::size_t kMacroParameterCount = 16;
-// One controller set, for the selected channel. Its IDs are the ones channel
+// One controller set, for the selected channel or, on All, for every
+// channel at once. Its IDs are the ones channel
 // 1's set had when there was one set per channel, so automation recorded on
 // channel 1's controllers still lands.
 constexpr Steinberg::Vst::ParamID kFirstMidiParameter = 0x10000;
@@ -35,9 +37,13 @@ constexpr Steinberg::int32 kLegacyStateVersion = 1;
 // nobody had touched, so it replayed all sixteen and overwrote whatever the
 // script had chosen for itself.
 constexpr Steinberg::int32 kScriptStateVersion = 2;
-// Version 4 added the MIDI channel. Anything older listens on channel 1.
+// Version 4 added the MIDI channel, 0-15, when one channel was the only
+// choice. Version 5 stores the MIDI Channel step instead, so All can be
+// saved. Anything older than 4 listens on All, as it did before there was a
+// choice.
 constexpr Steinberg::int32 kKnownMacroStateVersion = 3;
-constexpr Steinberg::int32 kStateVersion = 4;
+constexpr Steinberg::int32 kSingleChannelStateVersion = 4;
+constexpr Steinberg::int32 kStateVersion = 5;
 constexpr Steinberg::int32 kDefaultPipelineBlocks = 4;
 constexpr Steinberg::int32 kMaximumPipelineBlocks = 16;
 constexpr Steinberg::int32 kMaximumEmbeddedScriptBytes = 1024 * 1024;
@@ -68,18 +74,40 @@ constexpr bool decodeMidiParameter (Steinberg::Vst::ParamID id,
     return true;
 }
 
-// The list parameter's normalized value for a channel index 0-15, and back.
-constexpr double midiChannelToNormalized (std::size_t channel) noexcept
+// The MIDI Channel parameter's steps: 0 is All, 1-16 are channels 1-16.
+constexpr std::uint32_t kMidiListenAll = 0;
+constexpr std::uint32_t kMidiListenStepCount = kMidiChannelCount + 1U;
+
+constexpr double midiListenToNormalized (std::uint32_t listen) noexcept
 {
-    return static_cast<double> (channel) /
-           static_cast<double> (kMidiChannelCount - 1U);
+    return static_cast<double> (listen) /
+           static_cast<double> (kMidiListenStepCount - 1U);
 }
 
-constexpr std::uint16_t midiChannelFromNormalized (double normalized) noexcept
+constexpr std::uint32_t midiListenFromNormalized (double normalized) noexcept
 {
     const auto bounded = normalized < 0.0 ? 0.0 : (normalized > 1.0 ? 1.0 : normalized);
-    return static_cast<std::uint16_t> (
-        bounded * static_cast<double> (kMidiChannelCount - 1U) + 0.5);
+    return static_cast<std::uint32_t> (
+        bounded * static_cast<double> (kMidiListenStepCount - 1U) + 0.5);
+}
+
+// Whether a step lets through events on a channel, 0-15.
+constexpr bool midiListensTo (std::uint32_t listen, std::int32_t channel) noexcept
+{
+    return channel >= 0 && channel < static_cast<std::int32_t> (kMidiChannelCount) &&
+           (listen == kMidiListenAll ||
+            static_cast<std::uint32_t> (channel) + 1U == listen);
+}
+
+// The channel, 0-15, given to events that reach the plug-in without one of
+// their own: controllers and program changes, which the host has already
+// turned into parameter changes. On All the host merges every channel's into
+// one, and they arrive as channel 1, which is where they arrived before
+// there was a choice.
+constexpr std::uint16_t midiListenEventChannel (std::uint32_t listen) noexcept
+{
+    return listen == kMidiListenAll ? std::uint16_t {0}
+                                    : static_cast<std::uint16_t> (listen - 1U);
 }
 
 } // namespace PyDevices::MPVST

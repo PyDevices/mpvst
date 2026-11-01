@@ -136,8 +136,8 @@ const ClassInfo* findAudioClassNamed(const PluginFactory& factory,
     return nullptr;
 }
 
-// A version 4 chunk ends with the known-macro mask and then the MIDI
-// channel. Both are read from the tail rather than by re-walking the layout,
+// A version 5 chunk ends with the known-macro mask and then the MIDI
+// Channel step (0 for All, 1-16 for one channel). Both are read from the tail rather than by re-walking the layout,
 // so this stays true whatever the embedded script's length turns out to be.
 bool readTailInt(const MemoryStream& chunk, std::size_t fromEnd,
                  Steinberg::uint32& value)
@@ -160,9 +160,9 @@ bool readKnownMask(const MemoryStream& chunk, Steinberg::uint32& mask)
     return readTailInt(chunk, 8U, mask);
 }
 
-bool readMidiChannel(const MemoryStream& chunk, Steinberg::uint32& channel)
+bool readMidiListen(const MemoryStream& chunk, Steinberg::uint32& listen)
 {
-    return readTailInt(chunk, 4U, channel);
+    return readTailInt(chunk, 4U, listen);
 }
 
 bool stateRoundTrip(const PluginFactory& factory, const ClassInfo& classInfo,
@@ -2461,19 +2461,24 @@ bool patchSelectDeliversProgramChange(const PluginFactory& factory,
           std::abs(actualRatio - expectedRatio) < expectedRatio * 0.25;
 }
 
-// The instance listens to one MIDI channel. The controller exposes the
-// real parameters, one set of 130 controller proxies and the MIDI Channel
-// setting, and maps only the selected channel's controllers; the processor
-// passes only that channel's notes and hands everything on as that channel;
-// and the choice survives a save. The script makes the evidence audible: a
-// note sounds at (channel + 1) / 16, so the level says which channel it came
-// in on, and silence says it never arrived.
+// The instance listens to every MIDI channel by default, or to one chosen
+// channel. The controller exposes the real parameters, one set of 130
+// controller proxies and the MIDI Channel setting (All, 1-16), and maps every
+// channel's controllers on All but only the selected channel's otherwise; the
+// processor passes every note on All, each as its own channel, and only the
+// selected channel's otherwise; and the choice survives a save, while older
+// projects open on All, or on the channel they chose. The script makes the
+// evidence audible: a note sounds at (channel + 1) / 16, so the level says
+// which channel it came in on, and silence says it never arrived.
 bool midiChannelFilters(const PluginFactory& factory,
                         const ClassInfo& classInfo, FUnknown* host)
 {
     constexpr ParamID kChannelParameter = 5;
     constexpr ParamID kFirstController = 0x10000;
     constexpr int32 kExpectedParameters = 21 + 130 + 1;
+    // The MIDI Channel parameter's normalized value for a step: 0 is All,
+    // 1-16 are channels 1-16.
+    const auto step = [](int listen) { return listen / 16.0; };
 
     const auto fail = [](const char* what) {
         std::cerr << "HOOK midi.channel FAIL: " << what << '\n';
@@ -2512,24 +2517,27 @@ bool midiChannelFilters(const PluginFactory& factory,
     }
     std::cout << "MIDI_CHANNEL parameters=" << parameterCount
               << " hidden=" << hiddenCount << " channel_index=" << channelIndex
-              << '\n';
+              << " steps=" << channelInfo.stepCount
+              << " default=" << channelInfo.defaultNormalizedValue << '\n';
     if (parameterCount != kExpectedParameters || hiddenCount != 130 ||
-        channelIndex != kExpectedParameters - 1 || channelInfo.stepCount != 15 ||
+        channelIndex != kExpectedParameters - 1 || channelInfo.stepCount != 16 ||
+        channelInfo.defaultNormalizedValue != 0.0 ||
         (channelInfo.flags & ParameterInfo::kIsHidden) != 0)
         return fail("wrong parameter layout");
     if (controller->getParamNormalized(kChannelParameter) != 0.0)
-        return fail("default channel is not 1");
-    std::array<char16, 128> shown {};
-    if (controller->getParamStringByValue(kChannelParameter, 1.0, shown.data()) !=
-        kResultTrue)
-        return fail("no channel display string");
-    {
+        return fail("default is not All");
+    const auto shownAs = [&](ParamValue value, const char* wanted) {
+        std::array<char16, 128> shown {};
+        if (controller->getParamStringByValue(kChannelParameter, value,
+                                              shown.data()) != kResultTrue)
+            return false;
         std::array<char, 16> ascii {};
         UString(shown.data(), static_cast<int32>(shown.size()))
             .toAscii(ascii.data(), static_cast<int32>(ascii.size()));
-        if (std::string {ascii.data()} != "16")
-            return fail("channel 16 is not shown as 16");
-    }
+        return std::string {ascii.data()} == wanted;
+    };
+    if (!shownAs(0.0, "All") || !shownAs(step(1), "1") || !shownAs(1.0, "16"))
+        return fail("the steps are not shown as All, 1 ... 16");
 
     IMidiMapping* rawMapping = nullptr;
     IUnitInfo* rawUnits = nullptr;
@@ -2540,12 +2548,13 @@ bool midiChannelFilters(const PluginFactory& factory,
         return fail("no IMidiMapping or IUnitInfo");
     auto mapping = owned(rawMapping);
     auto units = owned(rawUnits);
-    // Every controller on the selected channel maps to the one set; every
-    // controller on every other channel maps to nothing; program change
-    // follows the selected channel too.
+    // Every controller on a listened-to channel maps to the one set; every
+    // controller on any other channel maps to nothing; program change
+    // follows the same channels. wanted is a channel 0-15, or -1 for All.
     const auto mapsOnly = [&](int16 wanted) {
         for (int16 channel = 0; channel < 16; ++channel)
         {
+            const bool listened = wanted < 0 || channel == wanted;
             for (CtrlNumber number : {CtrlNumber {1}, CtrlNumber {7},
                                       CtrlNumber {kPitchBend},
                                       CtrlNumber {kAfterTouch}})
@@ -2554,7 +2563,7 @@ bool midiChannelFilters(const PluginFactory& factory,
                 const bool mapped =
                     mapping->getMidiControllerAssignment(0, channel, number, id) ==
                     kResultTrue;
-                if (mapped != (channel == wanted))
+                if (mapped != listened)
                     return false;
                 if (mapped && id != kFirstController + static_cast<ParamID>(number))
                     return false;
@@ -2562,18 +2571,27 @@ bool midiChannelFilters(const PluginFactory& factory,
             UnitID unit = -1;
             const bool program =
                 units->getUnitByBus(kEvent, kInput, 0, channel, unit) == kResultTrue;
-            if (program != (channel == wanted))
+            if (program != listened)
                 return false;
         }
         ParamID id = 0;
-        return mapping->getMidiControllerAssignment(0, wanted, 130, id) != kResultTrue;
+        return mapping->getMidiControllerAssignment(0, 16, 7, id) != kResultTrue &&
+               mapping->getMidiControllerAssignment(
+                   0, wanted < 0 ? int16 {0} : wanted, 130, id) != kResultTrue;
     };
-    if (!mapsOnly(0))
+    if (!mapsOnly(-1))
+        return fail("All mapping");
+    if (!ok(controller->setParamNormalized(kChannelParameter, step(1))) ||
+        !mapsOnly(0))
         return fail("channel 1 mapping");
-    if (!ok(controller->setParamNormalized(kChannelParameter, 1.0 / 15.0)) ||
+    if (!ok(controller->setParamNormalized(kChannelParameter, step(2))) ||
         !mapsOnly(1))
         return fail("channel 2 mapping");
-    std::cout << "HOOK midi.channel_mapping OK: one set of 130, channel 1 then 2\n";
+    if (!ok(controller->setParamNormalized(kChannelParameter, 0.0)) ||
+        !mapsOnly(-1))
+        return fail("back to All mapping");
+    std::cout << "HOOK midi.channel_mapping OK: one set of 130, All, channel 1, "
+                 "channel 2, All\n";
 
     // ---- the processor ---------------------------------------------------
     const auto sourcePath = std::filesystem::temp_directory_path() /
@@ -2730,38 +2748,77 @@ bool midiChannelFilters(const PluginFactory& factory,
     };
 
     constexpr double kSilent = 1e-5;
+    // On All, the default, every channel's note sounds, as its own channel.
+    std::array<double, 16> allNotes {};
+    for (int16 channel = 0; channel < 16; ++channel)
+    {
+        std::vector<Event> events;
+        if (channel > 0)
+            events.push_back(noteEvent(false, static_cast<int16>(channel - 1)));
+        events.push_back(noteEvent(true, channel));
+        allNotes[static_cast<std::size_t>(channel)] = rmsAfter(events, {});
+    }
+    // On All a controller, merged by the host, arrives as channel 1.
+    const auto ccOnAll = rmsAfter({}, {{kFirstController + 7, 1.0}});
+    const auto allCh3 = rmsAfter({noteEvent(true, 2)}, {});
+    // Channel 1 with channel 3's note still sounding: it is released.
+    const auto fromAllReleased = rmsAfter({}, {{kChannelParameter, step(1)}});
     const auto ch1Note = rmsAfter({noteEvent(true, 0)}, {});
     const auto ch1Off = rmsAfter({noteEvent(false, 0)}, {});
     const auto ch2Ignored = rmsAfter({noteEvent(true, 1)}, {});
     const auto ch2Note = rmsAfter({noteEvent(true, 1)},
-                                  {{kChannelParameter, 1.0 / 15.0}});
+                                  {{kChannelParameter, step(2)}});
     const auto ch2Off = rmsAfter({noteEvent(false, 1)}, {});
     const auto ch1Ignored = rmsAfter({noteEvent(true, 0)}, {});
     const auto ccOnCh2 = rmsAfter({}, {{kFirstController + 7, 1.0}});
     MemoryStream saved;
-    Steinberg::uint32 savedChannel = 99U;
+    Steinberg::uint32 savedListen = 99U;
     const bool savedOk = ok(component->getState(&saved)) &&
-                         readMidiChannel(saved, savedChannel);
-    // Back to channel 1 with channel 2's note still sounding: it is released.
+                         readMidiListen(saved, savedListen);
+    // Back to All with channel 2's note still sounding: it is released.
     const auto released = rmsAfter({}, {{kChannelParameter, 0.0}});
+    const auto backOnAll = rmsAfter({noteEvent(true, 4)}, {});
 
+    std::cout << "MIDI_CHANNEL all:";
+    for (auto level : allNotes)
+        std::cout << ' ' << level;
+    std::cout << " cc7_on_all=" << ccOnAll << " all_ch3=" << allCh3
+              << " after_all_to_1=" << fromAllReleased << '\n';
     std::cout << "MIDI_CHANNEL ch1_note=" << ch1Note << " ch1_off=" << ch1Off
               << " ch2_while_on_1=" << ch2Ignored << " ch2_note=" << ch2Note
               << " ch2_off=" << ch2Off << " ch1_while_on_2=" << ch1Ignored
-              << " cc7_on_2=" << ccOnCh2 << " saved_channel=" << savedChannel
-              << " after_switch_back=" << released << '\n';
+              << " cc7_on_2=" << ccOnCh2 << " saved_step=" << savedListen
+              << " after_switch_to_all=" << released
+              << " ch5_back_on_all=" << backOnAll << '\n';
 
     data.outputParameterChanges = nullptr;
     const bool stopped = ok(processor->setProcessing(false)) &&
                          ok(component->setActive(false));
     processor = nullptr;
 
+    const auto unit = allNotes[0];
+    if (unit <= kSilent)
+        return fail("on All, a note on channel 1 did not sound");
+    for (std::size_t channel = 0; channel < allNotes.size(); ++channel)
+    {
+        if (std::abs(allNotes[channel] / unit - static_cast<double>(channel + 1)) >
+            0.125 * static_cast<double>(channel + 1))
+            return fail("on All, a channel's note did not sound as that channel");
+    }
+    if (std::abs(ccOnAll / unit - 1.0) > 0.125 ||
+        std::abs(allCh3 / unit - 3.0) > 0.375 ||
+        std::abs(backOnAll / unit - 5.0) > 0.625)
+        return fail("on All, events did not arrive as their own channel");
+    std::cout << "HOOK midi.channel_all OK: all 16 channels sound, each as "
+                 "itself\n";
+
     // A note on channel 1 arrives as channel 1 (level 1/16); on channel 2 it
     // arrives as channel 2 (level 2/16), so the second is twice the first.
     if (ch1Note <= kSilent || ch1Off > kSilent || ch2Ignored > kSilent ||
-        ch2Off > kSilent || ch1Ignored > kSilent || released > kSilent)
-        return fail("a note on the wrong channel sounded, or one on the right "
-                    "channel did not");
+        ch2Off > kSilent || ch1Ignored > kSilent || released > kSilent ||
+        fromAllReleased > kSilent)
+        return fail("a note on the wrong channel sounded, one on the right "
+                    "channel did not, or a switch left a note sounding");
     if (std::abs(ch2Note / ch1Note - 2.0) > 0.25 ||
         std::abs(ccOnCh2 / ch2Note - 1.0) > 0.125)
         return fail("events did not arrive as the selected channel");
@@ -2769,39 +2826,77 @@ bool midiChannelFilters(const PluginFactory& factory,
                  "dropped each time\n";
 
     // ---- state -----------------------------------------------------------
-    if (!savedOk || savedChannel != 1U)
+    if (!savedOk || savedListen != 2U)
         return fail("the saved state does not hold channel 2");
     saved.seek(0, IBStream::kIBSeekSet, nullptr);
     if (!ok(controller->setComponentState(&saved)) ||
-        std::abs(controller->getParamNormalized(kChannelParameter) - 1.0 / 15.0) >
+        std::abs(controller->getParamNormalized(kChannelParameter) - step(2)) >
             1e-9 ||
         !mapsOnly(1))
         return fail("the controller did not restore channel 2");
-    auto restored = createComponent(factory, classInfo, host);
-    saved.seek(0, IBStream::kIBSeekSet, nullptr);
-    MemoryStream again;
-    Steinberg::uint32 restoredChannel = 99U;
-    if (!restored || !ok(restored->setState(&saved)) ||
-        !ok(restored->getState(&again)) || !readMidiChannel(again, restoredChannel) ||
-        restoredChannel != 1U)
+    // Restores a chunk into a fresh component and reports the step it saves
+    // back.
+    const auto componentListens = [&](MemoryStream& chunk) {
+        auto restored = createComponent(factory, classInfo, host);
+        chunk.seek(0, IBStream::kIBSeekSet, nullptr);
+        MemoryStream again;
+        Steinberg::uint32 listen = 99U;
+        if (!restored || !ok(restored->setState(&chunk)) ||
+            !ok(restored->getState(&again)) || !readMidiListen(again, listen))
+            listen = 99U;
+        if (restored)
+            (void)restored->terminate();
+        chunk.seek(0, IBStream::kIBSeekSet, nullptr);
+        return listen;
+    };
+    if (componentListens(saved) != 2U)
         return fail("a restored component lost channel 2");
-    (void)restored->terminate();
-    restored = nullptr;
-    // A version 3 chunk, from before the setting, listens on channel 1.
-    MemoryStream older;
-    IBStreamer writer(&older, kLittleEndian);
-    if (!writer.writeInt32(3) || !writer.writeInt32(0))
-        return false;
-    for (int index = 0; index < 16; ++index)
-        (void)writer.writeFloat(0.5F);
-    (void)writer.writeInt32(4);
-    (void)writer.writeInt32(0);
-    (void)writer.writeInt32(0);
-    older.seek(0, IBStream::kIBSeekSet, nullptr);
-    if (!ok(controller->setComponentState(&older)) ||
-        controller->getParamNormalized(kChannelParameter) != 0.0 || !mapsOnly(0))
-        return fail("an older project did not come back on channel 1");
-    std::cout << "HOOK midi.channel_state OK: saved, restored, older chunk on 1\n";
+    // A chunk of an older version, from before the setting or from when it
+    // held one channel 0-15.
+    const auto olderChunk = [](MemoryStream& chunk, int32 version,
+                               int32 channel) {
+        IBStreamer writer(&chunk, kLittleEndian);
+        (void)writer.writeInt32(version);
+        (void)writer.writeInt32(0);
+        for (int index = 0; index < 16; ++index)
+            (void)writer.writeFloat(0.5F);
+        if (version >= 2)
+        {
+            (void)writer.writeInt32(4);
+            (void)writer.writeInt32(0);
+        }
+        if (version >= 3)
+            (void)writer.writeInt32(0);
+        if (version >= 4)
+            (void)writer.writeInt32(channel);
+        chunk.seek(0, IBStream::kIBSeekSet, nullptr);
+    };
+    for (int32 version = 1; version <= 3; ++version)
+    {
+        MemoryStream older;
+        olderChunk(older, version, 0);
+        // The controller first moves off All, so landing on All is the
+        // chunk's doing.
+        (void)controller->setParamNormalized(kChannelParameter, step(5));
+        if (!ok(controller->setComponentState(&older)) ||
+            controller->getParamNormalized(kChannelParameter) != 0.0 ||
+            !mapsOnly(-1))
+            return fail("an older project did not come back on All");
+        if (componentListens(older) != 0U)
+            return fail("an older project's component did not come back on All");
+    }
+    // A version 4 chunk that chose channel 3 (stored as 2) keeps it.
+    MemoryStream single;
+    olderChunk(single, 4, 2);
+    if (!ok(controller->setComponentState(&single)) ||
+        std::abs(controller->getParamNormalized(kChannelParameter) - step(3)) >
+            1e-9 ||
+        !mapsOnly(2))
+        return fail("a version 4 project did not keep channel 3");
+    if (componentListens(single) != 3U)
+        return fail("a version 4 project's component did not keep channel 3");
+    std::cout << "HOOK midi.channel_state OK: saved, restored, versions 1-3 on "
+                 "All, version 4 keeps its channel\n";
 
     mapping = nullptr;
     units = nullptr;

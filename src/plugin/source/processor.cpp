@@ -207,9 +207,10 @@ std::uint32_t Processor::collectParameterChanges (IParameterChanges* changes,
         if (decodeMidiParameter (id, midiController))
         {
             // The host maps only the selected channel's controllers here, so
-            // that is the channel they came from.
-            const auto midiChannel = static_cast<std::uint16_t> (
-                midiChannel_.load (std::memory_order_relaxed));
+            // that is the channel they came from. On All it merges every
+            // channel's, and they arrive as channel 1.
+            const auto midiChannel = midiListenEventChannel (
+                midiListen_.load (std::memory_order_relaxed));
             const auto pointCount = queue->getPointCount ();
             for (int32 point = 0;
                  point < pointCount && count < events_.size (); ++point)
@@ -293,8 +294,8 @@ std::uint32_t Processor::collectParameterChanges (IParameterChanges* changes,
                 event.sample_position = std::clamp<int32> (sampleOffset, 0,
                                                             frameCount - 1);
                 event.type = MPVST_EVENT_PROGRAM_CHANGE;
-                event.channel = static_cast<std::uint16_t> (
-                    midiChannel_.load (std::memory_order_relaxed));
+                event.channel = midiListenEventChannel (
+                    midiListen_.load (std::memory_order_relaxed));
                 event.data0 = index;
                 event.value0 = static_cast<float> (bounded);
                 events_[count++] = event;
@@ -347,9 +348,9 @@ std::uint32_t Processor::collectEvents (IEventList* input,
         return count;
 
     // Events on any channel but the selected one are dropped here, so a
-    // script only ever hears its own channel.
-    const auto listening = static_cast<int16> (
-        midiChannel_.load (std::memory_order_relaxed));
+    // script only ever hears its own channel. On All nothing is dropped, and
+    // each event keeps the channel it came on.
+    const auto listen = midiListen_.load (std::memory_order_relaxed);
     const auto hostCount = input->getEventCount ();
     for (int32 index = 0; index < hostCount && count < events_.size (); ++index)
     {
@@ -357,11 +358,11 @@ std::uint32_t Processor::collectEvents (IEventList* input,
         if (input->getEvent (index, source) != kResultTrue || source.busIndex != 0)
             continue;
         if ((source.type == Event::kNoteOnEvent &&
-             source.noteOn.channel != listening) ||
+             !midiListensTo (listen, source.noteOn.channel)) ||
             (source.type == Event::kNoteOffEvent &&
-             source.noteOff.channel != listening) ||
+             !midiListensTo (listen, source.noteOff.channel)) ||
             (source.type == Event::kPolyPressureEvent &&
-             source.polyPressure.channel != listening))
+             !midiListensTo (listen, source.polyPressure.channel)))
             continue;
 
         mpvst_event event {};
@@ -513,17 +514,23 @@ std::uint32_t Processor::applyMidiChannelChange (IParameterChanges* changes,
             kResultTrue)
             continue;
         const auto next = static_cast<Steinberg::uint32> (
-            midiChannelFromNormalized (value));
-        const auto previous = midiChannel_.exchange (next,
-                                                     std::memory_order_relaxed);
+            midiListenFromNormalized (value));
+        const auto previous = midiListen_.exchange (next,
+                                                    std::memory_order_relaxed);
+        if (previous == next || frameCount <= 0)
+            continue;
         // Notes still held on the old channel would never hear their
-        // note-off now, so they get All Notes Off (controller 123) instead.
-        if (previous != next && frameCount > 0 && count < events_.size ())
+        // note-off now, so they get All Notes Off (controller 123) instead:
+        // on every channel when the old setting was All.
+        for (std::size_t channel = 0;
+             channel < kMidiChannelCount && count < events_.size (); ++channel)
         {
+            if (!midiListensTo (previous, static_cast<std::int32_t> (channel)))
+                continue;
             mpvst_event event {};
             event.sample_position = 0;
             event.type = MPVST_EVENT_CONTROL_CHANGE;
-            event.channel = static_cast<std::uint16_t> (previous);
+            event.channel = static_cast<std::uint16_t> (channel);
             event.data0 = 123;
             event.value0 = 0.0F;
             events_[count++] = event;
@@ -799,13 +806,19 @@ tresult PLUGIN_API Processor::setState (IBStream* state)
         known = static_cast<Steinberg::uint32> (rawKnown);
     }
 
-    // A chunk from before the MIDI Channel setting listens on channel 1,
-    // which is the channel its controllers were mapped from by default.
-    int32 midiChannel = 0;
-    if (version >= kStateVersion &&
-        (!stream.readInt32 (midiChannel) || midiChannel < 0 ||
-         midiChannel >= static_cast<int32> (kMidiChannelCount)))
-        return kResultFalse;
+    // A chunk from before the MIDI Channel setting listens on All, which is
+    // what it did then. Version 4 stored a channel, 0-15, when one channel
+    // was the only choice; version 5 stores the step, 0 for All.
+    int32 listen = static_cast<int32> (kMidiListenAll);
+    if (version >= kSingleChannelStateVersion)
+    {
+        if (!stream.readInt32 (listen))
+            return kResultFalse;
+        if (version == kSingleChannelStateVersion)
+            listen += 1;
+        if (listen < 0 || listen >= static_cast<int32> (kMidiListenStepCount))
+            return kResultFalse;
+    }
 
     bypass_.store (bypass != 0 ? 1U : 0U, std::memory_order_relaxed);
     for (std::size_t index = 0; index < values.size (); ++index)
@@ -817,8 +830,8 @@ tresult PLUGIN_API Processor::setState (IBStream* state)
     // 0.5 in that slot means "nobody chose", and the script's own default is
     // the only value in the system anybody chose on purpose.
     macrosKnown_.store (known, std::memory_order_relaxed);
-    midiChannel_.store (static_cast<Steinberg::uint32> (midiChannel),
-                        std::memory_order_relaxed);
+    midiListen_.store (static_cast<Steinberg::uint32> (listen),
+                       std::memory_order_relaxed);
     pipelineBlocks_ = pipelineBlocks;
     scriptSource_ = std::move (scriptSource);
     macroResyncPending_.store (1U, std::memory_order_relaxed);
@@ -866,9 +879,9 @@ tresult PLUGIN_API Processor::getState (IBStream* state)
     if (!stream.writeInt32 (static_cast<int32> (
             macrosKnown_.load (std::memory_order_relaxed))))
         return kResultFalse;
-    // Version 4: the MIDI channel the instance listens to.
+    // Version 5: the MIDI Channel step, 0 for All or 1-16.
     if (!stream.writeInt32 (static_cast<int32> (
-            midiChannel_.load (std::memory_order_relaxed))))
+            midiListen_.load (std::memory_order_relaxed))))
         return kResultFalse;
     return kResultOk;
 }
