@@ -69,7 +69,15 @@ if(TARGET mpvst-stage-micropython-engine)
     # mpvst_editor_smoke covers it, through the real one.
     add_test(NAME mpvst_engine_modules COMMAND
         $<TARGET_FILE_DIR:MPVST>/${mpvst_engine_name}
-        -c "import lvgl, vstaudio, vstui, displaydev, appdev, multimer, events")
+        -c "import lvgl, vstaudio, vstui, displaydev, appdev, multimer, events, controlpanel")
+
+    # The editor's panel follows a host's patch change: every encoder and LED
+    # ring moves to the patch's macros, and nothing is sent back. The real
+    # EngineAdapter and panel, on a display with no window.
+    add_test(NAME mpvst_panel_follow COMMAND
+        $<TARGET_FILE_DIR:MPVST>/${mpvst_engine_name}
+        ${CMAKE_CURRENT_SOURCE_DIR}/panel_follow.py
+        $<TARGET_FILE_DIR:MPVST>)
 
     # The engine is prebuilt and every later build copies it in without asking
     # how old it is, so the suites below can certify a DSP core that is not the

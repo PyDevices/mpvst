@@ -47,10 +47,11 @@ will leave the plug-in unable to start its engine.
 
 ## Controls
 
-Identical to Windows, including the plug-in's own editor: a patch selector, a
-Reload button, a Bypass switch, a status light, and a slider per macro under
-whatever labels the script declares. Click a control to focus it, then scroll
-or swipe - sideways adjusts it, up and down moves between controls.
+Identical to Windows, including the plug-in's own editor: patch pads, FINE,
+Bypass and Reload buttons, an engine light, and an encoder per macro under
+whatever labels the script declares. Drag an encoder up to turn it, or click
+a control to focus it, then scroll or swipe - sideways adjusts it, up and
+down moves between controls.
 
 The editor is a plain X11 child window driven by the host's own run loop, so a
 host that provides no `IRunLoop` gets no editor and the generic parameter
