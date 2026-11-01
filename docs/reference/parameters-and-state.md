@@ -4,9 +4,19 @@ What a host sees of an MPVST instance, what it saves, and the environment variab
 
 ## Parameters
 
-An instance exposes 20 visible parameters: bypass, `Reload Script`, the read-only `Engine Ready` and `Engine Error`, a patch selector, and 16 macros. It also exposes 2,080 hidden parameters (16 MIDI channels by 130 controllers) that carry MIDI controller input. REAPER reports three more of its own.
+An instance exposes 22 visible parameters: bypass, `Reload Script`, the read-only `Engine Ready` and `Engine Error`, a patch selector, 16 macros, and `MIDI Channel`. It also exposes 130 hidden parameters that carry MIDI controller, pitch-bend and channel-pressure input on the selected channel. REAPER reports three more of its own.
+
+Hosts built on JUCE, such as Element, don't hide hidden parameters, so they show all 152.
 
 Macro parameter IDs are permanently 100 to 115. Labels are metadata that a script may change without detaching any automation. In the host's generic editor they appear as `Macro 01` through `Macro 16`, or as the script's labels.
+
+### MIDI channel
+
+An instance listens to one MIDI channel, set by `MIDI Channel` (1 to 16, default 1). Notes, poly and channel pressure, pitch bend, controllers and program changes on that channel reach the script, and the script sees them as that channel. Everything on the other 15 is dropped. To play two instruments from one keyboard split or one multi-channel MIDI track, give each instance its own channel.
+
+Changing the channel releases any notes still held on the old one: the script gets All Notes Off (controller 123) on the old channel.
+
+The setting is saved with the project. A project saved before the setting existed opens on channel 1. Its automation on channel 1's controllers keeps working, because they kept their parameter IDs; automation recorded on another channel's controllers points at parameters that no longer exist, and hosts drop it.
 
 Bypass on an instrument produces silence. On an effect it swaps to a latency-matched dry path.
 
@@ -27,7 +37,7 @@ An exit code of `-1000` in the telemetry means the supervisor killed an engine t
 
 ## Saved state
 
-A project embeds the active script's source, so reopening it doesn't depend on the original path. State version 2 holds the bypass flag, the 16 macro values, the pipeline setting and up to 1 MiB of script source. It accepts legacy version 1 data. The byte layout is in [Generate projects from code](../guides/generate-projects.md#put-the-chunk-into-the-rpp).
+A project embeds the active script's source, so reopening it doesn't depend on the original path. State version 4 holds the bypass flag, the 16 macro values, the pipeline setting, up to 1 MiB of script source, which macros somebody actually set, and the MIDI channel. It accepts versions 1 to 3, which open on MIDI channel 1. The byte layout is in [Generate projects from code](../guides/generate-projects.md#put-the-chunk-into-the-rpp).
 
 An instance started from `MPVST_SCRIPT_PATH` follows that file: reloading re-reads it, and saving embeds what is on disk. An instance restored from project state keeps its embedded snapshot and ignores later edits to the original.
 

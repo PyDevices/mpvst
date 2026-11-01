@@ -28,7 +28,7 @@ The handler is called as `handler(event_type, channel, note_id, data0, value0, v
 | `EVENT_TRANSPORT` | 8 | sent on locates, loop wraps, play-state, tempo and time-signature changes |
 | `EVENT_PROGRAM_CHANGE` | 9 | `data0` is the program number |
 
-A note-on with velocity 0 is how some hosts send a note-off. Every one of the 128 MIDI controllers on 16 channels reaches the script as `EVENT_CONTROL_CHANGE`.
+A note-on with velocity 0 is how some hosts send a note-off. Every one of the 128 MIDI controllers reaches the script as `EVENT_CONTROL_CHANGE`. Only the instance's MIDI channel reaches it at all, and `channel` is always that channel, 0 to 15 ([MIDI channel](parameters-and-state.md#midi-channel)).
 
 ## Declarations
 
