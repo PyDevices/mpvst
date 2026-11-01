@@ -10,6 +10,8 @@
 #include "pluginterfaces/vst/ivstcomponent.h"
 #include "pluginterfaces/vst/ivsteditcontroller.h"
 #include "pluginterfaces/vst/ivstmessage.h"
+#include "pluginterfaces/vst/ivstmidicontrollers.h"
+#include "pluginterfaces/vst/ivstunits.h"
 #include "pluginterfaces/base/ustring.h"
 #include "pluginterfaces/gui/iplugview.h"
 
@@ -134,22 +136,33 @@ const ClassInfo* findAudioClassNamed(const PluginFactory& factory,
     return nullptr;
 }
 
-// The known-macro mask is the last int32 of a version 3 chunk. Read from the
-// tail rather than by re-walking the layout, so this stays true whatever the
-// embedded script's length turns out to be.
-bool readKnownMask(const MemoryStream& chunk, Steinberg::uint32& mask)
+// A version 4 chunk ends with the known-macro mask and then the MIDI
+// channel. Both are read from the tail rather than by re-walking the layout,
+// so this stays true whatever the embedded script's length turns out to be.
+bool readTailInt(const MemoryStream& chunk, std::size_t fromEnd,
+                 Steinberg::uint32& value)
 {
-    const auto size = chunk.getSize();
-    if (size < 4)
+    const auto size = static_cast<std::size_t>(chunk.getSize());
+    if (size < fromEnd)
         return false;
     const auto* bytes =
         reinterpret_cast<const unsigned char*>(chunk.getData());
-    const auto tail = static_cast<std::size_t>(size) - 4U;
-    mask = static_cast<Steinberg::uint32>(bytes[tail]) |
-           (static_cast<Steinberg::uint32>(bytes[tail + 1U]) << 8) |
-           (static_cast<Steinberg::uint32>(bytes[tail + 2U]) << 16) |
-           (static_cast<Steinberg::uint32>(bytes[tail + 3U]) << 24);
+    const auto at = size - fromEnd;
+    value = static_cast<Steinberg::uint32>(bytes[at]) |
+            (static_cast<Steinberg::uint32>(bytes[at + 1U]) << 8) |
+            (static_cast<Steinberg::uint32>(bytes[at + 2U]) << 16) |
+            (static_cast<Steinberg::uint32>(bytes[at + 3U]) << 24);
     return true;
+}
+
+bool readKnownMask(const MemoryStream& chunk, Steinberg::uint32& mask)
+{
+    return readTailInt(chunk, 8U, mask);
+}
+
+bool readMidiChannel(const MemoryStream& chunk, Steinberg::uint32& channel)
+{
+    return readTailInt(chunk, 4U, channel);
 }
 
 bool stateRoundTrip(const PluginFactory& factory, const ClassInfo& classInfo,
@@ -2448,6 +2461,357 @@ bool patchSelectDeliversProgramChange(const PluginFactory& factory,
           std::abs(actualRatio - expectedRatio) < expectedRatio * 0.25;
 }
 
+// The instance listens to one MIDI channel. The controller exposes the
+// real parameters, one set of 130 controller proxies and the MIDI Channel
+// setting, and maps only the selected channel's controllers; the processor
+// passes only that channel's notes and hands everything on as that channel;
+// and the choice survives a save. The script makes the evidence audible: a
+// note sounds at (channel + 1) / 16, so the level says which channel it came
+// in on, and silence says it never arrived.
+bool midiChannelFilters(const PluginFactory& factory,
+                        const ClassInfo& classInfo, FUnknown* host)
+{
+    constexpr ParamID kChannelParameter = 5;
+    constexpr ParamID kFirstController = 0x10000;
+    constexpr int32 kExpectedParameters = 21 + 130 + 1;
+
+    const auto fail = [](const char* what) {
+        std::cerr << "HOOK midi.channel FAIL: " << what << '\n';
+        return false;
+    };
+
+    // ---- the controller --------------------------------------------------
+    auto probe = createComponent(factory, classInfo, host);
+    if (!probe)
+        return fail("no component");
+    TUID controllerCID {};
+    if (!ok(probe->getControllerClassId(controllerCID)))
+        return fail("no controller class");
+    (void)probe->terminate();
+    probe = nullptr;
+    auto controller =
+        factory.createInstance<IEditController>(VST3::UID(controllerCID));
+    if (!controller || !ok(controller->initialize(host)))
+        return fail("controller did not initialize");
+    const auto parameterCount = controller->getParameterCount();
+    int32 channelIndex = -1;
+    int32 hiddenCount = 0;
+    ParameterInfo channelInfo {};
+    for (int32 index = 0; index < parameterCount; ++index)
+    {
+        ParameterInfo info {};
+        if (controller->getParameterInfo(index, info) != kResultTrue)
+            continue;
+        if ((info.flags & ParameterInfo::kIsHidden) != 0)
+            ++hiddenCount;
+        if (info.id == kChannelParameter)
+        {
+            channelIndex = index;
+            channelInfo = info;
+        }
+    }
+    std::cout << "MIDI_CHANNEL parameters=" << parameterCount
+              << " hidden=" << hiddenCount << " channel_index=" << channelIndex
+              << '\n';
+    if (parameterCount != kExpectedParameters || hiddenCount != 130 ||
+        channelIndex != kExpectedParameters - 1 || channelInfo.stepCount != 15 ||
+        (channelInfo.flags & ParameterInfo::kIsHidden) != 0)
+        return fail("wrong parameter layout");
+    if (controller->getParamNormalized(kChannelParameter) != 0.0)
+        return fail("default channel is not 1");
+    std::array<char16, 128> shown {};
+    if (controller->getParamStringByValue(kChannelParameter, 1.0, shown.data()) !=
+        kResultTrue)
+        return fail("no channel display string");
+    {
+        std::array<char, 16> ascii {};
+        UString(shown.data(), static_cast<int32>(shown.size()))
+            .toAscii(ascii.data(), static_cast<int32>(ascii.size()));
+        if (std::string {ascii.data()} != "16")
+            return fail("channel 16 is not shown as 16");
+    }
+
+    IMidiMapping* rawMapping = nullptr;
+    IUnitInfo* rawUnits = nullptr;
+    if (!ok(controller->queryInterface(IMidiMapping::iid,
+                                       reinterpret_cast<void**>(&rawMapping))) ||
+        !ok(controller->queryInterface(IUnitInfo::iid,
+                                       reinterpret_cast<void**>(&rawUnits))))
+        return fail("no IMidiMapping or IUnitInfo");
+    auto mapping = owned(rawMapping);
+    auto units = owned(rawUnits);
+    // Every controller on the selected channel maps to the one set; every
+    // controller on every other channel maps to nothing; program change
+    // follows the selected channel too.
+    const auto mapsOnly = [&](int16 wanted) {
+        for (int16 channel = 0; channel < 16; ++channel)
+        {
+            for (CtrlNumber number : {CtrlNumber {1}, CtrlNumber {7},
+                                      CtrlNumber {kPitchBend},
+                                      CtrlNumber {kAfterTouch}})
+            {
+                ParamID id = 0;
+                const bool mapped =
+                    mapping->getMidiControllerAssignment(0, channel, number, id) ==
+                    kResultTrue;
+                if (mapped != (channel == wanted))
+                    return false;
+                if (mapped && id != kFirstController + static_cast<ParamID>(number))
+                    return false;
+            }
+            UnitID unit = -1;
+            const bool program =
+                units->getUnitByBus(kEvent, kInput, 0, channel, unit) == kResultTrue;
+            if (program != (channel == wanted))
+                return false;
+        }
+        ParamID id = 0;
+        return mapping->getMidiControllerAssignment(0, wanted, 130, id) != kResultTrue;
+    };
+    if (!mapsOnly(0))
+        return fail("channel 1 mapping");
+    if (!ok(controller->setParamNormalized(kChannelParameter, 1.0 / 15.0)) ||
+        !mapsOnly(1))
+        return fail("channel 2 mapping");
+    std::cout << "HOOK midi.channel_mapping OK: one set of 130, channel 1 then 2\n";
+
+    // ---- the processor ---------------------------------------------------
+    const auto sourcePath = std::filesystem::temp_directory_path() /
+        "mpvst-midi-channel.py";
+    constexpr const char* source =
+        "import synthio\n"
+        "import vstaudio\n"
+        "synth = synthio.Synthesizer(sample_rate=vstaudio.sample_rate(), "
+        "channel_count=2)\n"
+        "vstaudio.output(synth)\n"
+        "note = synthio.Note(220.0, amplitude=0.0)\n"
+        "synth.press(note)\n"
+        "def handle_event(event_type, channel, note_id, data0, value0, "
+        "value1, sample_position):\n"
+        "    if event_type == vstaudio.EVENT_NOTE_ON:\n"
+        "        note.amplitude = (channel + 1) / 16.0\n"
+        "    elif event_type == vstaudio.EVENT_NOTE_OFF:\n"
+        "        note.amplitude = 0.0\n"
+        "    elif event_type == vstaudio.EVENT_CONTROL_CHANGE:\n"
+        "        if data0 == 7:\n"
+        "            note.amplitude = value0 * (channel + 1) / 16.0\n"
+        "        elif data0 == 123:\n"
+        "            note.amplitude = 0.0\n"
+        "vstaudio.on_event(handle_event)\n";
+    {
+        std::ofstream out(sourcePath, std::ios::binary | std::ios::trunc);
+        if (!out || !out.write(source, static_cast<std::streamsize>(
+                                           std::strlen(source))))
+            return fail("could not write the probe script");
+    }
+    setScriptPath(sourcePath.string());
+    struct Cleanup
+    {
+        std::filesystem::path path;
+        ~Cleanup()
+        {
+            setScriptPath({});
+            std::error_code ignored;
+            (void)std::filesystem::remove(path, ignored);
+        }
+    } cleanup {sourcePath};
+
+    auto component = createComponent(factory, classInfo, host);
+    auto processor = getProcessor(component);
+    if (!component || !processor)
+        return fail("no processor");
+    SpeakerArrangement stereo = SpeakerArr::kStereo;
+    ProcessSetup setup {};
+    setup.processMode = kOffline;
+    setup.symbolicSampleSize = kSample32;
+    setup.maxSamplesPerBlock = 256;
+    setup.sampleRate = 48000.0;
+    if (!ok(processor->setBusArrangements(nullptr, 0, &stereo, 1)) ||
+        !ok(component->activateBus(kAudio, kOutput, 0, true)) ||
+        !ok(component->activateBus(kEvent, kInput, 0, true)) ||
+        !ok(processor->setupProcessing(setup)) ||
+        !ok(component->setActive(true)) ||
+        !ok(processor->setProcessing(true)))
+        return fail("could not start processing");
+
+    std::array<float, 256> left {};
+    std::array<float, 256> right {};
+    Sample32* channels[] = {left.data(), right.data()};
+    AudioBusBuffers output {};
+    output.numChannels = 2;
+    output.channelBuffers32 = channels;
+    ProcessData data {};
+    data.processMode = kOffline;
+    data.symbolicSampleSize = kSample32;
+    data.numSamples = static_cast<int32>(left.size());
+    data.numOutputs = 1;
+    data.outputs = &output;
+    ParameterChanges statusOut {2};
+    data.outputParameterChanges = &statusOut;
+    bool sawReady = false;
+    const auto pump = [&](int blocks) {
+        for (int block = 0; block < blocks; ++block)
+        {
+            if (!ok(processor->process(data)))
+                return false;
+            for (int32 queueIndex = 0;
+                 queueIndex < statusOut.getParameterCount(); ++queueIndex)
+            {
+                auto* queue = statusOut.getParameterData(queueIndex);
+                int32 offset = 0;
+                ParamValue value = 0.0;
+                if (queue != nullptr && queue->getParameterId() == 2U &&
+                    queue->getPointCount() > 0 &&
+                    queue->getPoint(queue->getPointCount() - 1, offset, value) ==
+                        kResultTrue && value >= 1.0)
+                    sawReady = true;
+            }
+            statusOut.clearQueue();
+        }
+        return true;
+    };
+    if (!pump(64) || !sawReady)
+        return fail("engine never became ready");
+    const auto latencyBlocks =
+        static_cast<int>(processor->getLatencySamples() / left.size()) + 4;
+
+    const auto noteEvent = [](bool on, int16 channel) {
+        Event event {};
+        event.busIndex = 0;
+        event.sampleOffset = 0;
+        event.type = on ? Event::kNoteOnEvent : Event::kNoteOffEvent;
+        if (on)
+        {
+            event.noteOn.channel = channel;
+            event.noteOn.pitch = 57;
+            event.noteOn.velocity = 1.0F;
+            event.noteOn.noteId = -1;
+        }
+        else
+        {
+            event.noteOff.channel = channel;
+            event.noteOff.pitch = 57;
+            event.noteOff.noteId = -1;
+        }
+        return event;
+    };
+    // Sends one block with these events and parameter changes, waits out the
+    // pipeline, and returns the RMS of what follows.
+    const auto rmsAfter = [&](std::vector<Event> events,
+                              std::vector<std::pair<ParamID, ParamValue>> params) {
+        EventList list;
+        for (auto& event : events)
+            (void)list.addEvent(event);
+        ParameterChanges changes {static_cast<int32>(params.size() + 1)};
+        for (const auto& [id, value] : params)
+        {
+            int32 queueIndex = 0;
+            int32 pointIndex = 0;
+            auto* queue = changes.addParameterData(id, queueIndex);
+            if (queue != nullptr)
+                (void)queue->addPoint(0, value, pointIndex);
+        }
+        data.inputEvents = &list;
+        data.inputParameterChanges = &changes;
+        const bool sent = ok(processor->process(data));
+        data.inputEvents = nullptr;
+        data.inputParameterChanges = nullptr;
+        if (!sent || !pump(latencyBlocks))
+            return -1.0;
+        double acc = 0.0;
+        for (int block = 0; block < 4; ++block)
+        {
+            if (!pump(1))
+                return -1.0;
+            for (auto sample : left)
+                acc += static_cast<double>(sample) * sample;
+        }
+        return std::sqrt(acc / (4.0 * static_cast<double>(left.size())));
+    };
+
+    constexpr double kSilent = 1e-5;
+    const auto ch1Note = rmsAfter({noteEvent(true, 0)}, {});
+    const auto ch1Off = rmsAfter({noteEvent(false, 0)}, {});
+    const auto ch2Ignored = rmsAfter({noteEvent(true, 1)}, {});
+    const auto ch2Note = rmsAfter({noteEvent(true, 1)},
+                                  {{kChannelParameter, 1.0 / 15.0}});
+    const auto ch2Off = rmsAfter({noteEvent(false, 1)}, {});
+    const auto ch1Ignored = rmsAfter({noteEvent(true, 0)}, {});
+    const auto ccOnCh2 = rmsAfter({}, {{kFirstController + 7, 1.0}});
+    MemoryStream saved;
+    Steinberg::uint32 savedChannel = 99U;
+    const bool savedOk = ok(component->getState(&saved)) &&
+                         readMidiChannel(saved, savedChannel);
+    // Back to channel 1 with channel 2's note still sounding: it is released.
+    const auto released = rmsAfter({}, {{kChannelParameter, 0.0}});
+
+    std::cout << "MIDI_CHANNEL ch1_note=" << ch1Note << " ch1_off=" << ch1Off
+              << " ch2_while_on_1=" << ch2Ignored << " ch2_note=" << ch2Note
+              << " ch2_off=" << ch2Off << " ch1_while_on_2=" << ch1Ignored
+              << " cc7_on_2=" << ccOnCh2 << " saved_channel=" << savedChannel
+              << " after_switch_back=" << released << '\n';
+
+    data.outputParameterChanges = nullptr;
+    const bool stopped = ok(processor->setProcessing(false)) &&
+                         ok(component->setActive(false));
+    processor = nullptr;
+
+    // A note on channel 1 arrives as channel 1 (level 1/16); on channel 2 it
+    // arrives as channel 2 (level 2/16), so the second is twice the first.
+    if (ch1Note <= kSilent || ch1Off > kSilent || ch2Ignored > kSilent ||
+        ch2Off > kSilent || ch1Ignored > kSilent || released > kSilent)
+        return fail("a note on the wrong channel sounded, or one on the right "
+                    "channel did not");
+    if (std::abs(ch2Note / ch1Note - 2.0) > 0.25 ||
+        std::abs(ccOnCh2 / ch2Note - 1.0) > 0.125)
+        return fail("events did not arrive as the selected channel");
+    std::cout << "HOOK midi.channel_filter OK: channel 1 then 2, the other "
+                 "dropped each time\n";
+
+    // ---- state -----------------------------------------------------------
+    if (!savedOk || savedChannel != 1U)
+        return fail("the saved state does not hold channel 2");
+    saved.seek(0, IBStream::kIBSeekSet, nullptr);
+    if (!ok(controller->setComponentState(&saved)) ||
+        std::abs(controller->getParamNormalized(kChannelParameter) - 1.0 / 15.0) >
+            1e-9 ||
+        !mapsOnly(1))
+        return fail("the controller did not restore channel 2");
+    auto restored = createComponent(factory, classInfo, host);
+    saved.seek(0, IBStream::kIBSeekSet, nullptr);
+    MemoryStream again;
+    Steinberg::uint32 restoredChannel = 99U;
+    if (!restored || !ok(restored->setState(&saved)) ||
+        !ok(restored->getState(&again)) || !readMidiChannel(again, restoredChannel) ||
+        restoredChannel != 1U)
+        return fail("a restored component lost channel 2");
+    (void)restored->terminate();
+    restored = nullptr;
+    // A version 3 chunk, from before the setting, listens on channel 1.
+    MemoryStream older;
+    IBStreamer writer(&older, kLittleEndian);
+    if (!writer.writeInt32(3) || !writer.writeInt32(0))
+        return false;
+    for (int index = 0; index < 16; ++index)
+        (void)writer.writeFloat(0.5F);
+    (void)writer.writeInt32(4);
+    (void)writer.writeInt32(0);
+    (void)writer.writeInt32(0);
+    older.seek(0, IBStream::kIBSeekSet, nullptr);
+    if (!ok(controller->setComponentState(&older)) ||
+        controller->getParamNormalized(kChannelParameter) != 0.0 || !mapsOnly(0))
+        return fail("an older project did not come back on channel 1");
+    std::cout << "HOOK midi.channel_state OK: saved, restored, older chunk on 1\n";
+
+    mapping = nullptr;
+    units = nullptr;
+    (void)controller->terminate();
+    controller = nullptr;
+    const bool terminated = ok(component->terminate());
+    component = nullptr;
+    return stopped && terminated;
+}
+
 // A tempo-synced delay in a named-effect script follows the host's tempo:
 // the tempo it starts at, and a change in the middle of the stream, in the
 // block the change happens in, with no control moving. DigitalDelay with Sync
@@ -2645,6 +3009,7 @@ int main(int argc, char** argv)
     const bool scriptProbe = mode == "--effect-script";
     const bool instrumentProbe = mode == "--instrument-script";
     const bool tempoMode = mode == "--expect-tempo-follow";
+    const bool midiChannelMode = mode == "--expect-midi-channel";
     if (argc < 2 || argc > 4 ||
         ((renderMode || scriptProbe || instrumentProbe || frameDump ||
           windowCapture || namedMode) && modeArgument.empty()) ||
@@ -2657,13 +3022,14 @@ int main(int argc, char** argv)
          mode != "--capture-editor-window" && mode != "--expect-named" &&
          mode != "--expect-all-named" && mode != "--expect-tempo-follow" &&
          mode != "--effect-script" && mode != "--instrument-script" &&
-         !renderMode))
+         !midiChannelMode && !renderMode))
     {
         std::cerr << "usage: mpvst_smoke_host <plugin.vst3> "
                      "[--expect-micropython|--expect-embedded-state|"
                      "--expect-effect-audio|"
                      "--expect-tempo-follow|"
                      "--expect-patch-select|"
+                     "--expect-midi-channel|"
                      "--expect-editor|"
                      "--dump-editor-frame <out.ppm>|"
                      "--capture-editor-window <out.ppm>|"
@@ -2846,6 +3212,15 @@ int main(int argc, char** argv)
             }
             std::cout << "HOOK editor OK\n";
         }
+        else if (midiChannelMode)
+        {
+            if (!midiChannelFilters(factory, classInfo, host))
+            {
+                std::cerr << "HOOK midi.channel FAIL\n";
+                return 5;
+            }
+            std::cout << "HOOK midi.channel OK\n";
+        }
         else if (patchSelectMode)
         {
             if (!patchSelectDeliversProgramChange(factory, classInfo, host))
@@ -2873,6 +3248,7 @@ int main(int argc, char** argv)
                                   !renderMode && !effectMode && !scriptProbe &&
                                   !tempoMode &&
                                   !instrumentProbe && !patchSelectMode &&
+                                  !midiChannelMode &&
                                   !editorMode && !windowCapture &&
                                   !namedMode && !sweepMode;
         if (defaultSuite)

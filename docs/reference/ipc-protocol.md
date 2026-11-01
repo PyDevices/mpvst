@@ -25,7 +25,7 @@ The mapping begins with a fixed header holding offsets and sizes for the host-to
 
 An output slot is a 64-byte header followed by `max_frames` left samples and `max_frames` right samples, with the stride rounded up to the next 64-byte boundary. Output is planar stereo float32.
 
-VST3 MIDI controller parameters are decoded before they enter the event ring: `channel` keeps the MIDI channel, `data0` the controller number, `value0` is normalized 0 to 1, and pitch bend also carries its bipolar value in `value1`.
+VST3 MIDI controller parameters are decoded before they enter the event ring: `channel` is the instance's selected MIDI channel, `data0` the controller number, `value0` is normalized 0 to 1, and pitch bend also carries its bipolar value in `value1`.
 
 ## Slots never block the audio thread
 

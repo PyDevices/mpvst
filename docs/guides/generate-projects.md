@@ -77,6 +77,8 @@ Little-endian component state:
 | script length | `int32` | bytes, not characters |
 | script | bytes | UTF-8, no terminator |
 
+A version 2 chunk is still read as it always was, and the instance listens on MIDI channel 1. What the plug-in itself saves is version 4: the same fields, then an `int32` mask of the macros somebody set, then the MIDI channel as an `int32` from 0 to 15.
+
 REAPER wraps that in a header of `uint32` words (first word = the class's Reaper numeric id; the `None` slot is the data size), then `uint32 length`, `uint32 1`, the component, and eight zero bytes. Base64 the header as the first line, the data in 128-character lines, and a footer of six zero bytes.
 
 ```python

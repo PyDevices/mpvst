@@ -14,5 +14,8 @@ Planned work, in no particular order:
 - **The C modules in the shape every PyDevices module has.** `vstaudio` and
   `vstui` keep their C under `src/`, gain a simpletest each and a `__revision__`.
 
+- **The MIDI channel on the editor's panel.** Show and change the instance's
+  MIDI channel from the panel, not only from the host's parameter list.
+
 Bugs, and things you need that don't work yet, go to
 [issues](https://github.com/PyDevices/mpvst/issues).

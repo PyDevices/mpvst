@@ -73,22 +73,38 @@ tresult PLUGIN_API Controller::initialize (FUnknown* context)
             kFirstMacroParameter + static_cast<ParamID> (index));
     }
 
+    // One hidden parameter per MIDI controller, plus pitch bend and channel
+    // pressure, which VST3 delivers the same way. They carry the selected
+    // channel's controllers; getMidiControllerAssignment maps no other
+    // channel onto them. Hosts built on JUCE ignore kIsHidden and draw every
+    // parameter, which is why there is one set and not one per channel.
+    for (std::size_t controller = 0; controller < kMidiControllerCount;
+         ++controller)
+    {
+        std::array<char, 48> ascii {};
+        std::snprintf (ascii.data (), ascii.size (), "MIDI Ctrl %03u",
+                       static_cast<unsigned> (controller));
+        UString128 title (ascii.data ());
+        parameters.addParameter (
+            title, nullptr, 0, 0.0,
+            ParameterInfo::kCanAutomate | ParameterInfo::kIsHidden,
+            midiParameterId (controller));
+    }
+
+    // Last, so every parameter above keeps the index it had before this one
+    // existed: some hosts record automation by index.
+    auto* channelParameter = new StringListParameter (
+        STR16 ("MIDI Channel"), kMidiChannelParameter, nullptr,
+        ParameterInfo::kCanAutomate | ParameterInfo::kIsList);
     for (std::size_t channel = 0; channel < kMidiChannelCount; ++channel)
     {
-        for (std::size_t controller = 0; controller < kMidiControllerCount;
-             ++controller)
-        {
-            std::array<char, 48> ascii {};
-            std::snprintf (ascii.data (), ascii.size (), "MIDI Ch %02u Ctrl %03u",
-                           static_cast<unsigned> (channel + 1U),
-                           static_cast<unsigned> (controller));
-            UString128 title (ascii.data ());
-            parameters.addParameter (
-                title, nullptr, 0, 0.0,
-                ParameterInfo::kCanAutomate | ParameterInfo::kIsHidden,
-                midiParameterId (channel, controller));
-        }
+        std::array<char, 8> ascii {};
+        std::snprintf (ascii.data (), ascii.size (), "%u",
+                       static_cast<unsigned> (channel + 1U));
+        UString128 label (ascii.data ());
+        channelParameter->appendString (label);
     }
+    parameters.addParameter (channelParameter);
 
     return kResultOk;
 }
@@ -167,17 +183,36 @@ tresult PLUGIN_API Controller::notify (IMessage* message)
     return EditControllerEx1::notify (message);
 }
 
+std::uint16_t Controller::midiChannel ()
+{
+    return midiChannelFromNormalized (
+        EditControllerEx1::getParamNormalized (kMidiChannelParameter));
+}
+
+tresult PLUGIN_API Controller::setParamNormalized (ParamID tag, ParamValue value)
+{
+    const auto before = midiChannel ();
+    const auto result = EditControllerEx1::setParamNormalized (tag, value);
+    // A host asks which parameter a channel's controller maps to once and
+    // remembers the answer, so a new channel has to be announced.
+    if (tag == kMidiChannelParameter && midiChannel () != before &&
+        componentHandler != nullptr)
+        (void)componentHandler->restartComponent (kMidiCCAssignmentChanged);
+    return result;
+}
+
 tresult PLUGIN_API Controller::getMidiControllerAssignment (
     int32 busIndex, int16 channel, CtrlNumber midiControllerNumber, ParamID& id)
 {
+    // Only the selected channel's controllers have somewhere to go. Every
+    // other channel's are left unmapped, so the host drops them.
     if (busIndex != 0 || channel < 0 ||
-        static_cast<std::size_t> (channel) >= kMidiChannelCount ||
+        static_cast<std::uint16_t> (channel) != midiChannel () ||
         midiControllerNumber < 0 ||
         static_cast<std::size_t> (midiControllerNumber) >= kMidiControllerCount)
         return kResultFalse;
 
-    id = midiParameterId (static_cast<std::size_t> (channel),
-                          static_cast<std::size_t> (midiControllerNumber));
+    id = midiParameterId (static_cast<std::size_t> (midiControllerNumber));
     return kResultTrue;
 }
 
@@ -187,8 +222,10 @@ tresult PLUGIN_API Controller::getUnitByBus (MediaType type, BusDirection dir,
 {
     // Associates the event input bus with the root unit, which owns the
     // patch program list: this is what tells a host it may translate an
-    // incoming MIDI Program Change message into kPatchParameter.
-    if (type == kEvent && dir == kInput && busIndex == 0 && channel == 0)
+    // incoming MIDI Program Change message into kPatchParameter. Only on the
+    // selected channel: a program change on any other is not for us.
+    if (type == kEvent && dir == kInput && busIndex == 0 && channel >= 0 &&
+        static_cast<std::uint16_t> (channel) == midiChannel ())
     {
         unitId = kRootUnitId;
         return kResultTrue;
@@ -232,6 +269,21 @@ tresult PLUGIN_API Controller::setComponentState (IBStream* state)
             return kResultFalse;
     }
 
+    // Version 3 appended the known-macro mask, which the controller has no
+    // use for; version 4 the MIDI channel after it.
+    int32 midiChannelIndex = 0;
+    if (version >= kStateVersion)
+    {
+        int32 known = 0;
+        if (!stream.readInt32 (known) || !stream.readInt32 (midiChannelIndex) ||
+            midiChannelIndex < 0 ||
+            midiChannelIndex >= static_cast<int32> (kMidiChannelCount))
+            return kResultFalse;
+    }
+
+    setParamNormalized (kMidiChannelParameter,
+                        midiChannelToNormalized (
+                            static_cast<std::size_t> (midiChannelIndex)));
     setParamNormalized (kBypassParameter, bypass != 0 ? 1.0 : 0.0);
     for (std::size_t index = 0; index < values.size (); ++index)
     {

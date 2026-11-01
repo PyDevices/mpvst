@@ -21,6 +21,8 @@ public:
     Steinberg::IPlugView* PLUGIN_API createView (Steinberg::FIDString name) override;
     Steinberg::tresult PLUGIN_API notify (Steinberg::Vst::IMessage* message) override;
     Steinberg::tresult PLUGIN_API setComponentState (Steinberg::IBStream* state) override;
+    Steinberg::tresult PLUGIN_API setParamNormalized (
+        Steinberg::Vst::ParamID tag, Steinberg::Vst::ParamValue value) override;
     Steinberg::tresult PLUGIN_API getMidiControllerAssignment (
         Steinberg::int32 busIndex, Steinberg::int16 channel,
         Steinberg::Vst::CtrlNumber midiControllerNumber,
@@ -33,6 +35,10 @@ public:
     void editorClosed (Editor* editor);
 
 private:
+    // The channel the instance listens to, 0-15, as the MIDI Channel
+    // parameter says.
+    std::uint16_t midiChannel ();
+
     // The mapping the processor reported. Held whether or not a view exists,
     // because the report and the host's decision to open an editor arrive in
     // whichever order the host feels like.

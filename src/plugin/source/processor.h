@@ -63,6 +63,11 @@ private:
     std::uint32_t collectEvents (Steinberg::Vst::IEventList* input,
                                  Steinberg::int32 frameCount,
                                  std::uint32_t count) noexcept;
+    // Applies a MIDI Channel change from this block, before any event is
+    // read, and releases what was playing on the old channel.
+    std::uint32_t applyMidiChannelChange (
+        Steinberg::Vst::IParameterChanges* changes,
+        Steinberg::int32 frameCount, std::uint32_t count) noexcept;
     std::uint32_t emitMacroResync (Steinberg::int32 frameCount,
                                    std::uint32_t count) noexcept;
     SidecarTransport::TransportInfo readTransport (
@@ -91,6 +96,8 @@ private:
     // merely defaulted to never overwrites what the script built itself.
     std::atomic<Steinberg::uint32> macrosKnown_ {0};
     std::array<std::atomic<float>, kMacroParameterCount> macros_ {};
+    // The one MIDI channel, 0-15, whose events reach the script.
+    std::atomic<Steinberg::uint32> midiChannel_ {0};
     std::string scriptSource_;
     Steinberg::int32 pipelineBlocks_ {kDefaultPipelineBlocks};
     float publishedReady_ {-1.0F};
