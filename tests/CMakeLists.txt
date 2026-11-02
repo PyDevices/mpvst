@@ -69,7 +69,7 @@ if(TARGET mpvst-stage-micropython-engine)
     # mpvst_editor_smoke covers it, through the real one.
     add_test(NAME mpvst_engine_modules COMMAND
         $<TARGET_FILE_DIR:MPVST>/${mpvst_engine_name}
-        -c "import lvgl, vstaudio, vstui, displaydev, appdev, multimer, events, controlpanel")
+        -c "import lvgl, vstaudio, vstui, displaydev, appdev, multimer, events, controlkit, audioinstruments.panel_view")
 
     # The editor's panel follows a host's patch change: every encoder and LED
     # ring moves to the patch's macros, and nothing is sent back. The real

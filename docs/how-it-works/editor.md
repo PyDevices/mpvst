@@ -1,6 +1,6 @@
 # The editor
 
-Every instance can show a panel of its own, laid out like a hardware instrument. It has sixteen patch pads in eight banks, an encoder with a ring of LEDs for each macro, a dot-matrix display, an engine light, and FINE, BYPASS and RELOAD buttons, labelled with whatever the script declares. This page is how that panel works and what happens when it breaks. It is one generic panel, the `controlpanel` package, frozen into the engine. Per-script panels, meters and resizable editors aren't built.
+Every instance can show a panel of its own, laid out like a hardware instrument. It has sixteen patch pads in eight banks, an encoder with a ring of LEDs for each macro, a dot-matrix display, an engine light, and FINE, BYPASS and RELOAD buttons, labelled with whatever the script declares. This page is how that panel works and what happens when it breaks. It is one generic panel, the `audioinstruments` panel file, on the `controlkit` package, frozen into the engine. Per-script panels, meters and resizable editors aren't built.
 
 ## Who draws what
 
