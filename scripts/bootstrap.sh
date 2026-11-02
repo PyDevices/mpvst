@@ -16,8 +16,10 @@ die() { log "ERROR: $*"; exit 1; }
 
 build_mp="$repo_dir/../micropython-pydevices/build_mp.py"
 [[ -x "$build_mp" ]] || die "no micropython-pydevices checkout beside this one (clone PyDevices/micropython-pydevices next to it)"
+apps_dir=$(cd "$repo_dir/.." && pwd)/apps
+[[ -f "$apps_dir/manifest.py" ]] || die "no apps checkout beside this one (clone PyDevices/apps next to it)"
 # The engine's modules: CONTRIBUTING.md says what each one is for.
-engine_modules="audioinstruments,audioeffects,audiodsp,audioif,controlkit,lvgl,pydevices,ulab,$repo_dir"
+engine_modules="audioinstruments,audioeffects,audiodsp,audioif,lvgl,pydevices,ulab,$apps_dir,$repo_dir"
 
 log "fetching VST3 SDK"
 "$repo_dir/scripts/fetch-vst3-sdk.sh" || die "fetch-vst3-sdk.sh failed"

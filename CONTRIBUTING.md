@@ -95,10 +95,10 @@ audiodsp's DSP, audioif, LVGL and ulab:
 
 ```bash
 ../micropython-pydevices/build_mp.py --port windows --variant vst3-engine \
-    --modules audioinstruments,audioeffects,audiodsp,audioif,controlkit,lvgl,pydevices,ulab,$PWD \
+    --modules audioinstruments,audioeffects,audiodsp,audioif,lvgl,pydevices,ulab,$PWD/../apps,$PWD \
     ENGINE_ICON=$PWD/installer/art/mpvst.ico
 ../micropython-pydevices/build_mp.py --port unix --variant vst3-engine \
-    --modules audioinstruments,audioeffects,audiodsp,audioif,controlkit,lvgl,pydevices,ulab,$PWD
+    --modules audioinstruments,audioeffects,audiodsp,audioif,lvgl,pydevices,ulab,$PWD/../apps,$PWD
 ```
 
 It lands in `../micropython-pydevices/builds/<port>/vst3-engine/`, and the
