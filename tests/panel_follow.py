@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """The editor's panel follows a patch change from the host.
 
 Run by the engine itself (ctest mpvst_panel_follow), with the staged bundle

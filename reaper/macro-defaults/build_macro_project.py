@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """One-track MPVST project whose component state is written by hand.
 
 The point is to control the two fields a saved project carries that nobody

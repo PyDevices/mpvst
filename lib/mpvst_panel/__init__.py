@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """The editor's Python half: the panel and the adapter it edits through.
 
 The panel is audioinstruments' `panel_view`, which lays it out from `controlkit`,

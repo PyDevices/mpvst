@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """Play an `audioinstruments` module inside the sidecar.
 
 The instrument library is the `audioinstruments` package, which knows nothing

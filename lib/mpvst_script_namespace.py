@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """Where a bare script's declarations are left for the panel to find.
 
 A script is exec'd into a dict rather than imported, so there is no module for

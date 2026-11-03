@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """The empty slot: an instrument that produces no audio, so that a slot
 nobody chose is obvious.
 

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 MACRO_LABELS = ("Level")
 """Deterministic effect used by the DAW matrix.
 

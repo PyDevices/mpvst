@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """The panel's view of the engine across a reload, success and failure.
 
 Runs under CPython with stand-ins for the engine's `vstaudio` and `vstui`

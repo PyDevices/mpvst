@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """Run an `audioeffects` component inside the sidecar.
 
 The instrument twin of this is `mpvst_instrument_adapter`, and the split is the same:

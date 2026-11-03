@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """Run every audioeffects class through the real sidecar.
 
 For each public class this writes a tiny script that builds the effect

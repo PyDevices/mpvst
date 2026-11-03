@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """What the panel is allowed to know about the instance it is editing.
 
 The panel gets one of these and nothing else: no `vstui`, no `vstaudio`, no

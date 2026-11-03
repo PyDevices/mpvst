@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """Report the held-note level of each render, as a fraction of full scale.
 
 matrix_instrument.py renders a constant 0.125 + 0.125 * macro01 while a note

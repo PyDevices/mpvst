@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """Build a minimal REAPER project that sends a deterministic MIDI note
 sequence straight to a hardware MIDI output device - no VST instrument
 anywhere in the signal path. For bring-up testing a MIDI device against a

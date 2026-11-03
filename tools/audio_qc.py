@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """Measure a rendered WAV: loudness, true peak, and silence.
 
     python tools/audio_qc.py bounce/piece.wav

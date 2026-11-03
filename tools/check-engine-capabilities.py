@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """Refuse an engine that can reach the network or native code.
 
 docs/how-it-works/security.md promises that the shipped sidecar engine has no sockets, no

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """Refuse a sidecar engine older than the code that goes into it.
 
     engine-provenance.py check ENGINE

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """Draw the provisional MPVST icon.
 
 This is a placeholder and is meant to look like one: a flat rounded tile with
