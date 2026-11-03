@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """The editor's lifecycle inside the engine process.
 
 The bootstrap calls `start()` once and hands the returned `tick` to

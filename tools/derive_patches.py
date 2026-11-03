@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """Give every instrument patch 0 describing the sound it already makes.
 
 Every instrument must declare at least one patch: piece.py resolves an

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """Write `catalog.json`: everything a tool needs to build a project by hand.
 
 Run it with the engine, from the folder it lives in, the same way as the

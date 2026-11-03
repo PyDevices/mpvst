@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """The editor as an ordinary PyDevices board.
 
 `vstui` gives the engine a framebuffer, an input queue and an edit queue in

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """Verify the PCM that REAPER rendered during the DAW matrix.
 
 The matrix instrument emits a constant level while a note is held:

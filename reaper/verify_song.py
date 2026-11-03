@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """Compare the REAPER bounce of Perihelion against the offline preview.
 
 The preview (audiodsp CPython wheel) and the bounce (real plug-in, real

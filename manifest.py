@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """mpvst's C modules for a MicroPython build: vstaudio and vstui.
 
 Name this repository among the modules of a micropython-pydevices build, the

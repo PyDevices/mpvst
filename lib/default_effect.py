@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """The effect the Fx script host runs when you have not given it one.
 
 It passes its input through unchanged, which is the right thing for an empty

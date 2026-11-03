@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """Generate the DAW matrix's instrument-into-effect project.
 
 Both instances get their scripts embedded in synthesized VST3 state, the

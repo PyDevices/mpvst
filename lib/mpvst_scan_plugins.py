@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """Find every plug-in declared in audioinstruments and audioeffects.
 
 Run it with the engine, from the folder it lives in:

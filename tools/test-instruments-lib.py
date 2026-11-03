@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Brad Barnett
+#
+# SPDX-License-Identifier: MIT
+
 """Run every instrument script through the real synthio DSP.
 
 Uses the soundtrack composer's harness (the audiodsp CPython wheel, no compiled engine or
