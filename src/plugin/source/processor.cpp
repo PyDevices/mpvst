@@ -277,6 +277,35 @@ std::uint32_t Processor::collectParameterChanges (IParameterChanges* changes,
             continue;
         }
 
+        if (id == kReloadParameter)
+        {
+            // Every point, not just the last: a host may send 1 and then 0
+            // inside one block, and that press must still start a reload.
+            // Any number of rising edges in a block starts one reload.
+            auto level = reloadLatch_.load (std::memory_order_relaxed);
+            bool rose = false;
+            const auto pointCount = queue->getPointCount ();
+            for (int32 point = 0; point < pointCount; ++point)
+            {
+                int32 pointOffset = 0;
+                ParamValue pointValue = 0.0;
+                if (queue->getPoint (point, pointOffset, pointValue) !=
+                    kResultTrue)
+                    continue;
+                const auto next = pointValue >= 0.5 ? 1U : 0U;
+                if (next != 0U && level == 0U)
+                    rose = true;
+                level = next;
+            }
+            reloadLatch_.store (level, std::memory_order_relaxed);
+            if (rose && reloadFadeState_ == ReloadFadeState::Idle)
+            {
+                reloadFadeState_ = ReloadFadeState::FadingOut;
+                fadeSamplesRemaining_ = 128U;
+            }
+            continue;
+        }
+
         int32 sampleOffset = 0;
         ParamValue value = 0.0;
         if (queue->getPoint (queue->getPointCount () - 1, sampleOffset, value) !=
@@ -304,18 +333,6 @@ std::uint32_t Processor::collectParameterChanges (IParameterChanges* changes,
         else if (id == kBypassParameter)
         {
             bypass_.store (value >= 0.5 ? 1U : 0U, std::memory_order_relaxed);
-        }
-        else if (id == kReloadParameter)
-        {
-            const auto next = value >= 0.5 ? 1U : 0U;
-            const auto previous = reloadLatch_.exchange (next,
-                                                          std::memory_order_relaxed);
-            if (next != 0U && previous == 0U &&
-                reloadFadeState_ == ReloadFadeState::Idle)
-            {
-                reloadFadeState_ = ReloadFadeState::FadingOut;
-                fadeSamplesRemaining_ = 128U;
-            }
         }
     }
     return count;

@@ -153,6 +153,9 @@ if(TARGET mpvst-stage-micropython-engine)
         $<TARGET_FILE_DIR:MPVST>/../.. --expect-tempo-follow)
     add_test(NAME mpvst_patch_select_smoke COMMAND mpvst_smoke_host
         $<TARGET_FILE_DIR:MPVST>/../.. --expect-patch-select)
+    # RELOAD sent as 1 then 0 inside one block still starts one reload.
+    add_test(NAME mpvst_reload_pulse_smoke COMMAND mpvst_smoke_host
+        $<TARGET_FILE_DIR:MPVST>/../.. --expect-reload-pulse)
     # MIDI Channel, All or one: the parameter layout, the controller mapping, which
     # notes reach the script and as which channel, and the saved choice.
     add_test(NAME mpvst_midi_channel_smoke COMMAND mpvst_smoke_host

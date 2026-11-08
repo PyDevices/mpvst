@@ -2461,6 +2461,136 @@ bool patchSelectDeliversProgramChange(const PluginFactory& factory,
           std::abs(actualRatio - expectedRatio) < expectedRatio * 0.25;
 }
 
+// A host can send RELOAD as 1 and then 0 inside one block: automation, or a
+// control surface that pulses the parameter. That press must still start a
+// reload. The script holds a steady tone, and a reload is audible as the
+// processor's fade: the output goes silent while the engine re-runs the
+// script, then the tone comes back. With no reload the tone never stops.
+// `pcmPath`, when given, receives the left channel as raw float32.
+bool reloadPulseInOneBlock(const PluginFactory& factory,
+                           const ClassInfo& classInfo, FUnknown* host,
+                           const std::string& pcmPath)
+{
+    const auto sourcePath = std::filesystem::temp_directory_path() /
+        "mpvst-reload-pulse.py";
+    constexpr const char* source =
+        "import synthio\n"
+        "import vstaudio\n"
+        "synth = synthio.Synthesizer(sample_rate=vstaudio.sample_rate(), "
+        "channel_count=2)\n"
+        "vstaudio.output(synth)\n"
+        "synth.press(synthio.Note(220.0, amplitude=0.5))\n";
+    {
+        std::ofstream out(sourcePath, std::ios::binary | std::ios::trunc);
+        if (!out || !out.write(source, static_cast<std::streamsize>(
+                                           std::strlen(source))))
+            return false;
+    }
+    setScriptPath(sourcePath.string());
+
+    auto component = createComponent(factory, classInfo, host);
+    auto processor = getProcessor(component);
+    if (!component || !processor)
+    {
+        setScriptPath({});
+        return false;
+    }
+
+    SpeakerArrangement stereo = SpeakerArr::kStereo;
+    ProcessSetup setup {};
+    setup.processMode = kOffline;
+    setup.symbolicSampleSize = kSample32;
+    setup.maxSamplesPerBlock = 256;
+    setup.sampleRate = 48000.0;
+    if (!ok(processor->setBusArrangements(nullptr, 0, &stereo, 1)) ||
+        !ok(component->activateBus(kAudio, kOutput, 0, true)) ||
+        !ok(component->activateBus(kEvent, kInput, 0, true)) ||
+        !ok(processor->setupProcessing(setup)) ||
+        !ok(component->setActive(true)) ||
+        !ok(processor->setProcessing(true)))
+    {
+        setScriptPath({});
+        return false;
+    }
+
+    std::array<float, 256> left {};
+    std::array<float, 256> right {};
+    Sample32* channels[] = {left.data(), right.data()};
+    AudioBusBuffers output {};
+    output.numChannels = 2;
+    output.channelBuffers32 = channels;
+    ProcessData data {};
+    data.processMode = kOffline;
+    data.symbolicSampleSize = kSample32;
+    data.numSamples = static_cast<int32>(left.size());
+    data.numOutputs = 1;
+    data.outputs = &output;
+
+    constexpr ParamID kReloadParameter = 1;
+    std::vector<float> rendered;
+    const auto render = [&](int blocks) {
+        for (int block = 0; block < blocks; ++block)
+        {
+            if (!ok(processor->process(data)))
+                return false;
+            data.inputParameterChanges = nullptr;
+            rendered.insert(rendered.end(), left.begin(), left.end());
+        }
+        return true;
+    };
+    // The longest run of exact silence from `from` on.
+    const auto silentRun = [&](std::size_t from) {
+        std::size_t longest = 0;
+        std::size_t run = 0;
+        for (std::size_t index = from; index < rendered.size(); ++index)
+        {
+            run = rendered[index] == 0.0F ? run + 1 : 0;
+            longest = std::max(longest, run);
+        }
+        return longest;
+    };
+
+    // Let the engine boot and the tone settle before the press.
+    bool rendering = render(64);
+    const auto pressAt = rendered.size();
+    const auto toneBefore = silentRun(pressAt - 32 * left.size());
+
+    ParameterChanges pulse {1};
+    int32 queueIndex = 0;
+    int32 pointIndex = 0;
+    auto* queue = pulse.addParameterData(kReloadParameter, queueIndex);
+    const bool queued = queue != nullptr &&
+        queue->addPoint(0, 1.0, pointIndex) == kResultTrue &&
+        queue->addPoint(32, 0.0, pointIndex) == kResultTrue;
+    data.inputParameterChanges = &pulse;
+    rendering = rendering && queued && render(48);
+    const auto silenceAfter = silentRun(pressAt);
+
+    const bool stopped = ok(processor->setProcessing(false)) &&
+                         ok(component->setActive(false));
+    processor = nullptr;
+    const bool terminated = ok(component->terminate());
+    component = nullptr;
+    setScriptPath({});
+    std::error_code ignored;
+    (void)std::filesystem::remove(sourcePath, ignored);
+
+    if (!pcmPath.empty())
+    {
+        std::ofstream out(pcmPath, std::ios::binary | std::ios::trunc);
+        (void)out.write(reinterpret_cast<const char*>(rendered.data()),
+                        static_cast<std::streamsize>(rendered.size() *
+                                                     sizeof(float)));
+    }
+    // The fade holds silence for the pipeline's latency plus one block, so
+    // a reload shows as hundreds of zero samples in a row; the tone itself
+    // has none.
+    std::cout << "RELOAD_PULSE silent_run_before=" << toneBefore
+              << " silent_run_after=" << silenceAfter << '\n';
+    return stopped && terminated && rendering && toneBefore < 4U &&
+           silenceAfter >= left.size();
+}
+
 // The instance listens to every MIDI channel by default, or to one chosen
 // channel. The controller exposes the real parameters, one set of 130
 // controller proxies and the MIDI Channel setting (All, 1-16), and maps every
@@ -3105,11 +3235,12 @@ int main(int argc, char** argv)
     const bool instrumentProbe = mode == "--instrument-script";
     const bool tempoMode = mode == "--expect-tempo-follow";
     const bool midiChannelMode = mode == "--expect-midi-channel";
+    const bool reloadPulseMode = mode == "--expect-reload-pulse";
     if (argc < 2 || argc > 4 ||
         ((renderMode || scriptProbe || instrumentProbe || frameDump ||
           windowCapture || namedMode) && modeArgument.empty()) ||
         (!renderMode && !scriptProbe && !instrumentProbe && !frameDump &&
-         !windowCapture && !namedMode && argc > 3) ||
+         !windowCapture && !namedMode && !reloadPulseMode && argc > 3) ||
         (!mode.empty() && mode != "--expect-micropython" &&
          mode != "--expect-embedded-state" &&
          mode != "--expect-effect-audio" && mode != "--expect-patch-select" &&
@@ -3117,7 +3248,7 @@ int main(int argc, char** argv)
          mode != "--capture-editor-window" && mode != "--expect-named" &&
          mode != "--expect-all-named" && mode != "--expect-tempo-follow" &&
          mode != "--effect-script" && mode != "--instrument-script" &&
-         !midiChannelMode && !renderMode))
+         !midiChannelMode && !reloadPulseMode && !renderMode))
     {
         std::cerr << "usage: mpvst_smoke_host <plugin.vst3> "
                      "[--expect-micropython|--expect-embedded-state|"
@@ -3125,6 +3256,7 @@ int main(int argc, char** argv)
                      "--expect-tempo-follow|"
                      "--expect-patch-select|"
                      "--expect-midi-channel|"
+                     "--expect-reload-pulse [out.pcm]|"
                      "--expect-editor|"
                      "--dump-editor-frame <out.ppm>|"
                      "--capture-editor-window <out.ppm>|"
@@ -3316,6 +3448,15 @@ int main(int argc, char** argv)
             }
             std::cout << "HOOK midi.channel OK\n";
         }
+        else if (reloadPulseMode)
+        {
+            if (!reloadPulseInOneBlock(factory, classInfo, host, modeArgument))
+            {
+                std::cerr << "HOOK reload.pulse FAIL\n";
+                return 5;
+            }
+            std::cout << "HOOK reload.pulse OK\n";
+        }
         else if (patchSelectMode)
         {
             if (!patchSelectDeliversProgramChange(factory, classInfo, host))
@@ -3343,7 +3484,7 @@ int main(int argc, char** argv)
                                   !renderMode && !effectMode && !scriptProbe &&
                                   !tempoMode &&
                                   !instrumentProbe && !patchSelectMode &&
-                                  !midiChannelMode &&
+                                  !midiChannelMode && !reloadPulseMode &&
                                   !editorMode && !windowCapture &&
                                   !namedMode && !sweepMode;
         if (defaultSuite)
