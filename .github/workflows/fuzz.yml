@@ -1,0 +1,82 @@
+# Coverage-guided fuzzing of the two byte streams the plug-in accepts from
+# outside its own process: the shared-memory mapping an engine hands back and
+# the project state a host restores (tests/fuzz). Run it by hand from the
+# Actions tab; each target gets the same fixed time, 180 seconds unless you
+# say otherwise. A crash fails the job and its input is uploaded as an
+# artifact named fuzz-crashes: download it and run it back with
+#   mpvst_fuzz_<target> <crash file>
+# The targets build with clang, address and undefined-behaviour sanitizers, and
+# need only the protocol library, not the plug-in or an engine.
+name: fuzz
+
+on:
+  pull_request:
+    paths: ['.github/workflows/fuzz.yml']
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: Seconds to fuzz each target
+        default: '180'
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CC: clang
+      CXX: clang++
+      SECONDS_PER_TARGET: ${{ inputs.seconds || '180' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pins
+        id: pins
+        run: |
+          echo "sdk=$(sed -n 's/^readonly SDK_COMMIT="\(.*\)"/\1/p' scripts/fetch-vst3-sdk.sh)" >> "$GITHUB_OUTPUT"
+
+      # CMake configures the whole project, so it wants the SDK in place even
+      # though the fuzz targets never link it.
+      - name: Cache the VST3 SDK
+        id: sdk
+        uses: actions/cache@v4
+        with:
+          path: .deps/vst3sdk
+          key: vst3sdk-${{ steps.pins.outputs.sdk }}
+      - name: Fetch the VST3 SDK
+        if: steps.sdk.outputs.cache-hit != 'true'
+        run: scripts/fetch-vst3-sdk.sh
+
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y ninja-build libx11-dev
+
+      - name: Build the fuzz targets
+        run: |
+          cmake -S . -B build -G Ninja -DMPVST_ENABLE_LIBFUZZER=ON
+          cmake --build build --target mpvst_fuzz_mapping mpvst_fuzz_state
+
+      # libFuzzer exits non-zero on a crash, a leak or a timeout and writes the
+      # input that caused it beside the others. Keep going to the next target
+      # either way, so one crash does not hide another, and fail at the end.
+      - name: Fuzz each target
+        run: |
+          mkdir -p crashes
+          status=0
+          for target in mapping state; do
+            mkdir -p "work/$target"
+            cp -r tests/fuzz/corpus/. "work/$target/"
+            build/tests/mpvst_fuzz_$target \
+              -max_total_time="$SECONDS_PER_TARGET" -timeout=10 \
+              -artifact_prefix="crashes/$target-" "work/$target" || status=1
+          done
+          exit $status
+
+      - name: Upload crash inputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-crashes
+          path: crashes/
+          if-no-files-found: ignore
