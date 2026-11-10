@@ -183,3 +183,11 @@ jobs:
             skip=(-E mpvst_engine_provenance)
           fi
           ctest --test-dir build -C Release --output-on-failure --timeout 1800 "${skip[@]}"
+
+      # A build from a git checkout must name its commit; "unknown" is only
+      # right for a source tarball, which this is not.
+      - name: The C modules name the commit they were built from
+        working-directory: mpvst
+        run: |
+          ctest --test-dir build -C Release -R mpvst_engine_revision -V | tee revision.txt
+          ! grep -qw unknown revision.txt
