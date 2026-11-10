@@ -71,6 +71,24 @@ if(TARGET mpvst-stage-micropython-engine)
         $<TARGET_FILE_DIR:MPVST>/${mpvst_engine_name}
         -c "import lvgl, vstaudio, vstui, displaydev, appdev, multimer, events, controlkit, audioinstruments.panel_view")
 
+    # Each C module reports which source it was built from, and its
+    # simpletest runs: vstui on its own in the engine, vstaudio as an
+    # instrument script through the real processor.
+    add_test(NAME mpvst_engine_revision COMMAND
+        $<TARGET_FILE_DIR:MPVST>/${mpvst_engine_name}
+        -c "import vstaudio, vstui; print(vstaudio.__revision__, vstui.__revision__); assert isinstance(vstaudio.__revision__, str) and vstaudio.__revision__ and isinstance(vstui.__revision__, str) and vstui.__revision__")
+    add_test(NAME mpvst_vstui_simpletest COMMAND
+        $<TARGET_FILE_DIR:MPVST>/${mpvst_engine_name}
+        ${CMAKE_SOURCE_DIR}/usermods/vstui/examples/vstui_simpletest.py)
+    set_tests_properties(mpvst_vstui_simpletest PROPERTIES
+        PASS_REGULAR_EXPRESSION "editor surface attached: False")
+    add_test(NAME mpvst_vstaudio_simpletest COMMAND mpvst_smoke_host
+        $<TARGET_FILE_DIR:MPVST>/../..
+        --instrument-script
+        ${CMAKE_SOURCE_DIR}/usermods/vstaudio/examples/vstaudio_simpletest.py)
+    set_tests_properties(mpvst_vstaudio_simpletest PROPERTIES TIMEOUT 120
+        PASS_REGULAR_EXPRESSION "HOOK instrument.script OK")
+
     # The editor's panel follows a host's patch change: every encoder and LED
     # ring moves to the patch's macros, and nothing is sent back. The real
     # EngineAdapter and panel, on a display with no window.

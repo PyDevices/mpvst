@@ -21,6 +21,7 @@
 #include "py/mperrno.h"
 #include "py/mphal.h"
 #include "py/obj.h"
+#include "py/objstr.h"
 #include "py/runtime.h"
 
 #include <math.h>
@@ -972,6 +973,14 @@ static mp_obj_t vstaudio_frozen_files(void) {
 }
 static MP_DEFINE_CONST_FUN_OBJ_0(vstaudio_frozen_files_obj, vstaudio_frozen_files);
 
+// vstaudio.__revision__: which vstaudio this engine was built from. The build passes
+// VSTAUDIO_REVISION (git describe) as a compile definition; a build with no git
+// says "unknown" rather than guessing.
+#ifndef VSTAUDIO_REVISION
+#define VSTAUDIO_REVISION "unknown"
+#endif
+static const MP_DEFINE_STR_OBJ(vstaudio_revision_obj, VSTAUDIO_REVISION);
+
 // Dynamics and Splitter used to live here, in vstaudio_dsp.c. They are
 // audiodsp's `audiodynamics.Dynamics` and `audioroute.Splitter` now - the
 // same DSP, compiled from audiodsp/src/shared/ into every target it
@@ -979,6 +988,7 @@ static MP_DEFINE_CONST_FUN_OBJ_0(vstaudio_frozen_files_obj, vstaudio_frozen_file
 // host binding, which is all a VST3 sidecar ever had to provide.
 static const mp_rom_map_elem_t vstaudio_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_vstaudio) },
+    { MP_ROM_QSTR(MP_QSTR___revision__), MP_ROM_PTR(&vstaudio_revision_obj) },
     { MP_ROM_QSTR(MP_QSTR_configure), MP_ROM_PTR(&vstaudio_configure_obj) },
     { MP_ROM_QSTR(MP_QSTR_sample_rate), MP_ROM_PTR(&vstaudio_sample_rate_obj) },
     { MP_ROM_QSTR(MP_QSTR_output), MP_ROM_PTR(&vstaudio_output_obj) },

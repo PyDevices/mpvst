@@ -7,8 +7,6 @@ Planned work, in no particular order:
 - **64-bit audio.** Float64 processing for hosts that ask for it, and a
   floating-point audio graph behind it.
 - **macOS.** Signed and notarised universal bundles.
-- **The C modules in the shape every PyDevices module has.** `vstaudio` and
-  `vstui` keep their C under `src/`, gain a simpletest each and a `__revision__`.
 - **The MIDI channel on the editor's panel.** Show and change the instance's
   MIDI channel from the panel, not only from the host's parameter list.
 
