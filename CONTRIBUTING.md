@@ -17,7 +17,7 @@ map to follow.
 | | |
 |---|---|
 | `src/` | the C++ that builds the plug-in: `plugin/` (VST3 classes), `protocol/` (the shared-memory wire format), `runtime/` (shared memory and child processes) |
-| `usermods/` | the MicroPython C modules the engine binds to: `vstaudio/` (the audio API scripts use) and `vstui/` (the editor's framebuffer, input and edit rings) |
+| `usermods/` | the MicroPython C modules the engine binds to, each with its C in `src/` and a simpletest in `examples/`: `vstaudio/` (the audio API scripts use) and `vstui/` (the editor's framebuffer, input and edit rings). Both report the commit they were built from as `__revision__` |
 | `lib/` | everything staged into the bundle beside the engine: the bootstrap, the adapters, `mpvst_scan_plugins.py`, the default instrument, and the editor's Python half (`mpvst_editor.py`, `mpvst_board_config.py`, `mpvst_panel/`) |
 | `tools/` | developer tooling - the library test sweeps, `audio_qc.py`, `derive_patches.py` |
 | `tests/` | the ctest suite and `smoke_host/`, a minimal VST3 host that loads the bundle with no DAW |

@@ -24,6 +24,7 @@
 
 #include "py/binary.h"
 #include "py/obj.h"
+#include "py/objstr.h"
 #include "py/objarray.h"
 #include "py/runtime.h"
 
@@ -408,8 +409,17 @@ static mp_obj_t vstui_stats(void) {
 }
 static MP_DEFINE_CONST_FUN_OBJ_0(vstui_stats_obj, vstui_stats);
 
+// vstui.__revision__: which vstui this engine was built from. The build passes
+// VSTUI_REVISION (git describe) as a compile definition; a build with no git
+// says "unknown" rather than guessing.
+#ifndef VSTUI_REVISION
+#define VSTUI_REVISION "unknown"
+#endif
+static const MP_DEFINE_STR_OBJ(vstui_revision_obj, VSTUI_REVISION);
+
 static const mp_rom_map_elem_t vstui_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_vstui) },
+    { MP_ROM_QSTR(MP_QSTR___revision__), MP_ROM_PTR(&vstui_revision_obj) },
     { MP_ROM_QSTR(MP_QSTR_open), MP_ROM_PTR(&vstui_open_obj) },
     { MP_ROM_QSTR(MP_QSTR_available), MP_ROM_PTR(&vstui_available_obj) },
     { MP_ROM_QSTR(MP_QSTR_configure), MP_ROM_PTR(&vstui_configure_obj) },
