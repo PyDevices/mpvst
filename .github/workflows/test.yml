@@ -1,0 +1,134 @@
+# Builds the plug-in on Windows, the platform it ships on, and runs the ctest
+# suite (lint included) against the real build. A change that reaches only
+# documentation runs nothing.
+#
+# In CI: every ctest test. That is the protocol, reload, GDI blit and fuzz
+# smoke tests, the smoke host's tests that load the built bundle with its
+# engine (embedded state, rendering, effects, patches, reload, editor, every
+# named class), the engine's capability and provenance checks, the library
+# sweeps and the lint.
+# Local only: everything under reaper/, which needs REAPER, and the Linux-only
+# mpvst_orphan_tests. The editor-window capture needs a desktop session; it
+# reports a skip if the runner has none.
+name: test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**'
+      - '!**.md'
+      - '!docs/**'
+      - '!LICENSE'
+      - '!installer/**'
+      - '!reaper/**'
+      - '!reaper.sh'
+      - '!examples/**'
+  pull_request:
+    paths:
+      - '**'
+      - '!**.md'
+      - '!docs/**'
+      - '!LICENSE'
+      - '!installer/**'
+      - '!reaper/**'
+      - '!reaper.sh'
+      - '!examples/**'
+  workflow_dispatch:
+
+# A newer commit on a pull request replaces the run for the older one.
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  ctest:
+    runs-on: windows-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: mpvst
+
+      # The engine is built by micropython-pydevices and takes the apps
+      # checkout as a module; both sit beside this repository, where the
+      # build scripts look for them.
+      - uses: actions/checkout@v4
+        with:
+          repository: PyDevices/micropython-pydevices
+          path: micropython-pydevices
+      - uses: actions/checkout@v4
+        with:
+          repository: PyDevices/apps
+          path: apps
+
+      - name: Pins
+        id: pins
+        run: |
+          echo "sdk=$(sed -n 's/^readonly SDK_COMMIT="\(.*\)"/\1/p' mpvst/scripts/fetch-vst3-sdk.sh)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache the VST3 SDK
+        id: sdk
+        uses: actions/cache@v4
+        with:
+          path: mpvst/.deps/vst3sdk
+          key: vst3sdk-${{ steps.pins.outputs.sdk }}
+      - name: Fetch the VST3 SDK
+        if: steps.sdk.outputs.cache-hit != 'true'
+        run: mpvst/scripts/fetch-vst3-sdk.sh
+
+      # The engine build is the slow part. It changes only when the usermods,
+      # the manifest, the icon or a pinned module (modules.lock) change.
+      - name: Cache the MicroPython engine
+        id: engine
+        uses: actions/cache@v4
+        with:
+          path: micropython-pydevices/builds
+          key: engine-windows-${{ hashFiles('mpvst/usermods/**', 'mpvst/manifest.py', 'mpvst/installer/art/mpvst.ico', 'micropython-pydevices/modules.lock', 'micropython-pydevices/UPSTREAM', 'micropython-pydevices/variants/**', 'micropython-pydevices/patches/**') }}
+
+      - name: Install MSYS2's make and MinGW toolchain
+        if: steps.engine.outputs.cache-hit != 'true'
+        uses: msys2/setup-msys2@v2
+        with:
+          release: false
+          update: false
+          msystem: MINGW64
+          install: make mingw-w64-x86_64-gcc autoconf automake libtool
+
+      - name: Build the MicroPython engine
+        if: steps.engine.outputs.cache-hit != 'true'
+        working-directory: micropython-pydevices
+        run: |
+          ws=$(cygpath -m "$GITHUB_WORKSPACE")
+          python build_mp.py --port windows --variant vst3-engine \
+            --modules "audioinstruments,audioeffects,audiodsp,audioif,lvgl,pydevices,ulab,$ws/apps,$ws/mpvst" \
+            "ENGINE_ICON=$ws/mpvst/installer/art/mpvst.ico"
+
+      - name: Python environment for the tests
+        working-directory: mpvst
+        run: |
+          python -m venv .venv
+          .venv/Scripts/python -m pip install -q \
+            -i https://test.pypi.org/simple/ \
+            --extra-index-url https://pypi.org/simple/ \
+            pydevices-audiodsp pydevices-audioinstruments pydevices-audioeffects \
+            numpy flake8
+          echo "$GITHUB_WORKSPACE/mpvst/.venv/Scripts" >> "$GITHUB_PATH"
+
+      - name: Configure
+        working-directory: mpvst
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+
+      - name: Build the plug-in
+        working-directory: mpvst
+        run: cmake --build build --config Release --parallel
+
+      - name: ctest
+        working-directory: mpvst
+        run: ctest --test-dir build -C Release --output-on-failure --timeout 1800
