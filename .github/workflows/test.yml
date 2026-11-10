@@ -101,21 +101,6 @@ jobs:
           msystem: MINGW64
           install: make mingw-w64-x86_64-gcc autoconf automake libtool
 
-      # TEMPORARY: audioeffects v0.5.2.dev0's airspace.py and shimmerhall.py
-      # say `from . import reverb`, which MicroPython answers with the
-      # package's lazy __getattr__ (an AttributeError) when reverb has not
-      # been imported yet. Patch the pinned tag before the build freezes it,
-      # until audioeffects fixes the two lines.
-      - name: Fetch audioeffects at its pin with the import fixed
-        if: steps.engine.outputs.cache-hit != 'true'
-        run: |
-          d=micropython-pydevices/deps/omnipython-lib-sources/audioeffects-v0.5.2.dev0
-          git clone --depth 1 --branch v0.5.2.dev0 https://github.com/PyDevices/audioeffects "$d"
-          for f in airspace shimmerhall; do
-            sed -i 's/^from \. import reverb as _reverb$/import audioeffects.reverb as _reverb/' "$d/lib/audioeffects/$f.py"
-            grep -n "_reverb$" "$d/lib/audioeffects/$f.py"
-          done
-
       - name: Build the MicroPython engine
         if: steps.engine.outputs.cache-hit != 'true'
         working-directory: micropython-pydevices
