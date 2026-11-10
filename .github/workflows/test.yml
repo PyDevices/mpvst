@@ -125,16 +125,29 @@ jobs:
             --modules "audioinstruments,audioeffects,audiodsp,audioif,lvgl,pydevices,ulab,$ws/apps,$ws/mpvst" \
             "ENGINE_ICON=$ws/mpvst/installer/art/mpvst.ico"
 
+      # The tests import the instruments and effects as CPython packages. The
+      # TestPyPI releases lag the tags the engine freezes, so install the
+      # tags the engine's library pins (audiodsp comes from TestPyPI, as in
+      # CONTRIBUTING.md).
       - name: Python environment for the tests
         working-directory: mpvst
         run: |
+          lib=$(awk '$1=="omnipython-lib" { print $3 }' ../micropython-pydevices/modules.lock)
+          curl -fsSL -o "$RUNNER_TEMP/lib-lock.json" "https://raw.githubusercontent.com/PyDevices/pydevices/$lib/lib-lock.json"
+          read ai_ref ae_ref < <(python -c "
+          import json, sys
+          p = json.load(open(sys.argv[1]))['pinned']
+          print(p['audioinstruments']['ref'], p['audioeffects']['ref'])" "$RUNNER_TEMP/lib-lock.json")
+          echo "audioinstruments $ai_ref, audioeffects $ae_ref"
           python -m venv .venv
           .venv/Scripts/python -m pip install -q \
             -i https://test.pypi.org/simple/ \
             --extra-index-url https://pypi.org/simple/ \
-            pydevices-audiodsp pydevices-audioinstruments pydevices-audioeffects \
-            numpy flake8
+            pydevices-audiodsp numpy flake8 \
+            "git+https://github.com/PyDevices/audioinstruments@$ai_ref" \
+            "git+https://github.com/PyDevices/audioeffects@$ae_ref"
           echo "$GITHUB_WORKSPACE/mpvst/.venv/Scripts" >> "$GITHUB_PATH"
+          echo "AI_REF=$ai_ref" >> "$GITHUB_ENV"
 
       # The two SoundFont instruments need a bank, and banks are never kept in
       # a repository. The tests build their own tiny one with audioinstruments'
@@ -142,7 +155,7 @@ jobs:
       - name: A tiny SoundFont for the SoundFont instruments
         run: |
           curl -fsSL -o "$RUNNER_TEMP/sf2_builder.py" \
-            https://raw.githubusercontent.com/PyDevices/audioinstruments/v0.5.1/tests/support/sf2_builder.py
+            https://raw.githubusercontent.com/PyDevices/audioinstruments/$AI_REF/tests/support/sf2_builder.py
           mpvst/.venv/Scripts/python -c "import sys; sys.path.insert(0, sys.argv[1]); import sf2_builder; sf2_builder.tiny_bank().write(sys.argv[2])" "$RUNNER_TEMP" "$RUNNER_TEMP/tiny.sf2"
           echo "SOUNDFONT=$RUNNER_TEMP\\tiny.sf2" >> "$GITHUB_ENV"
 
