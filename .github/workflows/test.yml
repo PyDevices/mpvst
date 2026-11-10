@@ -170,6 +170,16 @@ jobs:
         working-directory: mpvst
         run: cmake --build build --config Release --parallel
 
+      # mpvst_engine_provenance asks git whether the engine is older than the
+      # sources it was built from, which needs the commit the engine was built
+      # at. A cached engine was built at an earlier run's commit this checkout
+      # does not hold; the cache key already names every input that decides
+      # whether the engine is stale, so the check runs on a fresh build only.
       - name: ctest
         working-directory: mpvst
-        run: ctest --test-dir build -C Release --output-on-failure --timeout 1800
+        run: |
+          skip=()
+          if [ "${{ steps.engine.outputs.cache-hit }}" = true ]; then
+            skip=(-E mpvst_engine_provenance)
+          fi
+          ctest --test-dir build -C Release --output-on-failure --timeout 1800 "${skip[@]}"
