@@ -125,27 +125,28 @@ jobs:
             --modules "audioinstruments,audioeffects,audiodsp,audioif,lvgl,pydevices,ulab,$ws/apps,$ws/mpvst" \
             "ENGINE_ICON=$ws/mpvst/installer/art/mpvst.ico"
 
-      # The tests import the instruments and effects as CPython packages. The
-      # TestPyPI releases lag the tags the engine freezes, so install the
-      # tags the engine's library pins (audiodsp comes from TestPyPI, as in
-      # CONTRIBUTING.md).
+      # The tests import audiodsp, the instruments and the effects as CPython
+      # packages. The releases on TestPyPI lag what the engine freezes, so
+      # install the same commits and tags: audiodsp at modules.lock's pin
+      # (building its C extension), the others at the tags omnipython-lib's
+      # lib-lock.json pins.
       - name: Python environment for the tests
         working-directory: mpvst
         run: |
-          lib=$(awk '$1=="omnipython-lib" { print $3 }' ../micropython-pydevices/modules.lock)
+          lock=../micropython-pydevices/modules.lock
+          dsp=$(awk '$1=="audiodsp" { print $3 }' "$lock")
+          lib=$(awk '$1=="omnipython-lib" { print $3 }' "$lock")
           curl -fsSL -o "$RUNNER_TEMP/lib-lock.json" "https://raw.githubusercontent.com/PyDevices/pydevices/$lib/lib-lock.json"
           read ai_ref ae_ref < <(python -c "
           import json, sys
           p = json.load(open(sys.argv[1]))['pinned']
           print(p['audioinstruments']['ref'], p['audioeffects']['ref'])" "$RUNNER_TEMP/lib-lock.json")
-          echo "audioinstruments $ai_ref, audioeffects $ae_ref"
+          echo "audiodsp $dsp, audioinstruments $ai_ref, audioeffects $ae_ref"
           python -m venv .venv
-          .venv/Scripts/python -m pip install -q \
-            -i https://test.pypi.org/simple/ \
-            --extra-index-url https://pypi.org/simple/ \
-            pydevices-audiodsp numpy flake8 \
+          .venv/Scripts/python -m pip install -q numpy flake8 "git+https://github.com/PyDevices/audiodsp@$dsp"
+          .venv/Scripts/python -m pip install -q --no-deps \
             "git+https://github.com/PyDevices/audioinstruments@$ai_ref" \
-            "git+https://github.com/PyDevices/audioeffects@$ae_ref"
+            "git+https://github.com/PyDevices/audioeffects@$ae_ref#subdirectory=lib/audioeffects"
           echo "$GITHUB_WORKSPACE/mpvst/.venv/Scripts" >> "$GITHUB_PATH"
           echo "AI_REF=$ai_ref" >> "$GITHUB_ENV"
 
