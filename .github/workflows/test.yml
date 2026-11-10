@@ -101,18 +101,20 @@ jobs:
           msystem: MINGW64
           install: make mingw-w64-x86_64-gcc autoconf automake libtool
 
-      # TEMPORARY: audioeffects v0.5.2.dev0's airspace.py says
-      # `from . import reverb`, which MicroPython answers with the package's
-      # lazy __getattr__ (an AttributeError) when reverb has not been imported
-      # yet. Patch the pinned tag before the build freezes it, until
-      # audioeffects fixes the line.
+      # TEMPORARY: audioeffects v0.5.2.dev0's airspace.py and shimmerhall.py
+      # say `from . import reverb`, which MicroPython answers with the
+      # package's lazy __getattr__ (an AttributeError) when reverb has not
+      # been imported yet. Patch the pinned tag before the build freezes it,
+      # until audioeffects fixes the two lines.
       - name: Fetch audioeffects at its pin with the import fixed
         if: steps.engine.outputs.cache-hit != 'true'
         run: |
           d=micropython-pydevices/deps/omnipython-lib-sources/audioeffects-v0.5.2.dev0
           git clone --depth 1 --branch v0.5.2.dev0 https://github.com/PyDevices/audioeffects "$d"
-          sed -i 's/^from \. import reverb as _reverb$/import audioeffects.reverb as _reverb/' "$d/lib/audioeffects/airspace.py"
-          grep -n "_reverb$" "$d/lib/audioeffects/airspace.py"
+          for f in airspace shimmerhall; do
+            sed -i 's/^from \. import reverb as _reverb$/import audioeffects.reverb as _reverb/' "$d/lib/audioeffects/$f.py"
+            grep -n "_reverb$" "$d/lib/audioeffects/$f.py"
+          done
 
       - name: Build the MicroPython engine
         if: steps.engine.outputs.cache-hit != 'true'
@@ -134,9 +136,21 @@ jobs:
             numpy flake8
           echo "$GITHUB_WORKSPACE/mpvst/.venv/Scripts" >> "$GITHUB_PATH"
 
+      # The two SoundFont instruments need a bank, and banks are never kept in
+      # a repository. The tests build their own tiny one with audioinstruments'
+      # test builder, at the tag the library pins.
+      - name: A tiny SoundFont for the SoundFont instruments
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/sf2_builder.py" \
+            https://raw.githubusercontent.com/PyDevices/audioinstruments/v0.5.1/tests/support/sf2_builder.py
+          mpvst/.venv/Scripts/python -c "import sys; sys.path.insert(0, sys.argv[1]); import sf2_builder; sf2_builder.tiny_bank().write(sys.argv[2])" "$RUNNER_TEMP" "$RUNNER_TEMP/tiny.sf2"
+          echo "SOUNDFONT=$RUNNER_TEMP\\tiny.sf2" >> "$GITHUB_ENV"
+
+      # The tests' Python is the venv's, which CMake would not find on its own
+      # on Windows (it looks for python3 first).
       - name: Configure
         working-directory: mpvst
-        run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
+        run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64 -DMPVST_PYTHON="$GITHUB_WORKSPACE/mpvst/.venv/Scripts/python.exe"
 
       - name: Build the plug-in
         working-directory: mpvst
