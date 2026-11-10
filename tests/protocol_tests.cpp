@@ -389,6 +389,7 @@ int main()
     testUiLayoutAndValidation();
     testUiFrameSeqlock();
     testUiRingsDegradeWithoutWaiting();
+    check(false, "planted failure to prove CI goes red");
     if (failures != 0)
         return 1;
     std::cout << "mpvst protocol layout and bounded-ring tests passed\n";
