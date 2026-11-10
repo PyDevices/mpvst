@@ -4,8 +4,8 @@
 #   ./scripts/fetch-nsis.sh
 #
 # NSIS cross-builds a Windows installer from Linux, so the release path needs
-# no Windows toolchain and no hosted CI - the same posture as the rest of this
-# repository, where the build runs here and the artifacts are made here.
+# no Windows toolchain: the installer is made on the machine that cuts the
+# release.
 #
 # It lands in .deps/nsis rather than on the machine, because installing a
 # toolchain system-wide needs root and this script deliberately needs none:
