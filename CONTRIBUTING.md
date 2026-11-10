@@ -197,9 +197,13 @@ See [MPVST on Windows](docs/guides/windows.md) and
 [MPVST on Linux](docs/guides/linux.md) for the install paths and the
 desktop-script security model.
 
-This repository has no hosted CI. The `ctest` suite (lint included) is the
-gate, and you run it locally before pushing; `scripts/bootstrap.sh` runs it as
-its final verification step.
+Every pull request that touches code runs [`test.yml`](.github/workflows/test.yml)
+on a Windows runner: it builds the engine and the plug-in as above and runs the
+whole `ctest` suite, lint included. A change to documentation alone runs
+nothing. Everything under `reaper/` needs REAPER and an audio device, so it
+stays local, as does `mpvst_orphan_tests`, which only builds on Linux.
+`ctest` is still the thing to run before you push, and `scripts/bootstrap.sh`
+runs it as its final verification step.
 
 ## Testing against a real DAW
 

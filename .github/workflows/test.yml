@@ -1,0 +1,185 @@
+# Builds the plug-in on Windows, the platform it ships on, and runs the ctest
+# suite (lint included) against the real build. A change that reaches only
+# documentation runs nothing.
+#
+# In CI: every ctest test. That is the protocol, reload, GDI blit and fuzz
+# smoke tests, the smoke host's tests that load the built bundle with its
+# engine (embedded state, rendering, effects, patches, reload, editor, every
+# named class), the engine's capability and provenance checks, the library
+# sweeps and the lint.
+# Local only: everything under reaper/, which needs REAPER, and the Linux-only
+# mpvst_orphan_tests. The editor-window capture needs a desktop session; it
+# reports a skip if the runner has none.
+name: test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**'
+      - '!**.md'
+      - '!docs/**'
+      - '!LICENSE'
+      - '!installer/**'
+      - '!reaper/**'
+      - '!reaper.sh'
+      - '!examples/**'
+  pull_request:
+    paths:
+      - '**'
+      - '!**.md'
+      - '!docs/**'
+      - '!LICENSE'
+      - '!installer/**'
+      - '!reaper/**'
+      - '!reaper.sh'
+      - '!examples/**'
+  workflow_dispatch:
+
+# A newer commit on a pull request replaces the run for the older one.
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  ctest:
+    runs-on: windows-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: mpvst
+
+      # The engine is built by micropython-pydevices and takes the apps
+      # checkout as a module; both sit beside this repository, where the
+      # build scripts look for them.
+      - uses: actions/checkout@v4
+        with:
+          repository: PyDevices/micropython-pydevices
+          path: micropython-pydevices
+      - uses: actions/checkout@v4
+        with:
+          repository: PyDevices/apps
+          path: apps
+
+      - name: Pins
+        id: pins
+        run: |
+          echo "sdk=$(sed -n 's/^readonly SDK_COMMIT="\(.*\)"/\1/p' mpvst/scripts/fetch-vst3-sdk.sh)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache the VST3 SDK
+        id: sdk
+        uses: actions/cache@v4
+        with:
+          path: mpvst/.deps/vst3sdk
+          key: vst3sdk-${{ steps.pins.outputs.sdk }}
+      - name: Fetch the VST3 SDK
+        if: steps.sdk.outputs.cache-hit != 'true'
+        run: mpvst/scripts/fetch-vst3-sdk.sh
+
+      # The engine build is the slow part. It changes only when the usermods,
+      # the manifest, the icon or a pinned module (modules.lock) change.
+      - name: Cache the MicroPython engine
+        id: engine
+        uses: actions/cache@v4
+        with:
+          path: micropython-pydevices/builds
+          key: engine-windows-${{ hashFiles('mpvst/usermods/**', 'mpvst/manifest.py', 'mpvst/installer/art/mpvst.ico', 'micropython-pydevices/modules.lock', 'micropython-pydevices/UPSTREAM', 'micropython-pydevices/variants/**', 'micropython-pydevices/patches/**') }}
+
+      - name: Install MSYS2's make and MinGW toolchain
+        if: steps.engine.outputs.cache-hit != 'true'
+        uses: msys2/setup-msys2@v2
+        with:
+          release: false
+          update: false
+          msystem: MINGW64
+          install: make mingw-w64-x86_64-gcc autoconf automake libtool
+
+      # TEMPORARY: audioeffects v0.5.2.dev0's airspace.py and shimmerhall.py
+      # say `from . import reverb`, which MicroPython answers with the
+      # package's lazy __getattr__ (an AttributeError) when reverb has not
+      # been imported yet. Patch the pinned tag before the build freezes it,
+      # until audioeffects fixes the two lines.
+      - name: Fetch audioeffects at its pin with the import fixed
+        if: steps.engine.outputs.cache-hit != 'true'
+        run: |
+          d=micropython-pydevices/deps/omnipython-lib-sources/audioeffects-v0.5.2.dev0
+          git clone --depth 1 --branch v0.5.2.dev0 https://github.com/PyDevices/audioeffects "$d"
+          for f in airspace shimmerhall; do
+            sed -i 's/^from \. import reverb as _reverb$/import audioeffects.reverb as _reverb/' "$d/lib/audioeffects/$f.py"
+            grep -n "_reverb$" "$d/lib/audioeffects/$f.py"
+          done
+
+      - name: Build the MicroPython engine
+        if: steps.engine.outputs.cache-hit != 'true'
+        working-directory: micropython-pydevices
+        run: |
+          ws=$(cygpath -m "$GITHUB_WORKSPACE")
+          python build_mp.py --port windows --variant vst3-engine \
+            --modules "audioinstruments,audioeffects,audiodsp,audioif,lvgl,pydevices,ulab,$ws/apps,$ws/mpvst" \
+            "ENGINE_ICON=$ws/mpvst/installer/art/mpvst.ico"
+
+      # The tests import audiodsp, the instruments and the effects as CPython
+      # packages. The releases on TestPyPI lag what the engine freezes, so
+      # install the same commits and tags: audiodsp at modules.lock's pin
+      # (building its C extension), the others at the tags omnipython-lib's
+      # lib-lock.json pins.
+      - name: Python environment for the tests
+        working-directory: mpvst
+        run: |
+          lock=../micropython-pydevices/modules.lock
+          dsp=$(awk '$1=="audiodsp" { print $3 }' "$lock")
+          lib=$(awk '$1=="omnipython-lib" { print $3 }' "$lock")
+          curl -fsSL -o "$RUNNER_TEMP/lib-lock.json" "https://raw.githubusercontent.com/PyDevices/pydevices/$lib/lib-lock.json"
+          read ai_ref ae_ref < <(python -c "
+          import json, sys
+          p = json.load(open(sys.argv[1]))['pinned']
+          print(p['audioinstruments']['ref'], p['audioeffects']['ref'])" "$RUNNER_TEMP/lib-lock.json")
+          echo "audiodsp $dsp, audioinstruments $ai_ref, audioeffects $ae_ref"
+          python -m venv .venv
+          .venv/Scripts/python -m pip install -q numpy flake8 "git+https://github.com/PyDevices/audiodsp@$dsp"
+          .venv/Scripts/python -m pip install -q --no-deps \
+            "git+https://github.com/PyDevices/audioinstruments@$ai_ref" \
+            "git+https://github.com/PyDevices/audioeffects@$ae_ref#subdirectory=lib/audioeffects"
+          echo "$GITHUB_WORKSPACE/mpvst/.venv/Scripts" >> "$GITHUB_PATH"
+          echo "AI_REF=$ai_ref" >> "$GITHUB_ENV"
+
+      # The two SoundFont instruments need a bank, and banks are never kept in
+      # a repository. The tests build their own tiny one with audioinstruments'
+      # test builder, at the tag the library pins.
+      - name: A tiny SoundFont for the SoundFont instruments
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/sf2_builder.py" \
+            https://raw.githubusercontent.com/PyDevices/audioinstruments/$AI_REF/tests/support/sf2_builder.py
+          mpvst/.venv/Scripts/python -c "import sys; sys.path.insert(0, sys.argv[1]); import sf2_builder; sf2_builder.tiny_bank().write(sys.argv[2])" "$RUNNER_TEMP" "$RUNNER_TEMP/tiny.sf2"
+          echo "SOUNDFONT=$RUNNER_TEMP\\tiny.sf2" >> "$GITHUB_ENV"
+
+      # The tests' Python is the venv's, which CMake would not find on its own
+      # on Windows (it looks for python3 first).
+      - name: Configure
+        working-directory: mpvst
+        run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64 -DMPVST_PYTHON="$GITHUB_WORKSPACE/mpvst/.venv/Scripts/python.exe"
+
+      - name: Build the plug-in
+        working-directory: mpvst
+        run: cmake --build build --config Release --parallel
+
+      # mpvst_engine_provenance asks git whether the engine is older than the
+      # sources it was built from, which needs the commit the engine was built
+      # at. A cached engine was built at an earlier run's commit this checkout
+      # does not hold; the cache key already names every input that decides
+      # whether the engine is stale, so the check runs on a fresh build only.
+      - name: ctest
+        working-directory: mpvst
+        run: |
+          skip=()
+          if [ "${{ steps.engine.outputs.cache-hit }}" = true ]; then
+            skip=(-E mpvst_engine_provenance)
+          fi
+          ctest --test-dir build -C Release --output-on-failure --timeout 1800 "${skip[@]}"
