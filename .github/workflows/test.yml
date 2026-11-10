@@ -84,13 +84,13 @@ jobs:
         run: mpvst/scripts/fetch-vst3-sdk.sh
 
       # The engine build is the slow part. It changes only when the usermods,
-      # the manifest, the icon or a pinned module (modules.lock) change.
+      # the manifest, the icon or a pinned module (DEPENDENCIES.lock) change.
       - name: Cache the MicroPython engine
         id: engine
         uses: actions/cache@v4
         with:
           path: micropython-pydevices/builds
-          key: engine-windows-${{ hashFiles('mpvst/usermods/**', 'mpvst/manifest.py', 'mpvst/installer/art/mpvst.ico', 'micropython-pydevices/modules.lock', 'micropython-pydevices/UPSTREAM', 'micropython-pydevices/variants/**', 'micropython-pydevices/patches/**') }}
+          key: engine-windows-${{ hashFiles('mpvst/usermods/**', 'mpvst/manifest.py', 'mpvst/installer/art/mpvst.ico', 'micropython-pydevices/DEPENDENCIES.lock', 'micropython-pydevices/modules.lock', 'micropython-pydevices/UPSTREAM', 'micropython-pydevices/variants/**', 'micropython-pydevices/patches/**') }}
 
       - name: Install MSYS2's make and MinGW toolchain
         if: steps.engine.outputs.cache-hit != 'true'
@@ -127,13 +127,15 @@ jobs:
 
       # The tests import audiodsp, the instruments and the effects as CPython
       # packages. The releases on TestPyPI lag what the engine freezes, so
-      # install the same commits and tags: audiodsp at modules.lock's pin
+      # install the same commits and tags: audiodsp at micropython-pydevices' pin
       # (building its C extension), the others at the tags omnipython-lib's
       # lib-lock.json pins.
       - name: Python environment for the tests
         working-directory: mpvst
         run: |
-          lock=../micropython-pydevices/modules.lock
+          # DEPENDENCIES.lock, or modules.lock in a checkout from before it.
+          lock=../micropython-pydevices/DEPENDENCIES.lock
+          [ -f "$lock" ] || lock=../micropython-pydevices/modules.lock
           dsp=$(awk '$1=="audiodsp" { print $3 }' "$lock")
           lib=$(awk '$1=="omnipython-lib" { print $3 }' "$lock")
           curl -fsSL -o "$RUNNER_TEMP/lib-lock.json" "https://raw.githubusercontent.com/PyDevices/pydevices/$lib/lib-lock.json"
