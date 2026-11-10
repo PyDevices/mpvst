@@ -101,6 +101,21 @@ jobs:
           msystem: MINGW64
           install: make mingw-w64-x86_64-gcc autoconf automake libtool
 
+      # TEMPORARY: audioeffects v0.5.2.dev0's airspace.py and shimmerhall.py
+      # say `from . import reverb`, which MicroPython answers with the
+      # package's lazy __getattr__ (an AttributeError) when reverb has not
+      # been imported yet. Patch the pinned tag before the build freezes it,
+      # until audioeffects fixes the two lines.
+      - name: Fetch audioeffects at its pin with the import fixed
+        if: steps.engine.outputs.cache-hit != 'true'
+        run: |
+          d=micropython-pydevices/deps/omnipython-lib-sources/audioeffects-v0.5.2.dev0
+          git clone --depth 1 --branch v0.5.2.dev0 https://github.com/PyDevices/audioeffects "$d"
+          for f in airspace shimmerhall; do
+            sed -i 's/^from \. import reverb as _reverb$/import audioeffects.reverb as _reverb/' "$d/lib/audioeffects/$f.py"
+            grep -n "_reverb$" "$d/lib/audioeffects/$f.py"
+          done
+
       - name: Build the MicroPython engine
         if: steps.engine.outputs.cache-hit != 'true'
         working-directory: micropython-pydevices
@@ -110,25 +125,61 @@ jobs:
             --modules "audioinstruments,audioeffects,audiodsp,audioif,lvgl,pydevices,ulab,$ws/apps,$ws/mpvst" \
             "ENGINE_ICON=$ws/mpvst/installer/art/mpvst.ico"
 
+      # The tests import audiodsp, the instruments and the effects as CPython
+      # packages. The releases on TestPyPI lag what the engine freezes, so
+      # install the same commits and tags: audiodsp at modules.lock's pin
+      # (building its C extension), the others at the tags omnipython-lib's
+      # lib-lock.json pins.
       - name: Python environment for the tests
         working-directory: mpvst
         run: |
+          lock=../micropython-pydevices/modules.lock
+          dsp=$(awk '$1=="audiodsp" { print $3 }' "$lock")
+          lib=$(awk '$1=="omnipython-lib" { print $3 }' "$lock")
+          curl -fsSL -o "$RUNNER_TEMP/lib-lock.json" "https://raw.githubusercontent.com/PyDevices/pydevices/$lib/lib-lock.json"
+          read ai_ref ae_ref < <(python -c "
+          import json, sys
+          p = json.load(open(sys.argv[1]))['pinned']
+          print(p['audioinstruments']['ref'], p['audioeffects']['ref'])" "$RUNNER_TEMP/lib-lock.json")
+          echo "audiodsp $dsp, audioinstruments $ai_ref, audioeffects $ae_ref"
           python -m venv .venv
-          .venv/Scripts/python -m pip install -q \
-            -i https://test.pypi.org/simple/ \
-            --extra-index-url https://pypi.org/simple/ \
-            pydevices-audiodsp pydevices-audioinstruments pydevices-audioeffects \
-            numpy flake8
+          .venv/Scripts/python -m pip install -q numpy flake8 "git+https://github.com/PyDevices/audiodsp@$dsp"
+          .venv/Scripts/python -m pip install -q --no-deps \
+            "git+https://github.com/PyDevices/audioinstruments@$ai_ref" \
+            "git+https://github.com/PyDevices/audioeffects@$ae_ref#subdirectory=lib/audioeffects"
           echo "$GITHUB_WORKSPACE/mpvst/.venv/Scripts" >> "$GITHUB_PATH"
+          echo "AI_REF=$ai_ref" >> "$GITHUB_ENV"
 
+      # The two SoundFont instruments need a bank, and banks are never kept in
+      # a repository. The tests build their own tiny one with audioinstruments'
+      # test builder, at the tag the library pins.
+      - name: A tiny SoundFont for the SoundFont instruments
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/sf2_builder.py" \
+            https://raw.githubusercontent.com/PyDevices/audioinstruments/$AI_REF/tests/support/sf2_builder.py
+          mpvst/.venv/Scripts/python -c "import sys; sys.path.insert(0, sys.argv[1]); import sf2_builder; sf2_builder.tiny_bank().write(sys.argv[2])" "$RUNNER_TEMP" "$RUNNER_TEMP/tiny.sf2"
+          echo "SOUNDFONT=$RUNNER_TEMP\\tiny.sf2" >> "$GITHUB_ENV"
+
+      # The tests' Python is the venv's, which CMake would not find on its own
+      # on Windows (it looks for python3 first).
       - name: Configure
         working-directory: mpvst
-        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+        run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64 -DMPVST_PYTHON="$GITHUB_WORKSPACE/mpvst/.venv/Scripts/python.exe"
 
       - name: Build the plug-in
         working-directory: mpvst
         run: cmake --build build --config Release --parallel
 
+      # mpvst_engine_provenance asks git whether the engine is older than the
+      # sources it was built from, which needs the commit the engine was built
+      # at. A cached engine was built at an earlier run's commit this checkout
+      # does not hold; the cache key already names every input that decides
+      # whether the engine is stale, so the check runs on a fresh build only.
       - name: ctest
         working-directory: mpvst
-        run: ctest --test-dir build -C Release --output-on-failure --timeout 1800
+        run: |
+          skip=()
+          if [ "${{ steps.engine.outputs.cache-hit }}" = true ]; then
+            skip=(-E mpvst_engine_provenance)
+          fi
+          ctest --test-dir build -C Release --output-on-failure --timeout 1800 "${skip[@]}"
