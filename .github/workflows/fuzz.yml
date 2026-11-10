@@ -10,8 +10,6 @@
 name: fuzz
 
 on:
-  pull_request:
-    paths: ['.github/workflows/fuzz.yml']
   workflow_dispatch:
     inputs:
       seconds:

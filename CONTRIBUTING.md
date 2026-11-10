@@ -259,7 +259,9 @@ The suite tests the system at several boundaries:
 - **Fuzz tests** exercise mapping and state parsing. A portable driver runs in
   the normal suite, and optional Clang/libFuzzer targets allow deeper runs
   (`-DMPVST_ENABLE_LIBFUZZER=ON`, with interesting inputs kept in
-  [`tests/fuzz/corpus`](tests/fuzz/corpus/)).
+  [`tests/fuzz/corpus`](tests/fuzz/corpus/)). The
+  [fuzz workflow](.github/workflows/fuzz.yml) builds them and runs each for a
+  fixed time when you start it from the Actions tab, and keeps any crash input.
 - **REAPER harnesses** cover what needs a real DAW: FX-chain changes,
   automation, project reload, installed bundles and cross-platform render
   parity.
