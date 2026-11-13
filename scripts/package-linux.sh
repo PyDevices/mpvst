@@ -10,8 +10,9 @@ dist_dir="$repo_dir/dist"
 # reads the same file, so the binary and the archive around it cannot
 # disagree about which version they are.
 version=$(tr -d '[:space:]' < "$repo_dir/VERSION")
-[[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
-    echo "error: VERSION must hold a bare X.Y.Z, got '$version'" >&2
+# X.Y.Z, or a pre-release such as X.Y.Z.devN or X.Y.ZrcN.
+[[ "$version" =~ ^([0-9]+\.[0-9]+\.[0-9]+)((a|b|rc)[0-9]+|\.dev[0-9]+)?$ ]] || {
+    echo "error: VERSION must hold X.Y.Z, X.Y.Z.devN or X.Y.ZrcN, got '$version'" >&2
     exit 1
 }
 name="MPVST-$version"

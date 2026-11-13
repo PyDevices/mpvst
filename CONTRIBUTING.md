@@ -197,6 +197,17 @@ See [MPVST on Windows](docs/guides/windows.md) and
 [MPVST on Linux](docs/guides/linux.md) for the install paths and the
 desktop-script security model.
 
+Pushing a version tag runs the same packaging in
+[`release.yml`](.github/workflows/release.yml) and publishes the archives,
+with their sidecars, as a GitHub Release. The tag must match `VERSION`.
+A dev build is `X.Y.Z.devN` in `VERSION` and tag `vX.Y.Z.devN`, and it is
+published as a pre-release; so is an `rc`. A final is a signed annotated
+tag `vX.Y.Z` made by hand, and its release takes the tag's message as its
+notes. The plug-in's VST3 version is the `X.Y.Z` part, because hosts read
+it as a number; the archives carry the whole version.
+`./scripts/install-release.sh` installs the newest release, dev builds
+included, or the tag you name.
+
 Every pull request that touches code runs [`test.yml`](.github/workflows/test.yml)
 on a Windows runner: it builds the engine and the plug-in as above and runs the
 whole `ctest` suite, lint included. A change to documentation alone runs

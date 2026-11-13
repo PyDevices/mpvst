@@ -9,14 +9,20 @@ cmake_minimum_required(VERSION 3.25)
 # 0.1.0: the Linux tree was reconfigured by hand and the Windows one was not.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/VERSION")
+# VERSION holds X.Y.Z, or a pre-release such as X.Y.Z.devN or X.Y.ZrcN.
+# project() and the VST3 metadata take only numbers, so they get the X.Y.Z
+# part; the archives and the installer carry the whole string.
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" MPVST_VERSION)
 string(STRIP "${MPVST_VERSION}" MPVST_VERSION)
-if(NOT MPVST_VERSION MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+$")
-    message(FATAL_ERROR "VERSION must hold a bare X.Y.Z, got '${MPVST_VERSION}'")
+if(NOT MPVST_VERSION MATCHES "^([0-9]+\\.[0-9]+\\.[0-9]+)((a|b|rc)[0-9]+|\\.dev[0-9]+)?$")
+    message(FATAL_ERROR
+        "VERSION must hold X.Y.Z, X.Y.Z.devN or X.Y.ZrcN, got '${MPVST_VERSION}'")
 endif()
+set(MPVST_NUMERIC_VERSION "${CMAKE_MATCH_1}")
+message(STATUS "MPVST version ${MPVST_VERSION}")
 
 project(MPVST
-    VERSION ${MPVST_VERSION}
+    VERSION ${MPVST_NUMERIC_VERSION}
     DESCRIPTION "Programmable MPVST instrument"
     LANGUAGES C CXX
 )
