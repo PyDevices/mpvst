@@ -3,8 +3,12 @@
 ; Built from Linux by scripts/package-windows.sh through makensis, so the
 ; release path needs no Windows toolchain:
 ;
-;   makensis -DMPVST_VERSION=x.y.z -DMPVST_STAGE=<dir> -DMPVST_OUTFILE=<exe> \
-;            installer/windows.nsi
+;   makensis -DMPVST_VERSION=x.y.z -DMPVST_NUMERIC_VERSION=x.y.z \
+;            -DMPVST_STAGE=<dir> -DMPVST_OUTFILE=<exe> installer/windows.nsi
+;
+; MPVST_VERSION is the whole version, a pre-release suffix included
+; (0.3.5.dev0); MPVST_NUMERIC_VERSION is its X.Y.Z part, because Windows
+; file version resources take numbers only.
 ;
 ; MPVST_STAGE is a directory holding MPVST.vst3, README.md and LICENSE -
 ; the same staging tree the .zip is built from, so the archive and the
@@ -18,6 +22,9 @@ SetCompressor /SOLID lzma
 
 !ifndef MPVST_VERSION
   !error "MPVST_VERSION is required"
+!endif
+!ifndef MPVST_NUMERIC_VERSION
+  !error "MPVST_NUMERIC_VERSION is required"
 !endif
 !ifndef MPVST_STAGE
   !error "MPVST_STAGE is required"
@@ -51,11 +58,11 @@ InstallDirRegKey HKCU "Software\${PUBLISHER}\MPVST" "VST3Directory"
 
 !define SUPPORTDIR "$LOCALAPPDATA\Programs\${PRODUCT}"
 
-VIProductVersion "${MPVST_VERSION}.0"
+VIProductVersion "${MPVST_NUMERIC_VERSION}.0"
 VIAddVersionKey "ProductName" "${PRODUCT}"
 VIAddVersionKey "CompanyName" "${PUBLISHER}"
 VIAddVersionKey "FileDescription" "${PRODUCT} plug-in installer"
-VIAddVersionKey "FileVersion" "${MPVST_VERSION}"
+VIAddVersionKey "FileVersion" "${MPVST_NUMERIC_VERSION}"
 VIAddVersionKey "ProductVersion" "${MPVST_VERSION}"
 VIAddVersionKey "LegalCopyright" "${PUBLISHER}"
 

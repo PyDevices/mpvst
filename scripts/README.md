@@ -13,8 +13,14 @@ for that). Every script here is idempotent: safe to rerun.
 - **`fetch-vst3-sdk.sh`** - downloads the pinned VST3 SDK into `.deps/vst3sdk`.
 - **`install-plugin-windows.sh [--no-build]`** - builds the Windows VST3
   bundle and installs it into the per-user VST3 directory any DAW scans.
-- **`package-linux.sh`** / **`package-windows.sh`** - assemble the
-  release archive for each platform's VST3 bundle.
+- **`install-release.sh [--download-only] [TAG]`** - downloads a released
+  Windows build, checks it against its `.sha256`, and installs it where
+  `install-plugin-windows.sh` would. With no tag it takes the newest
+  release, dev builds included.
+- **`package-linux.sh`** / **`package-windows.sh [BUILD_DIR]`** - assemble
+  the release archive for each platform's VST3 bundle. The
+  [release workflow](../.github/workflows/release.yml) runs both on every
+  version tag.
 - **`check-cross-platform-parity.sh`** - renders a fixed score through
   both platforms' real sidecars and compares the PCM byte for byte.
 

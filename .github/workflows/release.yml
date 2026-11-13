@@ -1,0 +1,272 @@
+# Builds the release archives for a pushed version tag and publishes them as
+# a GitHub Release: the Linux tarball, the Windows zip and the Windows
+# installer, each with a .sha256 sidecar, the same files
+# scripts/package-linux.sh and scripts/package-windows.sh make by hand.
+#
+# A tag vX.Y.Z publishes a release; vX.Y.Z.devN, vX.Y.ZrcN, vX.Y.ZaN and
+# vX.Y.ZbN publish a pre-release. The tag must match VERSION at the tagged
+# commit. A final takes its notes from its annotated tag; a pre-release gets
+# generated notes. If the release already exists, written by hand, the
+# workflow only uploads the archives to it.
+#
+# A pull request that changes the release path builds and packages
+# everything without publishing, so a broken release build shows up before
+# the next tag does.
+name: release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+.dev[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+a[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+b[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+rc[0-9]+'
+  pull_request:
+    paths:
+      - '.github/workflows/release.yml'
+      - 'scripts/package-*.sh'
+      - 'scripts/fetch-nsis.sh'
+      - 'scripts/nsis-env.sh'
+      - 'installer/**'
+      - 'CMakeLists.txt'
+  # Run on a tag to publish it again, for instance after a failed run.
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+      publish: ${{ steps.version.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read VERSION and check it against the tag
+        id: version
+        run: |
+          v=$(tr -d '[:space:]' < VERSION)
+          [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+((a|b|rc)[0-9]+|\.dev[0-9]+)?$ ]] || {
+            echo "::error::VERSION reads '$v', which is not a release version"
+            exit 1
+          }
+          publish=false
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            [[ "$GITHUB_REF_NAME" == "v$v" ]] || {
+              echo "::error::tag $GITHUB_REF_NAME does not match VERSION $v"
+              exit 1
+            }
+            publish=true
+          fi
+          prerelease=false
+          [[ "$v" =~ ((a|b|rc)[0-9]+|\.dev[0-9]+)$ ]] && prerelease=true
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+          echo "MPVST $v, pre-release: $prerelease, publish: $publish"
+
+  # The plug-in is built with MSVC, as test.yml builds it. The archive and the
+  # installer are made on Linux below, where NSIS runs.
+  windows:
+    needs: version
+    runs-on: windows-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: mpvst
+      - uses: actions/checkout@v4
+        with:
+          repository: PyDevices/micropython-pydevices
+          path: micropython-pydevices
+      - uses: actions/checkout@v4
+        with:
+          repository: PyDevices/apps
+          path: apps
+
+      - name: Pins
+        id: pins
+        run: |
+          echo "sdk=$(sed -n 's/^readonly SDK_COMMIT="\(.*\)"/\1/p' mpvst/scripts/fetch-vst3-sdk.sh)" >> "$GITHUB_OUTPUT"
+      - name: Cache the VST3 SDK
+        id: sdk
+        uses: actions/cache@v4
+        with:
+          path: mpvst/.deps/vst3sdk
+          key: vst3sdk-${{ steps.pins.outputs.sdk }}
+      - name: Fetch the VST3 SDK
+        if: steps.sdk.outputs.cache-hit != 'true'
+        run: mpvst/scripts/fetch-vst3-sdk.sh
+
+      # The same key as test.yml, so an engine main has already built is
+      # reused.
+      - name: Cache the MicroPython engine
+        id: engine
+        uses: actions/cache@v4
+        with:
+          path: micropython-pydevices/builds
+          key: engine-windows-${{ hashFiles('mpvst/usermods/**', 'mpvst/manifest.py', 'mpvst/installer/art/mpvst.ico', 'micropython-pydevices/DEPENDENCIES.lock', 'micropython-pydevices/modules.lock', 'micropython-pydevices/UPSTREAM', 'micropython-pydevices/variants/**', 'micropython-pydevices/patches/**') }}
+      - name: Install MSYS2's make and MinGW toolchain
+        if: steps.engine.outputs.cache-hit != 'true'
+        uses: msys2/setup-msys2@v2
+        with:
+          release: false
+          update: false
+          msystem: MINGW64
+          install: make mingw-w64-x86_64-gcc autoconf automake libtool
+      - name: Build the MicroPython engine
+        if: steps.engine.outputs.cache-hit != 'true'
+        working-directory: micropython-pydevices
+        run: |
+          ws=$(cygpath -m "$GITHUB_WORKSPACE")
+          python build_mp.py --port windows --variant vst3-engine \
+            --modules "audioinstruments,audioeffects,audiodsp,audioif,lvgl,pydevices,ulab,$ws/apps,$ws/mpvst" \
+            "ENGINE_ICON=$ws/mpvst/installer/art/mpvst.ico"
+
+      - name: Configure
+        working-directory: mpvst
+        run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64 -DBUILD_TESTING=OFF
+      - name: Build the plug-in
+        working-directory: mpvst
+        run: cmake --build build --config Release --parallel
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-bundle
+          path: mpvst/build/VST3/Release/
+          if-no-files-found: error
+          retention-days: 7
+
+  linux:
+    needs: version
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: mpvst
+      - uses: actions/checkout@v4
+        with:
+          repository: PyDevices/micropython-pydevices
+          path: micropython-pydevices
+      - uses: actions/checkout@v4
+        with:
+          repository: PyDevices/apps
+          path: apps
+
+      - name: Build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build pkg-config libffi-dev libx11-dev
+
+      - name: Pins
+        id: pins
+        run: |
+          echo "sdk=$(sed -n 's/^readonly SDK_COMMIT="\(.*\)"/\1/p' mpvst/scripts/fetch-vst3-sdk.sh)" >> "$GITHUB_OUTPUT"
+      - name: Cache the VST3 SDK
+        id: sdk
+        uses: actions/cache@v4
+        with:
+          path: mpvst/.deps/vst3sdk
+          key: vst3sdk-linux-${{ steps.pins.outputs.sdk }}
+      - name: Fetch the VST3 SDK
+        if: steps.sdk.outputs.cache-hit != 'true'
+        run: mpvst/scripts/fetch-vst3-sdk.sh
+
+      - name: Cache the MicroPython engine
+        id: engine
+        uses: actions/cache@v4
+        with:
+          path: micropython-pydevices/builds
+          key: engine-unix-${{ hashFiles('mpvst/usermods/**', 'mpvst/manifest.py', 'micropython-pydevices/DEPENDENCIES.lock', 'micropython-pydevices/modules.lock', 'micropython-pydevices/UPSTREAM', 'micropython-pydevices/variants/**', 'micropython-pydevices/patches/**') }}
+      - name: Build the MicroPython engine
+        if: steps.engine.outputs.cache-hit != 'true'
+        working-directory: micropython-pydevices
+        run: |
+          python3 build_mp.py --port unix --variant vst3-engine \
+            --modules "audioinstruments,audioeffects,audiodsp,audioif,lvgl,pydevices,ulab,$GITHUB_WORKSPACE/apps,$GITHUB_WORKSPACE/mpvst"
+
+      - name: Build the plug-in
+        working-directory: mpvst
+        run: |
+          cmake -S . -B .build-linux -G Ninja -DBUILD_TESTING=OFF
+          cmake --build .build-linux
+      - name: Package
+        working-directory: mpvst
+        run: scripts/package-linux.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-dist
+          path: mpvst/dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: [version, windows, linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      V: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-bundle
+          path: ${{ runner.temp }}/win-build/VST3/Release
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-dist
+          path: dist
+
+      - name: Package Windows
+        run: |
+          sudo apt-get update
+          scripts/fetch-nsis.sh
+          scripts/package-windows.sh "$RUNNER_TEMP/win-build"
+
+      - name: Check every archive and its sidecar
+        working-directory: dist
+        run: |
+          for f in "MPVST-$V-linux-x86_64.tar.gz" "MPVST-$V-windows-x86_64.zip" "MPVST-$V-windows-x86_64-setup.exe"; do
+            test -s "$f" || { echo "::error::missing $f"; exit 1; }
+            sha256sum -c "$f.sha256"
+          done
+          ls -l
+
+      - uses: actions/upload-artifact@v4
+        if: needs.version.outputs.publish != 'true'
+        with:
+          name: release-dist
+          path: dist/
+          retention-days: 7
+
+      - name: Publish the release
+        if: needs.version.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ needs.version.outputs.prerelease }}
+        run: |
+          tag="v$V"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" dist/* --clobber
+          elif [[ "$PRERELEASE" == true ]]; then
+            gh release create "$tag" dist/* --verify-tag --prerelease \
+              --title "MPVST $V" --generate-notes
+          else
+            gh release create "$tag" dist/* --verify-tag \
+              --title "MPVST $V" --notes-from-tag
+          fi
+          gh release view "$tag"

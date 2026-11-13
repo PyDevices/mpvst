@@ -2,19 +2,27 @@
 set -euo pipefail
 
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-source "$repo_dir/scripts/windows-paths.sh"
-mpvst_load_windows_paths || exit 1
-build_dir=${1:-$WIN_TEMP/mpvst-build}
+# With no argument the build is the one install-plugin-windows.sh makes, in
+# the Windows temp directory; the release workflow passes its own.
+if [[ -n "${1:-}" ]]; then
+    build_dir=$1
+else
+    source "$repo_dir/scripts/windows-paths.sh"
+    mpvst_load_windows_paths || exit 1
+    build_dir=$WIN_TEMP/mpvst-build
+fi
 bundle="$build_dir/VST3/Release/MPVST.vst3"
 dist_dir="$repo_dir/dist"
 # VERSION at the repo root is the single source of truth; CMakeLists.txt
 # reads the same file, so the binary and the archive around it cannot
 # disagree about which version they are.
 version=$(tr -d '[:space:]' < "$repo_dir/VERSION")
-[[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
-    echo "error: VERSION must hold a bare X.Y.Z, got '$version'" >&2
+# X.Y.Z, or a pre-release such as X.Y.Z.devN or X.Y.ZrcN.
+[[ "$version" =~ ^([0-9]+\.[0-9]+\.[0-9]+)((a|b|rc)[0-9]+|\.dev[0-9]+)?$ ]] || {
+    echo "error: VERSION must hold X.Y.Z, X.Y.Z.devN or X.Y.ZrcN, got '$version'" >&2
     exit 1
 }
+numeric_version=${BASH_REMATCH[1]}
 name="MPVST-$version"
 archive="$dist_dir/$name-windows-x86_64.zip"
 
@@ -52,6 +60,7 @@ if [[ -x "$repo_dir/.deps/nsis/usr/bin/makensis" || -n "${MAKENSIS:-}" ]]; then
     rm -f -- "$installer"
     "$repo_dir/scripts/nsis-env.sh" \
         -DMPVST_VERSION="$version" \
+        -DMPVST_NUMERIC_VERSION="$numeric_version" \
         -DMPVST_STAGE="$stage_dir/$name" \
         -DMPVST_OUTFILE="$installer" \
         "$repo_dir/installer/windows.nsi" >/dev/null \
