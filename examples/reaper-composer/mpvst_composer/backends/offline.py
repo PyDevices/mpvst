@@ -27,8 +27,8 @@ through Reaper before you believe it.
 Pan automation (the pan is static, as in `apply_mix`) and sidechain keys are
 not mixed here.
 
-Needs: numpy and `pydevices-audiodsp`, `pydevices-audioinstruments` and
-`pydevices-audioeffects`.
+Needs: numpy and `omnipython-audiodsp`, `omnipython-audioinstruments` and
+`omnipython-audioeffects`.
 
 Run it:
 
@@ -36,7 +36,7 @@ Run it:
     song.render("song.wav", OfflineRenderer)
 
 Tested on: CPython 3.12.3 on Linux (WSL 2) with PyYAML 6.0.3, numpy 2.5.4
-and pydevices-audiodsp 0.6.7 and audioinstruments 0.5.0. Exercised by
+and omnipython-audiodsp 0.6.7 and audioinstruments 0.5.0. Exercised by
 `converge.py`, `canon_16.py` and `from_yaml.py`.
 """
 

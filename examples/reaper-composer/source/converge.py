@@ -15,8 +15,8 @@ degrees. They begin together in half notes, fan out as each voice takes the
 line at its own note value, pile up in the middle and collapse back into
 unison at the end.
 
-Needs: PyYAML (`pip install pyyaml`), numpy and `pydevices-audiodsp`,
-`pydevices-audioinstruments` and `pydevices-audioeffects`. The two renders
+Needs: PyYAML (`pip install pyyaml`), numpy and `omnipython-audiodsp`,
+`omnipython-audioinstruments` and `omnipython-audioeffects`. The two renders
 take about as long as the music.
 
 Run it:
@@ -28,7 +28,7 @@ Run it:
 Success is "The two routes converge." and two matching digests.
 
 Tested on: CPython 3.12.3 on Linux (WSL 2) with PyYAML 6.0.3, numpy 2.5.4
-and pydevices-audiodsp 0.6.7 and audioinstruments 0.5.0. Ran without
+and omnipython-audiodsp 0.6.7 and audioinstruments 0.5.0. Ran without
 `--rpp`; the two renders matched.
 """
 

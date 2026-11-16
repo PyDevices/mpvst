@@ -87,8 +87,8 @@ jobs:
           path: mpvst
       - uses: actions/checkout@v4
         with:
-          repository: PyDevices/micropython-pydevices
-          path: micropython-pydevices
+          repository: PyDevices/omnipython-builds
+          path: omnipython-builds
       - uses: actions/checkout@v4
         with:
           repository: PyDevices/apps
@@ -114,8 +114,8 @@ jobs:
         id: engine
         uses: actions/cache@v4
         with:
-          path: micropython-pydevices/builds
-          key: engine-windows-${{ hashFiles('mpvst/usermods/**', 'mpvst/manifest.py', 'mpvst/installer/art/mpvst.ico', 'micropython-pydevices/DEPENDENCIES.lock', 'micropython-pydevices/modules.lock', 'micropython-pydevices/UPSTREAM', 'micropython-pydevices/variants/**', 'micropython-pydevices/patches/**') }}
+          path: omnipython-builds/builds
+          key: engine-windows-${{ hashFiles('mpvst/usermods/**', 'mpvst/manifest.py', 'mpvst/installer/art/mpvst.ico', 'omnipython-builds/DEPENDENCIES.lock', 'omnipython-builds/modules.lock', 'omnipython-builds/UPSTREAM', 'omnipython-builds/variants/**', 'omnipython-builds/patches/**') }}
       - name: Install MSYS2's make and MinGW toolchain
         if: steps.engine.outputs.cache-hit != 'true'
         uses: msys2/setup-msys2@v2
@@ -126,11 +126,11 @@ jobs:
           install: make mingw-w64-x86_64-gcc autoconf automake libtool
       - name: Build the MicroPython engine
         if: steps.engine.outputs.cache-hit != 'true'
-        working-directory: micropython-pydevices
+        working-directory: omnipython-builds
         run: |
           ws=$(cygpath -m "$GITHUB_WORKSPACE")
           python build_mp.py --port windows --variant vst3-engine \
-            --modules "audioinstruments,audioeffects,audiodsp,audioif,lvgl,pydevices,ulab,$ws/apps,$ws/mpvst" \
+            --modules "audioinstruments,audioeffects,audiodsp,audioif,lvgl,omnipython,ulab,$ws/apps,$ws/mpvst" \
             "ENGINE_ICON=$ws/mpvst/installer/art/mpvst.ico"
 
       - name: Configure
@@ -157,8 +157,8 @@ jobs:
           path: mpvst
       - uses: actions/checkout@v4
         with:
-          repository: PyDevices/micropython-pydevices
-          path: micropython-pydevices
+          repository: PyDevices/omnipython-builds
+          path: omnipython-builds
       - uses: actions/checkout@v4
         with:
           repository: PyDevices/apps
@@ -187,14 +187,14 @@ jobs:
         id: engine
         uses: actions/cache@v4
         with:
-          path: micropython-pydevices/builds
-          key: engine-unix-${{ hashFiles('mpvst/usermods/**', 'mpvst/manifest.py', 'micropython-pydevices/DEPENDENCIES.lock', 'micropython-pydevices/modules.lock', 'micropython-pydevices/UPSTREAM', 'micropython-pydevices/variants/**', 'micropython-pydevices/patches/**') }}
+          path: omnipython-builds/builds
+          key: engine-unix-${{ hashFiles('mpvst/usermods/**', 'mpvst/manifest.py', 'omnipython-builds/DEPENDENCIES.lock', 'omnipython-builds/modules.lock', 'omnipython-builds/UPSTREAM', 'omnipython-builds/variants/**', 'omnipython-builds/patches/**') }}
       - name: Build the MicroPython engine
         if: steps.engine.outputs.cache-hit != 'true'
-        working-directory: micropython-pydevices
+        working-directory: omnipython-builds
         run: |
           python3 build_mp.py --port unix --variant vst3-engine \
-            --modules "audioinstruments,audioeffects,audiodsp,audioif,lvgl,pydevices,ulab,$GITHUB_WORKSPACE/apps,$GITHUB_WORKSPACE/mpvst"
+            --modules "audioinstruments,audioeffects,audiodsp,audioif,lvgl,omnipython,ulab,$GITHUB_WORKSPACE/apps,$GITHUB_WORKSPACE/mpvst"
 
       - name: Build the plug-in
         working-directory: mpvst

@@ -58,7 +58,7 @@ endforeach()
 file(GLOB_RECURSE entries RELATIVE "${MPVST_LIB_SRC}" "${MPVST_LIB_SRC}/*")
 foreach(entry IN LISTS entries)
     # An editable install of the component packages leaves a
-    # pydevices_audioeffects.egg-info/ beside the code; it is packaging
+    # omnipython_audioeffects.egg-info/ beside the code; it is packaging
     # metadata, it is never imported, and it has been shipping inside the
     # bundle. Excluded by name rather than by "files only", because
     # audioeffects/__init__.py does `from . import rebuilt`, so a rule that

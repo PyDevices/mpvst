@@ -20,7 +20,7 @@ your DAW, then insert the "MPVST Script Host" instrument and play notes.
 To hear it with no host, render it offline with `InstrumentRun` from
 `soundtrack/composer/harness.py`; the first-program guide shows how.
 
-Tested on: CPython 3.12.3 on Linux (WSL 2) with pydevices-audiodsp 0.6.7,
+Tested on: CPython 3.12.3 on Linux (WSL 2) with omnipython-audiodsp 0.6.7,
 through the offline `InstrumentRun`; not loaded in a DAW.
 """
 

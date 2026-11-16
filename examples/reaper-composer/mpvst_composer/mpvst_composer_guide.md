@@ -12,7 +12,7 @@ You need a way to know what the instruments are, and a way to hear them.
 
 1. **The components.** The composer has to learn every instrument, effect,
    patch and macro before it can write one. It asks
-   `pydevices-audioinstruments` and `pydevices-audioeffects` if pip has them,
+   `omnipython-audioinstruments` and `omnipython-audioeffects` if pip has them,
    and reads `catalog.json` out of an installed mpvst bundle otherwise. Either
    answers; `MPVST_BUNDLE` points at the plug-in if you put it somewhere
    unusual.
@@ -346,8 +346,8 @@ from mpvst_composer.backends.offline import OfflineRenderer
 song.render("my_song.wav", OfflineRenderer)
 ```
 
-It needs `pydevices-audiodsp`, `pydevices-audioinstruments` and
-`pydevices-audioeffects` from pip.
+It needs `omnipython-audiodsp`, `omnipython-audioinstruments` and
+`omnipython-audioeffects` from pip.
 
 **Before you believe it**, bounce it through Reaper:
 

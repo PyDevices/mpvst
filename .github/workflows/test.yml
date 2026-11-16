@@ -56,13 +56,13 @@ jobs:
         with:
           path: mpvst
 
-      # The engine is built by micropython-pydevices and takes the apps
+      # The engine is built by omnipython-builds and takes the apps
       # checkout as a module; both sit beside this repository, where the
       # build scripts look for them.
       - uses: actions/checkout@v4
         with:
-          repository: PyDevices/micropython-pydevices
-          path: micropython-pydevices
+          repository: PyDevices/omnipython-builds
+          path: omnipython-builds
       - uses: actions/checkout@v4
         with:
           repository: PyDevices/apps
@@ -89,8 +89,8 @@ jobs:
         id: engine
         uses: actions/cache@v4
         with:
-          path: micropython-pydevices/builds
-          key: engine-windows-${{ hashFiles('mpvst/usermods/**', 'mpvst/manifest.py', 'mpvst/installer/art/mpvst.ico', 'micropython-pydevices/DEPENDENCIES.lock', 'micropython-pydevices/modules.lock', 'micropython-pydevices/UPSTREAM', 'micropython-pydevices/variants/**', 'micropython-pydevices/patches/**') }}
+          path: omnipython-builds/builds
+          key: engine-windows-${{ hashFiles('mpvst/usermods/**', 'mpvst/manifest.py', 'mpvst/installer/art/mpvst.ico', 'omnipython-builds/DEPENDENCIES.lock', 'omnipython-builds/modules.lock', 'omnipython-builds/UPSTREAM', 'omnipython-builds/variants/**', 'omnipython-builds/patches/**') }}
 
       - name: Install MSYS2's make and MinGW toolchain
         if: steps.engine.outputs.cache-hit != 'true'
@@ -103,27 +103,27 @@ jobs:
 
       - name: Build the MicroPython engine
         if: steps.engine.outputs.cache-hit != 'true'
-        working-directory: micropython-pydevices
+        working-directory: omnipython-builds
         run: |
           ws=$(cygpath -m "$GITHUB_WORKSPACE")
           python build_mp.py --port windows --variant vst3-engine \
-            --modules "audioinstruments,audioeffects,audiodsp,audioif,lvgl,pydevices,ulab,$ws/apps,$ws/mpvst" \
+            --modules "audioinstruments,audioeffects,audiodsp,audioif,lvgl,omnipython,ulab,$ws/apps,$ws/mpvst" \
             "ENGINE_ICON=$ws/mpvst/installer/art/mpvst.ico"
 
       # The tests import audiodsp, the instruments and the effects as CPython
       # packages. The releases on TestPyPI lag what the engine freezes, so
-      # install the same commits and tags: audiodsp at micropython-pydevices' pin
+      # install the same commits and tags: audiodsp at omnipython-builds' pin
       # (building its C extension), the others at the tags omnipython-lib's
       # lib-lock.json pins.
       - name: Python environment for the tests
         working-directory: mpvst
         run: |
           # DEPENDENCIES.lock, or modules.lock in a checkout from before it.
-          lock=../micropython-pydevices/DEPENDENCIES.lock
-          [ -f "$lock" ] || lock=../micropython-pydevices/modules.lock
+          lock=../omnipython-builds/DEPENDENCIES.lock
+          [ -f "$lock" ] || lock=../omnipython-builds/modules.lock
           dsp=$(awk '$1=="audiodsp" { print $3 }' "$lock")
           lib=$(awk '$1=="omnipython-lib" { print $3 }' "$lock")
-          curl -fsSL -o "$RUNNER_TEMP/lib-lock.json" "https://raw.githubusercontent.com/PyDevices/pydevices/$lib/lib-lock.json"
+          curl -fsSL -o "$RUNNER_TEMP/lib-lock.json" "https://raw.githubusercontent.com/PyDevices/omnipython/$lib/lib-lock.json"
           read ai_ref ae_ref < <(python -c "
           import json, sys
           p = json.load(open(sys.argv[1]))['pinned']

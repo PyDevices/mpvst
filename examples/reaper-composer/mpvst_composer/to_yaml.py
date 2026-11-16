@@ -26,7 +26,7 @@ Run it:
     to_yaml.write(song, "song.yaml")
 
 Tested on: CPython 3.12.3 on Linux (WSL 2) with PyYAML 6.0.3, numpy 2.5.4
-and pydevices-audiodsp 0.6.7 and audiocomponents 0.4.1. Exercised by
+and omnipython-audiodsp 0.6.7 and audiocomponents 0.4.1. Exercised by
 `converge.py`, `canon_16.py` and `from_yaml.py`.
 """
 

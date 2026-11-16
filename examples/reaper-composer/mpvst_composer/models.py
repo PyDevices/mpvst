@@ -20,7 +20,7 @@ Run it:
     song = Project(name="Sketch")
 
 Tested on: CPython 3.12.3 on Linux (WSL 2) with PyYAML 6.0.3, numpy 2.5.4
-and pydevices-audiodsp 0.6.7 and audiocomponents 0.4.1. Exercised by
+and omnipython-audiodsp 0.6.7 and audiocomponents 0.4.1. Exercised by
 `converge.py`, `canon_16.py` and `from_yaml.py`.
 """
 
@@ -338,8 +338,8 @@ class Project:
                 print("Warning: no catalog.json in any VST3 folder and no "
                       "audioinstruments or audioeffects packages installed. Named patches and "
                       "class IDs are unavailable; install MPVST, set "
-                      "MPVST_BUNDLE, or pip install pydevices-audioinstruments "
-                      "and pydevices-audioeffects.")
+                      "MPVST_BUNDLE, or pip install omnipython-audioinstruments "
+                      "and omnipython-audioeffects.")
             self._load_reaper_numeric_ids()
             return
 

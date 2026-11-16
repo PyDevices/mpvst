@@ -8,7 +8,7 @@
 docs/how-it-works/security.md promises that the shipped sidecar engine has no sockets, no
 TLS and no FFI, so a piece someone downloaded cannot reach the network or load
 a native library whatever it contains. That promise lives in a build variant in
-another repository (micropython-pydevices' `vst3-engine`), and nothing here
+another repository (omnipython-builds' `vst3-engine`), and nothing here
 used to check it held.
 
 It did not. The Windows engine built for 0.3.0, and again for 0.3.1, could
@@ -98,7 +98,7 @@ def check(engine: Path, required: bool) -> int:
     if bad:
         print(f"FAIL {engine}: {summary}")
         print("    The engine must refuse all of these (docs/how-it-works/security.md). "
-              "The vst3-engine variant in micropython-pydevices switches them "
+              "The vst3-engine variant in omnipython-builds switches them "
               "off; rebuild it (CONTRIBUTING.md).")
         return 1
     print(f"ok {engine}: {summary}")

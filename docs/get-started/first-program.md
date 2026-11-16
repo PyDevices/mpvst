@@ -71,7 +71,7 @@ You can render the script offline, with no host and no plug-in, to check that it
 
 ```bash
 pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ \
-    pydevices-audiodsp pydevices-audioinstruments pydevices-audioeffects numpy
+    omnipython-audiodsp omnipython-audioinstruments omnipython-audioeffects numpy
 ```
 
 save this as `check_pluck.py` and run `python check_pluck.py` from the checkout's root:

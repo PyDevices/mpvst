@@ -4,7 +4,7 @@
 
 """mpvst's C modules for a MicroPython build: vstaudio and vstui.
 
-Name this repository among the modules of a micropython-pydevices build, the
+Name this repository among the modules of an omnipython-builds build, the
 way any module outside that repository is named, by its path:
 
     build_mp.py --port windows --variant vst3-engine --modules <others>,/path/to/mpvst

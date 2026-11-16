@@ -21,7 +21,7 @@ if(NOT MPVST_PYTHON)
     find_package(Python3 COMPONENTS Interpreter)
     set(MPVST_PYTHON "${Python3_EXECUTABLE}")
     message(STATUS "no .venv Python; falling back to ${MPVST_PYTHON}. The "
-        "Python tests need pydevices-audiodsp installed into it.")
+        "Python tests need omnipython-audiodsp installed into it.")
 endif()
 
 add_executable(mpvst_protocol_tests protocol_tests.cpp)
@@ -104,7 +104,7 @@ if(TARGET mpvst-stage-micropython-engine)
     # rendered silence. Refuse the engine once anything that goes into it --
     # audiodsp's C sources and build glue, or this repo's vstaudio/vstui --
     # has moved since it was built. It checks the engine the bundle stages
-    # from, because build_mp.py's record (pydevices-build.json) sits beside
+    # from, because build_mp.py's record (omnipython-build.json) sits beside
     # it; the staged copy carries none, and must not, since the record names
     # this machine's paths and would ship in the archive.
     add_test(NAME mpvst_engine_provenance COMMAND

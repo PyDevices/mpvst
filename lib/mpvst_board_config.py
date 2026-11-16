@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: MIT
 
-"""The editor as an ordinary PyDevices board.
+"""The editor as an ordinary OmniPython board.
 
 `vstui` gives the engine a framebuffer, an input queue and an edit queue in
-shared memory. This turns those into the board contract every PyDevices board
+shared memory. This turns those into the board contract every OmniPython board
 implements - a `display_drv` and a source of host events - so everything above
 this line is stock: `appdev.App` registers the devices, `display_driver` wires
 LVGL to them exactly as it does on a panel with a touchscreen and an encoder,
@@ -80,7 +80,7 @@ class VstDisplay(DisplayDriver):
 
 
 class _HostEvents:
-    """Drain `vstui.poll()` into the PyDevices events LVGL already reads."""
+    """Drain `vstui.poll()` into the OmniPython events LVGL already reads."""
 
     def __init__(self):
         self._buttons = (0, 0, 0)

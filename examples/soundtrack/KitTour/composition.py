@@ -24,8 +24,8 @@ the change announces itself.
 A drum machine's macros are its own, so each track plays its patch 0; nothing
 here sets a macro.
 
-Needs: Python 3 with numpy and `pydevices-audiodsp`,
-`pydevices-audioinstruments` and `pydevices-audioeffects`, and an mpvst
+Needs: Python 3 with numpy and `omnipython-audiodsp`,
+`omnipython-audioinstruments` and `omnipython-audioeffects`, and an mpvst
 install (set `MPVST_BUNDLE` if it is somewhere unusual). Opening the Reaper
 project this feeds needs Reaper and mpvst.
 
@@ -38,7 +38,7 @@ Reaper project.
 Success is a level report ending in "wrote kittour.wav" with no failed checks.
 
 Tested on: CPython 3.12.3 on Linux (WSL 2), rendered with
-`composer/preview.py` using pydevices-audiodsp 0.6.7 and
+`composer/preview.py` using omnipython-audiodsp 0.6.7 and
 audioinstruments 0.5.0.
 """
 

@@ -15,8 +15,8 @@ This is not the composer in `examples/reaper-composer/`. That one is a
 framework you write a song with; this one reads songs already written as
 modules.
 
-Needs: Python 3 with numpy and `pydevices-audiodsp`,
-`pydevices-audioinstruments` and `pydevices-audioeffects`, and an mpvst
+Needs: Python 3 with numpy and `omnipython-audiodsp`,
+`omnipython-audioinstruments` and `omnipython-audioeffects`, and an mpvst
 install (set `MPVST_BUNDLE` if it is somewhere unusual).
 
 Run it: from the `soundtrack` folder,
@@ -24,6 +24,6 @@ Run it: from the `soundtrack` folder,
     python composer/reaper.py --piece Perihelion
     python composer/preview.py --piece Perihelion perihelion.wav
 
-Tested on: CPython 3.12.3 on Linux (WSL 2) with pydevices-audiodsp 0.6.7 and
+Tested on: CPython 3.12.3 on Linux (WSL 2) with omnipython-audiodsp 0.6.7 and
 audiocomponents 0.4.1; `preview.py` and `reaper.py` run on several pieces.
 """

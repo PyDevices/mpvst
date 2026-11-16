@@ -9,7 +9,7 @@
 
 The `mpvst_engine_provenance` ctest runs it on the engine the bundle stages.
 
-The engine is built by micropython-pydevices' `build_mp.py` (the command is in
+The engine is built by omnipython-builds' `build_mp.py` (the command is in
 CONTRIBUTING.md), into that repository's `builds/<port>/vst3-engine/`,
 and every later `cmake --build` copies whatever is sitting there into the
 bundle without asking how old it is. So the whole ctest suite can run green
@@ -34,7 +34,7 @@ Two questions, asked two ways:
   the running binary's own claim, so it cannot be fooled by a record that was
   copied from somewhere else.
 - **this repository's vstaudio and vstui, and the audioinstruments and audioeffects packages**
-  (frozen into the engine): `build_mp.py` writes `pydevices-build.json`
+  (frozen into the engine): `build_mp.py` writes `omnipython-build.json`
   beside every build, naming the commit of each module that went in. The
   engine has to pass both questions.
 
@@ -63,7 +63,7 @@ REPO = Path(__file__).resolve().parents[1]
 #: freeze manifest and VERSION (compiled in as __version__) and
 #: DEPENDENCIES.lock (the mp3 decoder's pin); not its docs, tests, workflows,
 #: Python lib/ or CircuitPython patches. mpvst: the two usermods and the
-#: manifest that names them. audioinstruments, audioeffects and pydevices: the
+#: manifest that names them. audioinstruments, audioeffects and omnipython: the
 #: packages they freeze.
 ENGINE_PATHS = {
     "mpvst": ("usermods/vstaudio", "usermods/vstui", "manifest.py"),
@@ -71,14 +71,14 @@ ENGINE_PATHS = {
                  "VERSION", "DEPENDENCIES.lock"),
     "audioinstruments": ("lib", "manifest.py"),
     "audioeffects": ("lib", "manifest.py"),
-    "pydevices": ("lib", "manifest.py"),
+    "omnipython": ("lib", "manifest.py"),
 }
 
 #: The record build_mp.py writes beside every build.
-RECORD = "pydevices-build.json"
+RECORD = "omnipython-build.json"
 
-REBUILD = ("../micropython-pydevices/build_mp.py --port {port} --variant vst3-engine "
-           "--modules audioinstruments,audioeffects,audiodsp,audioif,lvgl,pydevices,ulab,{repo}{extra}")
+REBUILD = ("../omnipython-builds/build_mp.py --port {port} --variant vst3-engine "
+           "--modules audioinstruments,audioeffects,audiodsp,audioif,lvgl,omnipython,ulab,{repo}{extra}")
 
 # Any audiodsp module carries the stamp; ask three, and require that they
 # agree. They are all compiled from one tree, so a disagreement is its own
@@ -134,7 +134,7 @@ def record_problems(engine: Path) -> tuple[list[str], dict[str, Path]]:
                "audiodsp": modules.get("audiodsp"),
                "audioinstruments": modules.get("audioinstruments"),
                "audioeffects": modules.get("audioeffects"),
-               "pydevices": modules.get("pydevices")}
+               "omnipython": modules.get("omnipython")}
     problems, sources = [], {}
     for name, entry in entries.items():
         if entry is None:

@@ -44,8 +44,8 @@ every beat in a placement, so two tracks playing one pattern half a beat
 apart interlock into a line neither is playing.
 
 Needs: PyYAML (`pip install pyyaml`). For a `.wav` output, also numpy and
-`pydevices-audiodsp`, `pydevices-audioinstruments` and
-`pydevices-audioeffects`.
+`omnipython-audiodsp`, `omnipython-audioinstruments` and
+`omnipython-audioeffects`.
 
 Run it:
 
@@ -53,7 +53,7 @@ Run it:
     python from_yaml.py source/interlock.yaml interlock.wav
 
 Tested on: CPython 3.12.3 on Linux (WSL 2) with PyYAML 6.0.3, numpy 2.5.4
-and pydevices-audiodsp 0.6.7 and audioinstruments 0.5.0. Rendered
+and omnipython-audiodsp 0.6.7 and audioinstruments 0.5.0. Rendered
 `interlock.yaml` to a WAV with every track sounding; the `.rpp` output was
 not written.
 """

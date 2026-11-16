@@ -13,7 +13,7 @@ values mirror `src/protocol/include/mpvst/protocol.h`.
 Needs: Python 3. `harness.py` and `preview.py` load this module; it is not
 run on its own.
 
-Tested on: CPython 3.12.3 on Linux (WSL 2) with pydevices-audiodsp 0.6.7 and
+Tested on: CPython 3.12.3 on Linux (WSL 2) with omnipython-audiodsp 0.6.7 and
 audiocomponents 0.4.1; `preview.py` and `reaper.py` run on several pieces.
 """
 
