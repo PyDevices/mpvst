@@ -1087,7 +1087,7 @@ bool effectScriptProbe(const PluginFactory& factory,
 }
 
 // Loads an arbitrary instrument script (e.g. one of lib/instruments/*.py)
-// into the real MPVST Instrument class and sweeps every one of its 16
+// into the real mpvst Instrument class and sweeps every one of its 16
 // macros through 0.0/0.5/1.0 while pressing and releasing notes across a
 // wide pitch range. Reports whether the sidecar ever raised (kEngineError
 // going non-zero -- exactly how the ring_mod=/scale= API-misuse crashes

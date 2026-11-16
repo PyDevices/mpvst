@@ -1,5 +1,5 @@
 --[[
-DAW matrix for the MPVST instrument, on Windows and on Linux.
+DAW matrix for the mpvst instrument, on Windows and on Linux.
 
 REAPER runs this as Scripts/__startup.lua. It drives the Phase 6 exit criteria
 without any GUI interaction: scan, instantiate, play, automate, save, reopen,

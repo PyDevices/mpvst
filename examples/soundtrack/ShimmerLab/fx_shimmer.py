@@ -10,7 +10,7 @@ anything (name, categories, macro labels and the one patch), then a call
 that hands the work to the library. A composition embeds it in a track's
 `effects` list, and it takes four macros: Shimmer, Echo, Space and Tone.
 
-Needs: MPVST installed with `audioeffects`.
+Needs: mpvst installed with `audioeffects`.
 
 Run it: embed it in a composition's `effects` list and render that piece,
 from the `soundtrack` folder.

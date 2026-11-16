@@ -9,9 +9,9 @@ reach for. How to run each lives with the tool.
 | You want | Run | It needs |
 |---|---|---|
 | A composer project, on any machine | `from_yaml.py song.yaml song.wav` | pip packages |
-| A soundtrack piece, checking the script path | `composer/preview.py --piece NAME` | pip packages, installed MPVST |
-| Any `.RPP`, for real | `bounce.py song.rpp` | Reaper, installed MPVST |
-| A soundtrack piece, for real | `reaper.sh --render --piece NAME` | Reaper, installed MPVST |
+| A soundtrack piece, checking the script path | `composer/preview.py --piece NAME` | pip packages, installed mpvst |
+| Any `.RPP`, for real | `bounce.py song.rpp` | Reaper, installed mpvst |
+| A soundtrack piece, for real | `reaper.sh --render --piece NAME` | Reaper, installed mpvst |
 
 Offline is not the fast one. The two in the top half run in one CPython
 process at roughly the speed of the music; the two in the bottom half hand
@@ -36,7 +36,7 @@ They differ in how the sound gets built, so they catch different mistakes.
 `preview.py` runs the piece's **instrument scripts**, exec'd against the
 `vstaudio` shim exactly the way the sidecar loads them. It goes through
 `mpvst_instrument_adapter`, so the normalized host values cross the same
-seam - which is why it needs MPVST installed even though no plug-in loads.
+seam - which is why it needs mpvst installed even though no plug-in loads.
 Reach for it when the question is about a script: does it register an output,
 does a macro reach it, does the adapter hand it the units it expects.
 

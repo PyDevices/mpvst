@@ -25,7 +25,7 @@ pip install -i https://test.pypi.org/simple/ \
 ```
 
 TestPyPI is the only index carrying those three; the extra index resolves
-their ordinary dependencies. `preview.py` also needs MPVST installed, because
+their ordinary dependencies. `preview.py` also needs mpvst installed, because
 it loads instruments the way the sidecar does - through the bundle's
 `mpvst_instrument_adapter`. Point `MPVST_BUNDLE` at the install if it is
 somewhere unusual.

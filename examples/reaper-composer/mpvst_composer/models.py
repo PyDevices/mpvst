@@ -6,13 +6,13 @@
 A `Project` holds tempo markers, a key, tracks, aux tracks and a mix bus.
 Tracks hold `MidiPattern` and `DrumPattern` objects whose notes are scale
 degrees, plus macro, volume and pan automation. A project reads the class
-IDs and patch names it needs from the installed MPVST bundle's
+IDs and patch names it needs from the installed mpvst bundle's
 `catalog.json`, and falls back to the `audioinstruments` and `audioeffects`
 packages for what they declare. `Project.render` hands the finished project
 to a backend that writes it out.
 
 Needs: Python 3.8 or later. Class IDs for a Reaper project come from an
-MPVST install; set `MPVST_BUNDLE` if it is somewhere unusual.
+mpvst install; set `MPVST_BUNDLE` if it is somewhere unusual.
 
 Run it:
 
@@ -306,14 +306,14 @@ class Project:
         Two sources, because the question has two halves. What a component
         *is* - its macro labels and ranges, its patches, which key plays which
         drum - belongs to audioinstruments and audioeffects, and the packages answer for
-        themselves when they are installed. What MPVST *calls* it - the VST3
+        themselves when they are installed. What mpvst *calls* it - the VST3
         class ID a project file has to name - is the plug-in's own assignment,
         and only the installed bundle's catalog.json has it.
 
         So the packages are asked first and the catalog fills in behind them:
         every class ID, plus the components pip does not have. That is what
         lets a project be written, and rendered by OfflineRenderer, on a
-        machine where MPVST was never installed.
+        machine where mpvst was never installed.
 
         This replaces two older readers - a regex over moduleinfo.json's JSON5
         comments, and a patches_dump.json produced by running the plug-in's
@@ -582,7 +582,7 @@ class Project:
         floor: float = None,
     ):
         """
-        Audible ducking that does not depend on MPVST Compressor (which has no key=).
+        Audible ducking that does not depend on mpvst Compressor (which has no key=).
 
         Writes a volume envelope on `dest_track` that dips at every matching hit on
         `source_track`. Also used alongside a NoiseGate(duck=True) insert + AUXRECV

@@ -29,9 +29,9 @@ The one modulation is the C-major excursion at bar 61; everything else is
 diatonic A minor coloured with added ninths.
 
 Needs: Python 3 with numpy and `pydevices-audiodsp`,
-`pydevices-audioinstruments` and `pydevices-audioeffects`, and an MPVST
+`pydevices-audioinstruments` and `pydevices-audioeffects`, and an mpvst
 install (set `MPVST_BUNDLE` if it is somewhere unusual). Opening the Reaper
-project this feeds needs Reaper and MPVST.
+project this feeds needs Reaper and mpvst.
 
 Run it: from the `soundtrack` folder, render the piece to a WAV, or write its
 Reaper project.

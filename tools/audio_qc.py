@@ -7,7 +7,7 @@
     python tools/audio_qc.py bounce/piece.wav
     python tools/audio_qc.py *.wav --json
 
-Nothing here knows about MPVST, REAPER or how the file was made. Hand it a
+Nothing here knows about mpvst, REAPER or how the file was made. Hand it a
 WAV and it answers the questions we keep asking by hand after a render: how
 loud is it really, does it clip between samples, and is any of it silent that
 should not be.

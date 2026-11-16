@@ -4,7 +4,7 @@
 """Render Velvet Circuit, a retro-future jazz and prog main title.
 
 This is the first soundtrack piece built directly from the shared instrument
-library and the first with real MPVST Effect inserts.  It deliberately
+library and the first with real mpvst Effect inserts.  It deliberately
 turns away from Perihelion's orchestral film language and Automata's EDM arc:
 an imaginary 1978 crime series discovered on a satellite in 2049.
 
@@ -18,9 +18,9 @@ All instruments resolve from ../../lib/instruments.  Effect scripts below are
 only racks: every processor they instantiate comes from audioeffects.
 
 Needs: Python 3 with numpy and `pydevices-audiodsp`,
-`pydevices-audioinstruments` and `pydevices-audioeffects`, and an MPVST
+`pydevices-audioinstruments` and `pydevices-audioeffects`, and an mpvst
 install (set `MPVST_BUNDLE` if it is somewhere unusual). Opening the Reaper
-project this feeds needs Reaper and MPVST.
+project this feeds needs Reaper and mpvst.
 
 Run it: from the `soundtrack` folder, render the piece to a WAV, or write its
 Reaper project.

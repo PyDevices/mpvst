@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-"""One-track MPVST project whose component state is written by hand.
+"""One-track mpvst project whose component state is written by hand.
 
 The point is to control the two fields a saved project carries that nobody
 can set from a DAW: the state version, and -- from version 3 -- the mask

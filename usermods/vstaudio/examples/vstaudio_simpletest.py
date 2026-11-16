@@ -8,12 +8,12 @@ function that receives the host's MIDI events, and a source of audio for the
 plug-in to play. This one hands every note-on to a synthesizer and every
 note-off to its release.
 
-Needs: the MPVST plug-in, or a built tree to run it against.
+Needs: the mpvst plug-in, or a built tree to run it against.
 
-Run it: load the script in MPVST's Script Host, or from a build tree:
+Run it: load the script in mpvst's Script Host, or from a build tree:
     mpvst_smoke_host <bundle>.vst3 --instrument-script vstaudio_simpletest.py
 
-Tested on: the MPVST engine for Windows, through the smoke host.
+Tested on: the mpvst engine for Windows, through the smoke host.
 """
 
 import synthio

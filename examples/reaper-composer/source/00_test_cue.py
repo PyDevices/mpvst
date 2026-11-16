@@ -10,7 +10,7 @@ seconds and complete enough that, if it comes out clean, the routing works.
 Swap instruments and effects into it to measure them. The program writes a
 Reaper project and prints its path.
 
-Needs: Python 3.8 or later. Opening or rendering the project needs MPVST
+Needs: Python 3.8 or later. Opening or rendering the project needs mpvst
 installed with Reaper (see `examples/bounce.py`).
 
 Run it:

@@ -1,6 +1,6 @@
 # Soundtrack
 
-Example audio performed entirely by the MPVST instrument - no
+Example audio performed entirely by the mpvst instrument - no
 third-party plug-ins, no samples. Every sound is a MicroPython script
 running synthio and the audiodsp effects inside its own sidecar process.
 
@@ -57,7 +57,7 @@ ambiguous lounge-credits cadence. Twelve tracks perform
 6,480 notes: Rhythm808 (with Rhythm78 for the tambourine), MonoSynth,
 ElectricPiano, Clavichord (twice, one of them as the plucked guitar),
 Tonewheel3, ComboOrgan as the reed tenor, PolyXa, Poly80, StringEnsemble and
-CompactOrgan as the flute. Every track has a real MPVST Effect
+CompactOrgan as the flute. Every track has a real mpvst Effect
 insert built only from the shared library—saturation, overdrive, chorus,
 phaser, tape/slap delays, spring/plate/hall reverbs, and subtle vibrato.
 

@@ -16,7 +16,7 @@ framework you write a song with; this one reads songs already written as
 modules.
 
 Needs: Python 3 with numpy and `pydevices-audiodsp`,
-`pydevices-audioinstruments` and `pydevices-audioeffects`, and an MPVST
+`pydevices-audioinstruments` and `pydevices-audioeffects`, and an mpvst
 install (set `MPVST_BUNDLE` if it is somewhere unusual).
 
 Run it: from the `soundtrack` folder,

@@ -28,9 +28,9 @@ way a 303 ties steps. All echoes and the sidechain pump sync themselves
 to the host tempo through the plug-in's transport API.
 
 Needs: Python 3 with numpy and `pydevices-audiodsp`,
-`pydevices-audioinstruments` and `pydevices-audioeffects`, and an MPVST
+`pydevices-audioinstruments` and `pydevices-audioeffects`, and an mpvst
 install (set `MPVST_BUNDLE` if it is somewhere unusual). Opening the Reaper
-project this feeds needs Reaper and MPVST.
+project this feeds needs Reaper and mpvst.
 
 Run it: from the `soundtrack` folder, render the piece to a WAV, or write its
 Reaper project.

@@ -8,12 +8,12 @@ shows, and the pointer and wheel input and parameter edits that flow back.
 The surface exists only while the plug-in's editor is open. Without one,
 available() is False and the size constants still say how large a panel can be.
 
-Needs: the MPVST engine, started on its own.
+Needs: the mpvst engine, started on its own.
 
 Run it:
     mpvst-engine vstui_simpletest.py
 
-Tested on: the MPVST engine for Windows.
+Tested on: the mpvst engine for Windows.
 """
 
 import vstui

@@ -3,13 +3,13 @@
 # SPDX-License-Identifier: MIT
 """Render a project as a Reaper .rpp file.
 
-Writes a complete project in which each track holds one MPVST instrument
+Writes a complete project in which each track holds one mpvst instrument
 and its inserts, with the notes as MIDI items, the tempo map as an envelope,
 and the macro, volume and pan automation as envelopes. Plug-in state is
 embedded in the file, so it opens with no environment variables. Success is
 a project that opens in Reaper and plays the song.
 
-Needs: Python 3.8 or later and an MPVST install for the class IDs.
+Needs: Python 3.8 or later and an mpvst install for the class IDs.
 
 Run it:
 

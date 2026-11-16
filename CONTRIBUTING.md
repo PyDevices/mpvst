@@ -1,7 +1,7 @@
-# Contributing to MPVST
+# Contributing to mpvst
 
 This is how to build the plug-in from source, run its tests, and cut a release.
-To write instruments or effects *for* MPVST, which needs none of this, see
+To write instruments or effects *for* mpvst, which needs none of this, see
 [Write your own instruments and effects](docs/guides/write-a-script.md).
 
 A focused fix with a test, or a docs example that shows an existing call, is a
@@ -193,8 +193,8 @@ the archive is made from, so the two cannot ship different bytes. The
 installer is built by NSIS, which cross-builds a Windows installer from
 Linux - `fetch-nsis.sh` unpacks it into `.deps/` rather than installing it
 on the machine, so it needs no root and removing `.deps` removes it.
-See [MPVST on Windows](docs/guides/windows.md) and
-[MPVST on Linux](docs/guides/linux.md) for the install paths and the
+See [mpvst on Windows](docs/guides/windows.md) and
+[mpvst on Linux](docs/guides/linux.md) for the install paths and the
 desktop-script security model.
 
 Pushing a version tag runs the same packaging in

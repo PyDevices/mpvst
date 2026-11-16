@@ -1,4 +1,4 @@
-; Windows installer for the MPVST plug-in.
+; Windows installer for the mpvst plug-in.
 ;
 ; Built from Linux by scripts/package-windows.sh through makensis, so the
 ; release path needs no Windows toolchain:
