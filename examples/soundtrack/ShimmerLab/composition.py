@@ -31,8 +31,8 @@ four are level-matched to -35.0 dBFS section RMS so the loudest one
 does not win by being loudest. Decide what it should sound like first, then
 decide how far back it goes.
 
-Needs: Python 3 with numpy and `pydevices-audiodsp`,
-`pydevices-audioinstruments` and `pydevices-audioeffects`, and an mpvst
+Needs: Python 3 with numpy and `omnipython-audiodsp`,
+`omnipython-audioinstruments` and `omnipython-audioeffects`, and an mpvst
 install (set `MPVST_BUNDLE` if it is somewhere unusual). Opening the Reaper
 project this feeds needs Reaper and mpvst.
 
@@ -45,7 +45,7 @@ Reaper project.
 Success is a level report ending in "wrote shimmerlab.wav" with no failed checks.
 
 Tested on: CPython 3.12.3 on Linux (WSL 2), rendered with
-`composer/preview.py` using pydevices-audiodsp 0.6.7 and audiocomponents
+`composer/preview.py` using omnipython-audiodsp 0.6.7 and audiocomponents
 0.4.1.
 """
 

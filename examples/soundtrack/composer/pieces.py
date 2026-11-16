@@ -27,7 +27,7 @@ instrument.
 Needs: Python 3. `preview.py` and `reaper.py` import this module; it is not
 run on its own.
 
-Tested on: CPython 3.12.3 on Linux (WSL 2) with pydevices-audiodsp 0.6.7 and
+Tested on: CPython 3.12.3 on Linux (WSL 2) with omnipython-audiodsp 0.6.7 and
 audioinstruments 0.5.0; `preview.py` and `reaper.py` run on several pieces.
 """
 

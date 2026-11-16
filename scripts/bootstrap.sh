@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # One-shot setup for a fresh clone: VST3 SDK, the MicroPython engine (built
-# by the micropython-pydevices checkout beside this one), REAPER, then a
+# by the omnipython-builds checkout beside this one), REAPER, then a
 # CMake configure/build/ctest pass as
 # the final verification. Idempotent - every step skips work it already
 # did, so it's safe to rerun after a partial failure or just to check the
@@ -14,12 +14,12 @@ repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 log() { printf 'bootstrap: %s\n' "$*"; }
 die() { log "ERROR: $*"; exit 1; }
 
-build_mp="$repo_dir/../micropython-pydevices/build_mp.py"
-[[ -x "$build_mp" ]] || die "no micropython-pydevices checkout beside this one (clone PyDevices/micropython-pydevices next to it)"
+build_mp="$repo_dir/../omnipython-builds/build_mp.py"
+[[ -x "$build_mp" ]] || die "no omnipython-builds checkout beside this one (clone PyDevices/omnipython-builds next to it)"
 apps_dir=$(cd "$repo_dir/.." && pwd)/apps
 [[ -f "$apps_dir/manifest.py" ]] || die "no apps checkout beside this one (clone PyDevices/apps next to it)"
 # The engine's modules: CONTRIBUTING.md says what each one is for.
-engine_modules="audioinstruments,audioeffects,audiodsp,audioif,lvgl,pydevices,ulab,$apps_dir,$repo_dir"
+engine_modules="audioinstruments,audioeffects,audiodsp,audioif,lvgl,omnipython,ulab,$apps_dir,$repo_dir"
 
 log "fetching VST3 SDK"
 "$repo_dir/scripts/fetch-vst3-sdk.sh" || die "fetch-vst3-sdk.sh failed"
@@ -44,21 +44,21 @@ if ! "$repo_dir/reaper/install-reaper-portable.sh"; then
         "reaper.sh need it, the core build/test does not."
 fi
 
-log "creating .venv (pydevices-audiodsp, pydevices-audioinstruments," \
-    "pydevices-audioeffects from TestPyPI; numpy, flake8)"
+log "creating .venv (omnipython-audiodsp, omnipython-audioinstruments," \
+    "omnipython-audioeffects from TestPyPI; numpy, flake8)"
 if [[ ! -d "$repo_dir/.venv" ]]; then
     python3 -m venv "$repo_dir/.venv" || die "python3 -m venv failed"
 fi
-# The three PyDevices distributions live on TestPyPI; the extra index
+# The three OmniPython distributions live on TestPyPI; the extra index
 # resolves their ordinary dependencies. The instruments and the effects are
 # published from PyDevices/audioinstruments and PyDevices/audioeffects.
 "$repo_dir/.venv/bin/pip" install -q \
     -i https://test.pypi.org/simple/ \
     --extra-index-url https://pypi.org/simple/ \
-    pydevices-audiodsp pydevices-audioinstruments pydevices-audioeffects \
+    omnipython-audiodsp omnipython-audioinstruments omnipython-audioeffects \
     numpy flake8 \
     pyloudnorm soundfile scipy pyyaml \
-    || die "installing the PyDevices audio packages/numpy/flake8 into .venv failed"
+    || die "installing the OmniPython audio packages/numpy/flake8 into .venv failed"
 # pyloudnorm/soundfile/scipy are only for tools/audio_qc.py, which measures a
 # rendered WAV's loudness and true peak. Nothing in the ctest suite needs them.
 log ".venv ready - this is what gates the mpvst_lint, mpvst_instruments_library" \

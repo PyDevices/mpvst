@@ -10,8 +10,8 @@ backend writes a project for a DAW to play; an offline backend renders a WAV
 here with no DAW. `mpvst_composer_guide.md` in this folder is the full guide.
 
 Needs: Python 3.8 or later. The Reaper backend needs an mpvst install for
-its class IDs; the offline backend needs numpy and `pydevices-audiodsp`,
-`pydevices-audioinstruments` and `pydevices-audioeffects`.
+its class IDs; the offline backend needs numpy and `omnipython-audiodsp`,
+`omnipython-audioinstruments` and `omnipython-audioeffects`.
 
 Run it: import it from a script beside this folder.
 
@@ -21,7 +21,7 @@ The scripts in `source/` show it in use, and `from_yaml.py` drives it from a
 YAML file.
 
 Tested on: CPython 3.12.3 on Linux (WSL 2) with PyYAML 6.0.3, numpy 2.5.4
-and pydevices-audiodsp 0.6.7 and audiocomponents 0.4.1. Exercised by
+and omnipython-audiodsp 0.6.7 and audiocomponents 0.4.1. Exercised by
 `converge.py`, `canon_16.py` and `from_yaml.py`.
 """
 

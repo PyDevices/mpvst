@@ -17,7 +17,7 @@ Run it:
 
     python source/00_test_cue.py
 
-Tested on: CPython 3.12.3 on Linux (WSL 2) with pydevices-audiodsp 0.6.7 and
+Tested on: CPython 3.12.3 on Linux (WSL 2) with omnipython-audiodsp 0.6.7 and
 audioinstruments 0.5.0; rendered through the offline backend with every
 track sounding. The Reaper project it writes was not opened in REAPER.
 """

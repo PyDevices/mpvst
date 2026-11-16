@@ -15,14 +15,14 @@ shares the DSP but not the VST3 processor, the shared-memory protocol or the
 macro and state handling, so a Reaper render through the real plug-in stays
 authoritative for anything the script's audio does not cover.
 
-Needs: Python 3 with numpy and `pydevices-audiodsp`,
-`pydevices-audioinstruments` and `pydevices-audioeffects`, and an mpvst
+Needs: Python 3 with numpy and `omnipython-audiodsp`,
+`omnipython-audioinstruments` and `omnipython-audioeffects`, and an mpvst
 install (set `MPVST_BUNDLE` if it is somewhere unusual).
 
 Run it: import `InstrumentRun` or `EffectRun` from a program beside it; the
 first-program guide has a complete example that prints a peak and an RMS.
 
-Tested on: CPython 3.12.3 on Linux (WSL 2) with pydevices-audiodsp 0.6.7 and
+Tested on: CPython 3.12.3 on Linux (WSL 2) with omnipython-audiodsp 0.6.7 and
 audiocomponents 0.4.1; `preview.py` and `reaper.py` run on several pieces.
 """
 
@@ -35,7 +35,7 @@ COMPOSER_DIR = Path(__file__).resolve().parent
 
 # Put the soundtrack folder on the import path so the composer package
 # imports. audiodsp is imported from wherever it is installed, as
-# pydevices-audiodsp, so a checkout on PYTHONPATH can still override it.
+# omnipython-audiodsp, so a checkout on PYTHONPATH can still override it.
 sys.path.insert(0, str(COMPOSER_DIR.parent))
 # The adapters a composition's instrument scripts import live in the
 # installed bundle, beside the engine. MPVST_BUNDLE moves the search.

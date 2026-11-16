@@ -18,8 +18,8 @@ saying so.
 
 The engine is built without those three at the source, on both platforms,
 by the `vst3-engine` variant in
-[micropython-pydevices](https://github.com/PyDevices/micropython-pydevices/tree/main/variants)
-that the engine is built with (micropython-pydevices' `build_mp.py`; the
+[omnipython-builds](https://github.com/PyDevices/omnipython-builds/tree/main/variants)
+that the engine is built with (omnipython-builds' `build_mp.py`; the
 command is in [CONTRIBUTING.md](../../CONTRIBUTING.md#building-and-testing)). The ctest `mpvst_engine_capabilities`
 ([tools/check-engine-capabilities.py](../../tools/check-engine-capabilities.py))
 runs each engine and fails if it can import `socket`, `ssl`, `tls`, `ffi` or

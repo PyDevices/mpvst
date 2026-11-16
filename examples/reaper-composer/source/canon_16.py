@@ -17,8 +17,8 @@ and either renders it or writes it out as YAML. Read this file if you like
 functions; read the YAML it writes if you would rather see the notes.
 
 Needs: PyYAML (`pip install pyyaml`). For `--wav`, also numpy and
-`pydevices-audiodsp`, `pydevices-audioinstruments` and
-`pydevices-audioeffects`; the render takes about as long as the music.
+`omnipython-audiodsp`, `omnipython-audioinstruments` and
+`omnipython-audioeffects`; the render takes about as long as the music.
 
 Run it:
 
@@ -29,7 +29,7 @@ Run it:
 Success is a "wrote ... (16 voices)" line and the file beside the script.
 
 Tested on: CPython 3.12.3 on Linux (WSL 2) with PyYAML 6.0.3, numpy 2.5.4
-and pydevices-audiodsp 0.6.7 and audioinstruments 0.5.0. Ran with `--wav` and
+and omnipython-audiodsp 0.6.7 and audioinstruments 0.5.0. Ran with `--wav` and
 `--yaml`.
 """
 

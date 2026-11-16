@@ -11,7 +11,7 @@ with no environment variables and no build step. The MIDI, tempo map, volume
 envelopes, effect racks and macro automation envelopes all come from the
 piece's `composition.py`. Success is the "wrote ..." line naming the file.
 
-Needs: Python 3 with `pydevices-audioinstruments` and `pydevices-audioeffects`
+Needs: Python 3 with `omnipython-audioinstruments` and `omnipython-audioeffects`
 (or `MPVST_COMPONENTS_LIB` pointing at their `lib/` folder), and an mpvst
 install. Opening the project needs Reaper.
 
@@ -20,7 +20,7 @@ Run it: from the `soundtrack` folder,
     python composer/reaper.py --piece Perihelion
     python composer/reaper.py --piece Perihelion build/perihelion.RPP
 
-Tested on: CPython 3.12.3 on Linux (WSL 2) with pydevices-audiodsp 0.6.7 and
+Tested on: CPython 3.12.3 on Linux (WSL 2) with omnipython-audiodsp 0.6.7 and
 audiocomponents 0.4.1; `preview.py` and `reaper.py` run on several pieces.
 """
 
