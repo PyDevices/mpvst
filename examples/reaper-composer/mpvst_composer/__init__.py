@@ -4,12 +4,12 @@
 """Write songs in Python and render them to Reaper projects or WAV files.
 
 `mpvst_composer` is a small composing library. You build a `Project`, add
-tracks that play MPVST instruments, fill them with note and drum patterns
+tracks that play mpvst instruments, fill them with note and drum patterns
 written as scale degrees, route sends and a mix bus, and render. A Reaper
 backend writes a project for a DAW to play; an offline backend renders a WAV
 here with no DAW. `mpvst_composer_guide.md` in this folder is the full guide.
 
-Needs: Python 3.8 or later. The Reaper backend needs an MPVST install for
+Needs: Python 3.8 or later. The Reaper backend needs an mpvst install for
 its class IDs; the offline backend needs numpy and `pydevices-audiodsp`,
 `pydevices-audioinstruments` and `pydevices-audioeffects`.
 

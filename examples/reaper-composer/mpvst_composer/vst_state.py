@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Brad Barnett
 #
 # SPDX-License-Identifier: MIT
-"""MPVST VST3 component state and REAPER chunk wrapping.
+"""mpvst VST3 component state and REAPER chunk wrapping.
 
 Layout is the one in docs/guides/generate-projects.md, copied from
 reaper/matrix/build_effect_project.py. A rejected chunk is silent: the host
@@ -71,7 +71,7 @@ def encode_chunk_lines(
 
 
 def decode_chunk_lines(lines: List[str]) -> dict:
-    """Decode a REAPER-wrapped MPVST chunk (for tests / debugging)."""
+    """Decode a REAPER-wrapped mpvst chunk (for tests / debugging)."""
     if len(lines) < 3:
         raise ValueError("chunk too short")
     header = base64.b64decode(lines[0])

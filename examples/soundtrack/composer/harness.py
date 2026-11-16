@@ -16,7 +16,7 @@ macro and state handling, so a Reaper render through the real plug-in stays
 authoritative for anything the script's audio does not cover.
 
 Needs: Python 3 with numpy and `pydevices-audiodsp`,
-`pydevices-audioinstruments` and `pydevices-audioeffects`, and an MPVST
+`pydevices-audioinstruments` and `pydevices-audioeffects`, and an mpvst
 install (set `MPVST_BUNDLE` if it is somewhere unusual).
 
 Run it: import `InstrumentRun` or `EffectRun` from a program beside it; the

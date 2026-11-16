@@ -25,9 +25,9 @@ A drum machine's macros are its own, so each track plays its patch 0; nothing
 here sets a macro.
 
 Needs: Python 3 with numpy and `pydevices-audiodsp`,
-`pydevices-audioinstruments` and `pydevices-audioeffects`, and an MPVST
+`pydevices-audioinstruments` and `pydevices-audioeffects`, and an mpvst
 install (set `MPVST_BUNDLE` if it is somewhere unusual). Opening the Reaper
-project this feeds needs Reaper and MPVST.
+project this feeds needs Reaper and mpvst.
 
 Run it: from the `soundtrack` folder, render the piece to a WAV, or write its
 Reaper project.

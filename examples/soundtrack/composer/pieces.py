@@ -20,7 +20,7 @@ A composition module exposes TITLE, SAMPLE_RATE, MASTER_GAIN_DB, TEMPO_MAP
 SONG_SECONDS, RENDER_SECONDS, SECTIONS (name, start_beat, end_beat), TRACKS,
 beats_to_seconds(), track_gain(), macro_value() and active_track_count(),
 and optionally ACTIVE_LIMIT (None for no limit) and CLIMAX_SECTION. A track
-may also carry an effects list; each entry embeds one MPVST Effect script
+may also carry an effects list; each entry embeds one mpvst Effect script
 after the instrument and uses the same macros and macro_env shape as an
 instrument.
 

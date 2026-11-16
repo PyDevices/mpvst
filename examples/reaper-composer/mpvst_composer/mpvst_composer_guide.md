@@ -1,4 +1,4 @@
-# MPVST Composer Framework Guide
+# mpvst Composer Framework Guide
 
 The `mpvst_composer` framework is a Python-based Domain Specific Language (DSL) for programmatically generating DAW project files (currently supporting Reaper `.RPP`). 
 
@@ -13,7 +13,7 @@ You need a way to know what the instruments are, and a way to hear them.
 1. **The components.** The composer has to learn every instrument, effect,
    patch and macro before it can write one. It asks
    `pydevices-audioinstruments` and `pydevices-audioeffects` if pip has them,
-   and reads `catalog.json` out of an installed MPVST bundle otherwise. Either
+   and reads `catalog.json` out of an installed mpvst bundle otherwise. Either
    answers; `MPVST_BUNDLE` points at the plug-in if you put it somewhere
    unusual.
 2. **Something to render with.** Reaper plays the `.RPP` you write. With no
@@ -22,7 +22,7 @@ You need a way to know what the instruments are, and a way to hear them.
 3. **This folder.** `mpvst_composer` itself needs nothing but the Python
    standard library - no build, no checkout of the plug-in's source.
 
-Writing a Reaper project is the one thing that does need MPVST installed,
+Writing a Reaper project is the one thing that does need mpvst installed,
 because an `.RPP` has to name each plug-in by its VST3 class ID and only the
 bundle knows those. Everything else - the notes, the patches, the macros, an
 offline render - works without it.

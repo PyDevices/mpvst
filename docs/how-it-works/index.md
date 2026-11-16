@@ -1,6 +1,6 @@
-# How MPVST works
+# How mpvst works
 
-MPVST turns Python-defined audio instruments and effects into VST3 plug-ins.
+mpvst turns Python-defined audio instruments and effects into VST3 plug-ins.
 One bundle exposes a named plug-in for every discovered `audioinstruments`
 instrument and `audioeffects` effect, as well as generic instrument and effect
 **MPVST Script Host** classes for running arbitrary scripts.
@@ -9,7 +9,7 @@ The defining architectural choice is that the DAW does not run MicroPython
 inside its own process. Each plug-in instance launches a dedicated MicroPython
 sidecar, while a native C++ VST3 component keeps the host's audio callback
 bounded and real-time safe. If a script crashes, hangs, or exhausts its heap,
-MPVST can silence and restart that instance without taking down the DAW.
+mpvst can silence and restart that instance without taking down the DAW.
 
 This page follows the main execution path from the DAW to your script and back.
 Where to look in the source, and how to build and test it, is in
@@ -123,7 +123,7 @@ continue without a custom editor.
 
 The host-neutral [`audioinstruments`](https://github.com/PyDevices/audioinstruments) and
 [`audioeffects`](https://github.com/PyDevices/audioeffects) packages know nothing about VST3
-or MPVST's shared memory.
+or mpvst's shared memory.
 
 [`lib/mpvst_instrument_adapter.py`](../../lib/mpvst_instrument_adapter.py) and [`lib/mpvst_effect_adapter.py`](../../lib/mpvst_effect_adapter.py) form the
 boundary. The instrument adapter, for example:
@@ -212,7 +212,7 @@ later edits to the original file.
 ## Catalog and staging
 
 CMake stages the `audioinstruments` and `audioeffects` packages beside
-the engine and MPVST's `lib/` files. It then runs:
+the engine and mpvst's `lib/` files. It then runs:
 
 - `mpvst_scan_plugins.py`, which writes host-facing `moduleinfo.json`; and
 - `mpvst_catalog.py`, which writes tool-facing `catalog.json`.

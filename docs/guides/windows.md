@@ -1,6 +1,6 @@
-# MPVST on Windows
+# mpvst on Windows
 
-MPVST is installed. The bundle is
+mpvst is installed. The bundle is
 
     %LOCALAPPDATA%\Programs\Common\VST3\MPVST.vst3
 
@@ -86,7 +86,7 @@ once, then start the DAW and rescan.
 
 ## Uninstall
 
-Close the DAW, then uninstall MPVST from Settings -> Apps -> Installed apps.
+Close the DAW, then uninstall mpvst from Settings -> Apps -> Installed apps.
 It is a per-user install, which is why it needs no administrator prompt - and
 also why it does not appear in the old Control Panel "Programs and Features"
 list, which shows machine-wide installs only. Removing the bundle folder by

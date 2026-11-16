@@ -1,6 +1,6 @@
 # Parameters and state
 
-What a host sees of an MPVST instance, what it saves, and the environment variables that change it.
+What a host sees of an mpvst instance, what it saves, and the environment variables that change it.
 
 ## Parameters
 

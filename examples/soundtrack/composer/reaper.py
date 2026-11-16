@@ -4,15 +4,15 @@
 # SPDX-License-Identifier: MIT
 """Write a piece's Reaper project.
 
-Writes a complete .RPP where every track holds one MPVST Instrument and
-zero or more MPVST Effect inserts. Every script is embedded in synthesized
+Writes a complete .RPP where every track holds one mpvst Instrument and
+zero or more mpvst Effect inserts. Every script is embedded in synthesized
 VST3 state, the same byte layout Reaper itself saves, so the project opens
 with no environment variables and no build step. The MIDI, tempo map, volume
 envelopes, effect racks and macro automation envelopes all come from the
 piece's `composition.py`. Success is the "wrote ..." line naming the file.
 
 Needs: Python 3 with `pydevices-audioinstruments` and `pydevices-audioeffects`
-(or `MPVST_COMPONENTS_LIB` pointing at their `lib/` folder), and an MPVST
+(or `MPVST_COMPONENTS_LIB` pointing at their `lib/` folder), and an mpvst
 install. Opening the project needs Reaper.
 
 Run it: from the `soundtrack` folder,
@@ -148,7 +148,7 @@ def envelope_block(kind, header_extra, points):
 
 
 def fx_block(vst_line, header_words, script_source, macros, macro_env):
-    """One embedded MPVST Instrument or Effect instance."""
+    """One embedded mpvst Instrument or Effect instance."""
     lines = ["      BYPASS 0 0 0", "      " + vst_line]
     for chunk_line in vst_chunk_lines(script_source, macros, header_words):
         lines.append("        " + chunk_line)

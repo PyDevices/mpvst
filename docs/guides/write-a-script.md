@@ -1,6 +1,6 @@
 # Write your own instruments and effects
 
-You don't need to build anything to write for MPVST. The installed plug-in runs any script you point it at, and the library it ships is ordinary Python you can read. Start from [`lib/default_instrument.py`](../../lib/default_instrument.py) (it is also in the installed bundle), point `MPVST_SCRIPT_PATH` at your own file, and use the **MPVST Script Host** class. [MPVST on Windows](windows.md#develop-a-script) and [MPVST on Linux](linux.md#develop-a-script) cover the edit-and-reload loop. This page is what a script can say about itself.
+You don't need to build anything to write for mpvst. The installed plug-in runs any script you point it at, and the library it ships is ordinary Python you can read. Start from [`lib/default_instrument.py`](../../lib/default_instrument.py) (it is also in the installed bundle), point `MPVST_SCRIPT_PATH` at your own file, and use the **MPVST Script Host** class. [mpvst on Windows](windows.md#develop-a-script) and [mpvst on Linux](linux.md#develop-a-script) cover the edit-and-reload loop. This page is what a script can say about itself.
 
 ## An instrument
 

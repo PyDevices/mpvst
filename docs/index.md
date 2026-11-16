@@ -1,6 +1,6 @@
-# MPVST
+# mpvst
 
-MPVST is a VST3 plug-in whose instruments and effects are MicroPython-compatible scripts. One bundle ships a whole library: every `audioinstruments` module and every `audioeffects` class appears in your DAW's browser under its own name and category, next to two generic **MPVST Script Host** classes that run any script you point them at.
+mpvst is a VST3 plug-in whose instruments and effects are MicroPython-compatible scripts. One bundle ships a whole library: every `audioinstruments` module and every `audioeffects` class appears in your DAW's browser under its own name and category, next to two generic **MPVST Script Host** classes that run any script you point them at.
 
 Windows and Linux both ship, and the same project renders identical audio on both. Every instance runs its Python in a separate process, so a script that loops forever or runs out of memory takes down its own process and is restarted, not your DAW. The audio callback itself stays native and real-time safe.
 
@@ -14,8 +14,8 @@ Windows and Linux both ship, and the same project renders identical audio on bot
 - [Write your own instruments and effects](guides/write-a-script.md)
 - [Hear what you wrote](guides/hear-what-you-wrote.md): rendering with and without a DAW.
 - [Generate projects from code](guides/generate-projects.md)
-- [MPVST on Windows](guides/windows.md)
-- [MPVST on Linux](guides/linux.md)
+- [mpvst on Windows](guides/windows.md)
+- [mpvst on Linux](guides/linux.md)
 
 ## Reference
 
@@ -26,7 +26,7 @@ Windows and Linux both ship, and the same project renders identical audio on bot
 
 ## How it works
 
-- [How MPVST works](how-it-works/index.md)
+- [How mpvst works](how-it-works/index.md)
 - [The editor](how-it-works/editor.md)
 - [What the shipped engine cannot do](how-it-works/security.md)
 
@@ -34,4 +34,4 @@ Windows and Linux both ship, and the same project renders identical audio on bot
 
 - [Changelog](changelog.md) and the [roadmap](../ROADMAP.md).
 
-To build MPVST from source, see [CONTRIBUTING.md](../CONTRIBUTING.md).
+To build mpvst from source, see [CONTRIBUTING.md](../CONTRIBUTING.md).

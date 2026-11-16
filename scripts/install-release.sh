@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Download a released Windows build of MPVST, check it against its .sha256,
+# Download a released Windows build of mpvst, check it against its .sha256,
 # and install it into the per-user VST3 directory a DAW scans, the same place
 # install-plugin-windows.sh puts a build made from this checkout.
 #

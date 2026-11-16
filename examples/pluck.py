@@ -3,12 +3,12 @@
 # SPDX-License-Identifier: MIT
 """Play short plucked notes from MIDI input.
 
-The smallest instrument script MPVST can load. It makes a synthio
+The smallest instrument script mpvst can load. It makes a synthio
 synthesizer, gives each note a quick attack and a decaying envelope, and
 presses and releases notes as MIDI arrives. You hear a pluck for every note
 you play.
 
-Needs: MPVST installed in a VST3 host. The script runs inside the
+Needs: mpvst installed in a VST3 host. The script runs inside the
 plug-in's engine, where `vstaudio` and `synthio` exist.
 
 Run it: set `MPVST_SCRIPT_PATH` to this file's absolute path before starting

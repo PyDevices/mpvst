@@ -1,4 +1,4 @@
-# MPVST on Linux
+# mpvst on Linux
 
 The Linux build is the same instrument as the Windows one: the same IPC
 protocol, the same scripts, the same project state, and the same rendered PCM.

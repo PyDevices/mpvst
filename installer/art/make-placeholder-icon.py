@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-"""Draw the provisional MPVST icon.
+"""Draw the provisional mpvst icon.
 
 This is a placeholder and is meant to look like one: a flat rounded tile with
 the letters on it, stacked so they still read at 16 px.

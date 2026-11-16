@@ -4,7 +4,7 @@ You can build REAPER `.RPP` projects from a program, complete with working instr
 
 ## Why it works
 
-A standard VST saves its state as an opaque binary blob, so a program can't write a preset for it. MPVST saves the literal Python script that defines its sound, so you generate a patch or an effect rack by writing a short script, encoding it in the plug-in's state chunk, and placing that in the `.RPP`.
+A standard VST saves its state as an opaque binary blob, so a program can't write a preset for it. mpvst saves the literal Python script that defines its sound, so you generate a patch or an effect rack by writing a short script, encoding it in the plug-in's state chunk, and placing that in the `.RPP`.
 
 [`examples/reaper-composer`](../../examples/reaper-composer/mpvst_composer/mpvst_composer_guide.md) is a library that does all of this for you. Read on if you're writing your own generator.
 

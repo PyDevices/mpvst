@@ -264,9 +264,9 @@ jobs:
             gh release upload "$tag" dist/* --clobber
           elif [[ "$PRERELEASE" == true ]]; then
             gh release create "$tag" dist/* --verify-tag --prerelease \
-              --title "MPVST $V" --generate-notes
+              --title "mpvst $V" --generate-notes
           else
             gh release create "$tag" dist/* --verify-tag \
-              --title "MPVST $V" --notes-from-tag
+              --title "mpvst $V" --notes-from-tag
           fi
           gh release view "$tag"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install (or remove) the MPVST plug-in for the current user.
+# Install (or remove) the mpvst plug-in for the current user.
 #
 #   ./install.sh              install into ~/.vst3
 #   ./install.sh --dir DIR    install into DIR instead
