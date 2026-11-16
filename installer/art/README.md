@@ -1,10 +1,9 @@
 # Icon art
 
-`mpvst.ico` is a **placeholder**, and is drawn to look like one: one flat
-colour, the letters knocked out of a rounded tile so the shape still reads at
-16 px. It exists so the icon mechanism could be finished and exercised before
-anyone commits to a mark. [make-placeholder-icon.py](make-placeholder-icon.py)
-is how it was drawn; nothing in the build runs it, and nothing downstream cares
+`mpvst.ico` is mpvst's icon: the PyDevices board with a turned-up knob in
+its centre, at 16, 24, 32, 48, 64, 128 and 256 px.
+[make-placeholder-icon.py](make-placeholder-icon.py) drew the placeholder that
+came before it; nothing in the build runs it, and nothing downstream cares
 where the `.ico` came from. Replacing it is one file.
 
 Two Windows surfaces read this one file, and both of them used to carry
