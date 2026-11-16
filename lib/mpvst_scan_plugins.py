@@ -69,7 +69,7 @@ MODULE_DEFAULTS = {
     "Name": "MPVST",
     "Version": "0.0.1",
     "Vendor": "PyDevices",
-    "URL": "https://pydevices.github.io/",
+    "URL": "https://pydevices.com/",
     "E-Mail": "",
     "SDKVersion": "VST 3.8.1",
     "Unicode": True,

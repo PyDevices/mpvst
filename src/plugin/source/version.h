@@ -5,7 +5,7 @@
 
 #define stringOriginalFilename "MPVST.vst3"
 #define stringFileDescription "Programmable VST3 instrument and effect"
-#define stringCompanyWeb "https://pydevices.github.io/"
+#define stringCompanyWeb "https://pydevices.com/"
 #define stringCompanyEmail ""
 #define stringCompanyName "PyDevices"
 #define stringLegalCopyright "Copyright (c) 2026 PyDevices contributors"
