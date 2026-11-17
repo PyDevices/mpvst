@@ -67,10 +67,10 @@ What each line is for:
 
 ## Hear it without a DAW
 
-You can render the script offline, with no host and no plug-in, to check that it makes sound. From a checkout of this repository, in a virtual environment with the audio packages from TestPyPI:
+You can render the script offline, with no host and no plug-in, to check that it makes sound. From a checkout of this repository, in a virtual environment with the audio packages from PyPI:
 
 ```bash
-pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ \
+pip install --pre \
     omnipython-audiodsp omnipython-audioinstruments omnipython-audioeffects numpy
 ```
 

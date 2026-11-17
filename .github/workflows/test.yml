@@ -111,7 +111,7 @@ jobs:
             "ENGINE_ICON=$ws/mpvst/installer/art/mpvst.ico"
 
       # The tests import audiodsp, the instruments and the effects as CPython
-      # packages. The releases on TestPyPI lag what the engine freezes, so
+      # packages. The releases on PyPI lag what the engine freezes, so
       # install the same commits and tags: audiodsp at omnipython-builds' pin
       # (building its C extension), the others at the tags omnipython-lib's
       # lib-lock.json pins.

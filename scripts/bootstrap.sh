@@ -45,20 +45,21 @@ if ! "$repo_dir/reaper/install-reaper-portable.sh"; then
 fi
 
 log "creating .venv (omnipython-audiodsp, omnipython-audioinstruments," \
-    "omnipython-audioeffects from TestPyPI; numpy, flake8)"
+    "omnipython-audioeffects from PyPI; numpy, flake8)"
 if [[ ! -d "$repo_dir/.venv" ]]; then
     python3 -m venv "$repo_dir/.venv" || die "python3 -m venv failed"
 fi
-# The three OmniPython distributions live on TestPyPI; the extra index
-# resolves their ordinary dependencies. The instruments and the effects are
-# published from PyDevices/audioinstruments and PyDevices/audioeffects.
-"$repo_dir/.venv/bin/pip" install -q \
-    -i https://test.pypi.org/simple/ \
-    --extra-index-url https://pypi.org/simple/ \
+# The three OmniPython distributions publish pre-releases, so they install
+# with --pre, on their own: the tools after them stay on final releases. The
+# instruments and the effects are published from PyDevices/audioinstruments
+# and PyDevices/audioeffects.
+"$repo_dir/.venv/bin/pip" install -q --pre \
     omnipython-audiodsp omnipython-audioinstruments omnipython-audioeffects \
+    || die "installing the OmniPython audio packages into .venv failed"
+"$repo_dir/.venv/bin/pip" install -q \
     numpy flake8 \
     pyloudnorm soundfile scipy pyyaml \
-    || die "installing the OmniPython audio packages/numpy/flake8 into .venv failed"
+    || die "installing numpy/flake8 and the QC tools into .venv failed"
 # pyloudnorm/soundfile/scipy are only for tools/audio_qc.py, which measures a
 # rendered WAV's loudness and true peak. Nothing in the ctest suite needs them.
 log ".venv ready - this is what gates the mpvst_lint, mpvst_instruments_library" \
