@@ -11,8 +11,8 @@ Only the installation paths and the sidecar executable differ.
 below is relative to the installed bundle, so `Contents/x86_64-linux` means
 `~/.vst3/MPVST.vst3/Contents/x86_64-linux`.
 
-Start the DAW and request a VST3 rescan. Then insert any of them - **TR-808**,
-**Minimoog**, **Tape Delay** - and open its editor, or use the host's generic
+Start the DAW and request a VST3 rescan. Then insert any of them - search for **808**
+or **Tape Delay** - and open its editor, or use the host's generic
 parameter editor. **MPVST Script Host** runs whatever script
 `MPVST_SCRIPT_PATH` points at, which is the loop for developing one that is
 not in the library yet. With no script pointed at it that slot produces no
