@@ -55,7 +55,7 @@ How the pieces fit is in [How it works](docs/how-it-works/index.md). The canonic
   `libx11-dev` on Debian/Ubuntu.
 - Python 3.x for `tools/`, `scripts/`, and the `ctest`-registered Python
   suites; `numpy`, `omnipython-audiodsp`, `omnipython-audioinstruments` and
-  `omnipython-audioeffects` (all from TestPyPI - see
+  `omnipython-audioeffects` (all from PyPI - see
   [`tools/README.md`](tools/README.md)) for the instrument/effect tests
   and preview renders, and `flake8` for the `mpvst_lint` ctest.
   [`scripts/bootstrap.sh`](scripts/bootstrap.sh) creates a repo-local `.venv` with these.
