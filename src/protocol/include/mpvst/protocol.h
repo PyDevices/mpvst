@@ -74,7 +74,12 @@ typedef enum mpvst_event_type
        input event, so the host maps an incoming MIDI Program Change
        message onto the plug-in's kIsProgramChange-flagged parameter, and
        that parameter change becomes this event. */
-    MPVST_EVENT_PROGRAM_CHANGE = 9
+    MPVST_EVENT_PROGRAM_CHANGE = 9,
+    /* The MIDI Channel parameter has this step: data0 is 0 for All, or 1 to
+       16 for one channel. Sent when it changes, and with the macro resync
+       after a script loads, so the editor's panel shows what the host holds.
+       The instrument and effect adapters ignore it. */
+    MPVST_EVENT_MIDI_CHANNEL = 10
 } mpvst_event_type;
 
 typedef enum mpvst_command_type

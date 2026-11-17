@@ -18,6 +18,8 @@ On All, every channel reaches the script. A note keeps the channel it came on. C
 
 On one channel, notes, poly and channel pressure, pitch bend, controllers and program changes on that channel reach the script, as that channel, and everything on the other 15 is dropped. To play two instruments from one keyboard split or one multi-channel MIDI track, give each instance its own channel.
 
+The editor's panel has a MIDI CH button for the same setting, and the two always agree ([the editor](../how-it-works/editor.md#gestures-become-automation)).
+
 Changing the setting releases any notes still held: the script gets All Notes Off (controller 123) on the channel it was listening to, or on all 16 when it was All.
 
 The setting is saved with the project. A project saved before it existed opens on All, so it hears what it always heard. Its automation on channel 1's controllers keeps working, because they kept their parameter IDs; automation recorded on another channel's controllers points at parameters that no longer exist, and hosts drop it.

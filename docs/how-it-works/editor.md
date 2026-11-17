@@ -18,7 +18,7 @@ The panel takes pointer and wheel input, not keyboard. Drag an encoder up or rig
 
 An encoder drag is reported to your host as one begin, a stream of changes, and one end, so it records as a single automation edit. A burst of wheel notches on a focused control is one gesture too: it begins on the first notch and ends after a short quiet. The host echoes each change back through the normal parameter path, and the panel treats the host's value as the truth.
 
-The panel edits the patch, the 16 macros, bypass and reload. When the patch changes from the host, every encoder and LED ring moves to the new patch's macros, and nothing is sent back. All of them are ordinary automatable parameters your host's generic editor shows as well.
+The panel edits the patch, the 16 macros, bypass, reload and the MIDI channel. The MIDI CH button beside FINE shows the instance's channel, All or 1 to 16, and each click steps to the next; the display names the channel it chose. Both ways follow: choosing a channel on the panel moves the host's `MIDI Channel` parameter, and a host that automates that parameter, or opens a project saved on another channel, moves the button. When the patch changes from the host, every encoder and LED ring moves to the new patch's macros, and nothing is sent back. All of them are ordinary automatable parameters your host's generic editor shows as well.
 
 ## Reload
 

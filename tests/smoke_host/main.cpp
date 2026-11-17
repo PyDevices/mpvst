@@ -1930,9 +1930,90 @@ bool editorDrivesParameters(const PluginFactory& factory,
     }
     std::cout << "HOOK editor.navigate OK: focus moved to macro 101\n";
 
+    // The MIDI CH button sits left of FINE in the header, centred at
+    // (519, 47) on the 800 x 480 panel. A click must publish the next step of
+    // the MIDI Channel parameter (5): step 1 of 16 from All. The pixels under
+    // the button must then change when the host moves the parameter, with
+    // nothing published back.
+    constexpr std::int32_t kChannelX = 519;
+    constexpr std::int32_t kChannelY = 47;
+    constexpr std::uint32_t kChannelParameterId = 5U;
+    const auto channelPixels = [&]() {
+        std::uint64_t hash = 1469598103934665603ULL;
+        const auto* pixels = mpvst_ui_framebuffer(view.mapping.data());
+        const auto stride = mpvst_ui_stride_bytes();
+        for (std::uint32_t y = 36U; y < 58U; ++y)
+        {
+            const auto* row = reinterpret_cast<const std::uint16_t*>(
+                pixels + static_cast<std::size_t>(y) * stride);
+            for (std::uint32_t x = 490U; x < 548U; ++x)
+                hash = (hash ^ row[x]) * 1099511628211ULL;
+        }
+        return hash;
+    };
+    (void)view.drainEdits();
+    view.push(MPVST_UI_INPUT_POINTER_MOVE, 0U, kChannelX, kChannelY, 0, 0);
+    view.push(MPVST_UI_INPUT_POINTER_DOWN, 1U, kChannelX, kChannelY, 0, 0);
+    view.push(MPVST_UI_INPUT_POINTER_UP, 0U, kChannelX, kChannelY, 0, 0);
+    if (!pump(40))
+        return false;
+    edits = view.drainEdits();
+    bool sawChannel = false;
+    bool sawChannelEnd = false;
+    for (const auto& edit : edits)
+    {
+        if (std::get<1>(edit) != kChannelParameterId)
+            continue;
+        if (std::get<0>(edit) == MPVST_UI_EDIT_PERFORM)
+            sawChannel = std::abs(std::get<2>(edit) - 1.0F / 16.0F) < 1e-6F;
+        sawChannelEnd = sawChannelEnd || std::get<0>(edit) == MPVST_UI_EDIT_END;
+    }
+    if (!sawChannel || !sawChannelEnd)
+    {
+        std::cerr << "HOOK editor.channel FAIL: a click on MIDI CH did not "
+                     "publish step 1 of the MIDI Channel parameter\n";
+        return false;
+    }
+    const auto shownBefore = channelPixels();
+    {
+        ParameterChanges changes {1};
+        int32 queueIndex = 0;
+        int32 pointIndex = 0;
+        auto* queue = changes.addParameterData(kChannelParameterId, queueIndex);
+        if (queue == nullptr || !ok(queue->addPoint(0, 7.0 / 16.0, pointIndex)))
+            return false;
+        data.inputParameterChanges = &changes;
+        const bool sent = ok(processor->process(data));
+        data.inputParameterChanges = nullptr;
+        if (!sent)
+            return false;
+    }
+    if (!pump(40))
+        return false;
+    edits = view.drainEdits();
+    for (const auto& edit : edits)
+    {
+        if (std::get<1>(edit) == kChannelParameterId)
+        {
+            std::cerr << "HOOK editor.channel FAIL: the host's channel was "
+                         "published back\n";
+            return false;
+        }
+    }
+    if (channelPixels() == shownBefore)
+    {
+        std::cerr << "HOOK editor.channel FAIL: the control did not follow "
+                     "the host's MIDI Channel\n";
+        return false;
+    }
+    std::cout << "HOOK editor.channel OK: a click published step 1, and the "
+                 "host's step 7 moved the control without an echo\n";
+
     // Closing stops the painting and nothing else.
     view.setOpen(false);
-    if (!pump(20))
+    // The engine may be part-way through a tick when the flag clears, and that
+    // tick still publishes its frame: allow it, then require silence.
+    if (!pump(40))
         return false;
     const auto quiesced = view.frames();
     if (!pump(20))
