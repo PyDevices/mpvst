@@ -66,6 +66,8 @@ VIAddVersionKey "FileVersion" "${MPVST_NUMERIC_VERSION}"
 VIAddVersionKey "ProductVersion" "${MPVST_VERSION}"
 VIAddVersionKey "LegalCopyright" "${PUBLISHER}"
 
+!define MUI_ICON "${__FILEDIR__}\art\mpvst.ico"
+!define MUI_UNICON "${__FILEDIR__}\art\mpvst.ico"
 !define MUI_ABORTWARNING
 !define MUI_LICENSEPAGE_TEXT_BOTTOM "If you accept the terms of the \
 agreement, click I Agree to continue."
