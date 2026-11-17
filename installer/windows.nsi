@@ -103,6 +103,11 @@ Section "Plug-in" SecPlugin
     RMDir /r "$INSTDIR\${BUNDLE}"
     SetOutPath "$INSTDIR\${BUNDLE}"
     File /r "${MPVST_STAGE}\${BUNDLE}\*.*"
+    ; Explorer reads a folder's desktop.ini, and so shows the bundle with
+    ; PlugIn.ico, only when the folder is marked System and the file is
+    ; Hidden and System. A zip or a file copy loses both marks.
+    SetFileAttributes "$INSTDIR\${BUNDLE}" SYSTEM
+    SetFileAttributes "$INSTDIR\${BUNDLE}\desktop.ini" HIDDEN|SYSTEM
 
     ; Clicking Finish should leave it finished. moduleinfo.json is what the
     ; host reads to enumerate the plug-ins, and it ships generated - but the
@@ -133,6 +138,9 @@ Section "Plug-in" SecPlugin
     WriteRegStr HKCU "${UNINSTKEY}" "DisplayName" "${PRODUCT}"
     WriteRegStr HKCU "${UNINSTKEY}" "DisplayVersion" "${MPVST_VERSION}"
     WriteRegStr HKCU "${UNINSTKEY}" "Publisher" "${PUBLISHER}"
+    ; Installed apps draws the entry with DisplayIcon. The uninstaller carries
+    ; the plug-in's icon (MUI_UNICON) and sits beside this key's other paths.
+    WriteRegStr HKCU "${UNINSTKEY}" "DisplayIcon" "$\"${SUPPORTDIR}\Uninstall.exe$\",0"
     WriteRegStr HKCU "${UNINSTKEY}" "UninstallString" "$\"${SUPPORTDIR}\Uninstall.exe$\""
     WriteRegStr HKCU "${UNINSTKEY}" "QuietUninstallString" "$\"${SUPPORTDIR}\Uninstall.exe$\" /S"
     WriteRegStr HKCU "${UNINSTKEY}" "InstallLocation" "${SUPPORTDIR}"
