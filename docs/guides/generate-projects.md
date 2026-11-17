@@ -6,7 +6,7 @@ You can build REAPER `.RPP` projects from a program, complete with working instr
 
 A standard VST saves its state as an opaque binary blob, so a program can't write a preset for it. mpvst saves the literal Python script that defines its sound, so you generate a patch or an effect rack by writing a short script, encoding it in the plug-in's state chunk, and placing that in the `.RPP`.
 
-[`examples/reaper-composer`](../../examples/reaper-composer/mpvst_composer/mpvst_composer_guide.md) is a library that does all of this for you. Read on if you're writing your own generator.
+[`examples/reaper-composer`](https://github.com/PyDevices/mpvst/blob/main/examples/reaper-composer/mpvst_composer/mpvst_composer_guide.md) is a library that does all of this for you. Read on if you're writing your own generator.
 
 ## Read the class IDs from `catalog.json`
 
@@ -64,7 +64,7 @@ Start declared macros from patch 0 (or a named preset) as MIDI/127, then overlay
 
 ## Put the chunk into the `.RPP`
 
-The script and its macros travel in the plug-in's **v2 component state**. Copy this layout from [`reaper/matrix/build_effect_project.py`](../../reaper/matrix/build_effect_project.py), or from [`examples/reaper-composer/mpvst_composer/vst_state.py`](../../examples/reaper-composer/mpvst_composer/vst_state.py), which does the same job in the composer.
+The script and its macros travel in the plug-in's **v2 component state**. Copy this layout from [`reaper/matrix/build_effect_project.py`](https://github.com/PyDevices/mpvst/blob/main/reaper/matrix/build_effect_project.py), or from [`examples/reaper-composer/mpvst_composer/vst_state.py`](https://github.com/PyDevices/mpvst/blob/main/examples/reaper-composer/mpvst_composer/vst_state.py), which does the same job in the composer.
 
 Little-endian component state:
 

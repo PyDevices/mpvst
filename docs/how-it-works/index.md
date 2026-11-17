@@ -13,7 +13,7 @@ mpvst can silence and restart that instance without taking down the DAW.
 
 This page follows the main execution path from the DAW to your script and back.
 Where to look in the source, and how to build and test it, is in
-[CONTRIBUTING.md](../../CONTRIBUTING.md).
+[CONTRIBUTING.md](https://github.com/PyDevices/mpvst/blob/main/CONTRIBUTING.md).
 
 ## A mental model
 
@@ -77,8 +77,8 @@ process operation, log call, or UI call in `process()` as a design error.
 ### 3. Work crosses a fixed shared-memory protocol
 
 The canonical definitions are in
-[`src/protocol/include/mpvst/protocol.h`](../../src/protocol/include/mpvst/protocol.h) and
-[`src/protocol/include/mpvst/ui.h`](../../src/protocol/include/mpvst/ui.h). The audio mapping contains:
+[`src/protocol/include/mpvst/protocol.h`](https://github.com/PyDevices/mpvst/blob/main/src/protocol/include/mpvst/protocol.h) and
+[`src/protocol/include/mpvst/ui.h`](https://github.com/PyDevices/mpvst/blob/main/src/protocol/include/mpvst/ui.h). The audio mapping contains:
 
 1. a host-to-engine command ring;
 2. a timestamped event and parameter ring;
@@ -107,7 +107,7 @@ and crashes between instances. The controller does not own the sidecar: a VST
 host may construct a controller independently, and the processor must work
 without an open editor.
 
-The engine begins in [`lib/mpvst_bootstrap.py`](../../lib/mpvst_bootstrap.py). The bootstrap:
+The engine begins in [`lib/mpvst_bootstrap.py`](https://github.com/PyDevices/mpvst/blob/main/lib/mpvst_bootstrap.py). The bootstrap:
 
 1. configures `vstaudio` with the audio mapping;
 2. removes current-directory entries inherited from the DAW from `sys.path`;
@@ -125,7 +125,7 @@ The host-neutral [`audioinstruments`](https://github.com/PyDevices/audioinstrume
 [`audioeffects`](https://github.com/PyDevices/audioeffects) packages know nothing about VST3
 or mpvst's shared memory.
 
-[`lib/mpvst_instrument_adapter.py`](../../lib/mpvst_instrument_adapter.py) and [`lib/mpvst_effect_adapter.py`](../../lib/mpvst_effect_adapter.py) form the
+[`lib/mpvst_instrument_adapter.py`](https://github.com/PyDevices/mpvst/blob/main/lib/mpvst_instrument_adapter.py) and [`lib/mpvst_effect_adapter.py`](https://github.com/PyDevices/mpvst/blob/main/lib/mpvst_effect_adapter.py) form the
 boundary. The instrument adapter, for example:
 
 - constructs an instrument at the host sample rate;
@@ -165,10 +165,10 @@ The Python editor draws an RGB565 framebuffer with LVGL. The native view:
 It does not interpret the widgets or reconstruct the UI. The seam is:
 **Python paints pixels; native code presents pixels.**
 
-[`usermods/vstui/src/modvstui.c`](../../usermods/vstui/src/modvstui.c) exposes the shared framebuffer, input, open-state,
-edit, and error operations. [`lib/mpvst_board_config.py`](../../lib/mpvst_board_config.py) adapts those operations
-to the normal OmniPython display contract, and [`lib/mpvst_editor.py`](../../lib/mpvst_editor.py) and
-[`lib/mpvst_panel/`](../../lib/mpvst_panel/) connect the engine to the panel, the `controlkit` package frozen into the engine. [The editor](editor.md) covers what the panel does and how it fails.
+[`usermods/vstui/src/modvstui.c`](https://github.com/PyDevices/mpvst/blob/main/usermods/vstui/src/modvstui.c) exposes the shared framebuffer, input, open-state,
+edit, and error operations. [`lib/mpvst_board_config.py`](https://github.com/PyDevices/mpvst/blob/main/lib/mpvst_board_config.py) adapts those operations
+to the normal OmniPython display contract, and [`lib/mpvst_editor.py`](https://github.com/PyDevices/mpvst/blob/main/lib/mpvst_editor.py) and
+[`lib/mpvst_panel/`](https://github.com/PyDevices/mpvst/tree/main/lib/mpvst_panel) connect the engine to the panel, the `controlkit` package frozen into the engine. [The editor](editor.md) covers what the panel does and how it fails.
 
 ## Parameters, scripts, and state
 
@@ -223,7 +223,7 @@ hardcode a named class ID from documentation: the installed bundle's catalog
 is the authoritative copy, and a test verifies that it agrees with the classes
 the plug-in exposes.
 
-A Python-only component change normally needs no C++ rebuild: stage it into an existing bundle and regenerate the two metadata files. The workflow is in [CONTRIBUTING.md](../../CONTRIBUTING.md#a-python-only-change-needs-no-compiler).
+A Python-only component change normally needs no C++ rebuild: stage it into an existing bundle and regenerate the two metadata files. The workflow is in [CONTRIBUTING.md](https://github.com/PyDevices/mpvst/blob/main/CONTRIBUTING.md#a-python-only-change-needs-no-compiler).
 
 ## Latency and the audio thread
 
@@ -246,4 +246,4 @@ Process separation is crash containment, not a sandbox. A script runs with your 
 - [The editor](editor.md): the panel and how its gestures become automation.
 - [What the shipped engine cannot do](security.md): why there are no sockets, SSL or FFI.
 - [Protocol reference](../reference/ipc-protocol.md): the shared-memory records and rules.
-- [CONTRIBUTING.md](../../CONTRIBUTING.md): the repository map, building, tests, and where to start reading the source.
+- [CONTRIBUTING.md](https://github.com/PyDevices/mpvst/blob/main/CONTRIBUTING.md): the repository map, building, tests, and where to start reading the source.

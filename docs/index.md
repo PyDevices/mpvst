@@ -32,6 +32,6 @@ Windows and Linux both ship, and the same project renders identical audio on bot
 
 ## Changelog
 
-- [Changelog](changelog.md) and the [roadmap](../ROADMAP.md).
+- [Changelog](changelog.md) and the [roadmap](https://github.com/PyDevices/mpvst/blob/main/ROADMAP.md).
 
-To build mpvst from source, see [CONTRIBUTING.md](../CONTRIBUTING.md).
+To build mpvst from source, see [CONTRIBUTING.md](https://github.com/PyDevices/mpvst/blob/main/CONTRIBUTING.md).

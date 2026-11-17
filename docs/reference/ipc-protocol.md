@@ -1,6 +1,6 @@
 # Protocol reference
 
-How the plug-in and its engine process talk. The exact sizes and offsets are the compile-time checks in [`src/protocol/include/mpvst/protocol.h`](../../src/protocol/include/mpvst/protocol.h) and [`ui.h`](../../src/protocol/include/mpvst/ui.h); this page is the rules and the record table. [How it works](../how-it-works/index.md) is the narrative.
+How the plug-in and its engine process talk. The exact sizes and offsets are the compile-time checks in [`src/protocol/include/mpvst/protocol.h`](https://github.com/PyDevices/mpvst/blob/main/src/protocol/include/mpvst/protocol.h) and [`ui.h`](https://github.com/PyDevices/mpvst/blob/main/src/protocol/include/mpvst/ui.h); this page is the rules and the record table. [How it works](../how-it-works/index.md) is the narrative.
 
 ## Compatibility
 
