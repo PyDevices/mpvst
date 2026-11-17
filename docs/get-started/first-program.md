@@ -14,7 +14,7 @@ The names are not compiled in. Each is a two-line Python script the plug-in buil
 
 The two **MPVST Script Host** entries (one instrument, one effect) run whatever script you point them at. With none pointed at them the instrument host makes no sound, so an empty slot you did not choose is easy to spot, and the effect host passes its input through unchanged.
 
-This is [`examples/pluck.py`](../../examples/pluck.py), a plucked instrument in about twenty lines:
+This is [`examples/pluck.py`](https://github.com/PyDevices/mpvst/blob/main/examples/pluck.py), a plucked instrument in about twenty lines:
 
 ```python
 import synthio
