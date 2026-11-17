@@ -4,7 +4,7 @@ You can play a library instrument in two minutes, and run a script of your own i
 
 ## Play a library instrument
 
-mpvst does not install as one plug-in. Every instrument and effect in the library appears in your FX browser under its own name and category. Search for **TR-808**, **Minimoog** or **Tape Delay** and drop it on a track like any other VST3.
+mpvst does not install as one plug-in. Every instrument and effect in the library appears in your FX browser under its own name and category. Search for **808** or **Tape Delay** and drop it on a track like any other VST3.
 
 Its editor has patch pads, a bypass button, an engine light and an encoder per macro, labelled with whatever that instrument calls its knobs. Drag an encoder up to turn it, or click a control to focus it, then scroll: sideways adjusts it, up and down move between controls. If your host provides no editor, its generic parameter editor reaches the same parameters.
 

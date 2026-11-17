@@ -26,6 +26,6 @@ Close your DAW first. A host that has the plug-in loaded holds its files open.
 
 Make it a real rescan, not a restart. A host caches what it found last time against the bundle's contents, and REAPER has been seen holding entries from an earlier build after an install. In REAPER, Preferences, Plug-ins, VST, Re-scan clears it.
 
-The bundle registers a named plug-in for every library instrument and effect (for example **TR-808** under Instrument|Drum and **Tape Delay** under Fx|Delay), plus two generic **MPVST Script Host** classes. `mpvst_scan_plugins.py --list`, run with the bundle's own engine, prints the current set. [mpvst on Windows](../guides/windows.md#rescan-after-adding-a-script-of-your-own) and [mpvst on Linux](../guides/linux.md#rescan-after-adding-a-script-of-your-own) show the command.
+The bundle registers a named plug-in for every library instrument and effect (for example the **808** drum machine under Instrument|Drum and **Tape Delay** under Fx|Delay), plus two generic **MPVST Script Host** classes. `mpvst_scan_plugins.py --list`, run with the bundle's own engine, prints the current set. [mpvst on Windows](../guides/windows.md#rescan-after-adding-a-script-of-your-own) and [mpvst on Linux](../guides/linux.md#rescan-after-adding-a-script-of-your-own) show the command.
 
 Next: [your first program](first-program.md).
