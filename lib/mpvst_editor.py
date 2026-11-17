@@ -31,6 +31,10 @@ import sys
 import vstaudio
 import vstui
 
+# The event the processor sends when the MIDI Channel parameter changes,
+# matching MPVST_EVENT_MIDI_CHANNEL in src/protocol/include/mpvst/protocol.h.
+EVENT_MIDI_CHANNEL = 10
+
 
 def start(mapping_name, script_path=None):
     """Open the UI mapping. Returns an `Editor`, or None when there is none.
@@ -55,6 +59,9 @@ class Editor:
         # What the last load of the script raised, or "" when it loaded. A
         # panel built later still has to show it.
         self._load_error = ""
+        # The MIDI Channel step the host last reported, kept here and not in
+        # the adapter because the host says it before any panel exists.
+        self._channel = 0
 
     # ---- the engine's housekeeping step --------------------------------
 
@@ -90,6 +97,9 @@ class Editor:
         """The engine ran the script: `error` is "" when it loaded, else what
         it raised. The panel shows it from the engine light."""
         self._load_error = error or ""
+        # Loading a script clears the engine's observers, and the host says
+        # what the MIDI Channel is just after the load, panel or no panel.
+        vstaudio.observe(self._observe)
         if self._adapter is not None:
             self._adapter.note_loaded(self._load_error)
 
@@ -110,18 +120,20 @@ class Editor:
         adapter = self._adapter
         if (adapter is not None and self._panel is not None and
                 not self._failed and adapter.describes_current_script()):
-            # The load cleared the observer along with the old script's
-            # output, so the kept panel has to register it again.
-            vstaudio.observe(self._observe)
             self.script_loaded(error)
             return
         self._load_error = error or ""
+        vstaudio.observe(self._observe)
         self._release_panel()
         # A panel that failed against the old script deserves a fresh try
         # against the new one - editing the script is how a user fixes it.
         self._failed = False
 
     def stop(self):
+        try:
+            vstaudio.observe(None)
+        except Exception:
+            pass
         self._release_panel()
         app = self._app
         self._app = None
@@ -181,7 +193,7 @@ class Editor:
             group.remove_all_objs()
         self._adapter = EngineAdapter(vstui, self._script_path)
         self._adapter.note_loaded(self._load_error)
-        vstaudio.observe(self._observe)
+        self._adapter.channel = self._channel
         # The wheel mapping above moves focus with one wheel, so the panel
         # keeps its encoders in edit mode for the other.
         self._panel = build(self._adapter, group=group, two_wheels=True)
@@ -195,6 +207,11 @@ class Editor:
         script, and the panel must not displace it to find out that
         automation moved a macro.
         """
+        if event_type == EVENT_MIDI_CHANNEL:
+            self._channel = data0
+            if self._adapter is not None:
+                self._adapter.note_channel(data0)
+            return
         adapter = self._adapter
         if adapter is None:
             return
@@ -253,10 +270,6 @@ class Editor:
     def _release_panel(self):
         """Drop the widgets and the adapter, keeping LVGL and the app."""
         self._was_open = False
-        try:
-            vstaudio.observe(None)
-        except Exception:
-            pass
         if self._adapter is not None:
             try:
                 self._adapter.close_all()

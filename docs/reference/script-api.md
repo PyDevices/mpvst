@@ -28,6 +28,8 @@ The handler is called as `handler(event_type, channel, note_id, data0, value0, v
 | `EVENT_TRANSPORT` | 8 | sent on locates, loop wraps, play-state, tempo and time-signature changes |
 | `EVENT_PROGRAM_CHANGE` | 9 | `data0` is the program number |
 
+The plug-in sends one more event, type 10, when the `MIDI Channel` setting changes and once after a script loads: `data0` is its step, 0 for All or 1 to 16. The adapters for instruments and effects ignore it, and so should a script that handles events itself.
+
 A note-on with velocity 0 is how some hosts send a note-off. Every one of the 128 MIDI controllers reaches the script as `EVENT_CONTROL_CHANGE`. `channel` is 0 to 15. On the default `MIDI Channel` setting, All, a note keeps the channel it came on, and controllers, pitch bend, channel pressure and program changes arrive as channel 0. Set to one channel, only that channel reaches the script, and `channel` is always that channel ([MIDI channel](parameters-and-state.md#midi-channel)).
 
 ## Declarations

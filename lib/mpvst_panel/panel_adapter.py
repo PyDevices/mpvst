@@ -22,9 +22,12 @@ resolution keeps every bit of it on the way back in.
 BYPASS = 0
 RELOAD = 1
 PATCH = 4
+MIDI_CHANNEL = 5
 FIRST_MACRO = 100
 MACRO_COUNT = 16
 PATCH_COUNT = 128
+# The MIDI Channel parameter's steps: 0 is All, 1-16 are channels 1-16.
+CHANNEL_STEPS = 17
 
 # How long a control must sit still before its gesture is closed. A slider
 # drag and a burst of wheel ticks are both "one edit" to a host's automation
@@ -72,6 +75,8 @@ class EngineAdapter:
         for macro, value in enumerate(_patch_values(0)[:MACRO_COUNT]):
             self.macro_values[macro] = min(max(int(value), 0), 127)
         self.bypass = False
+        # The MIDI Channel step: 0 for All, 1-16 for one channel.
+        self.channel = 0
         # False from a reload request until the engine has run the script
         # again. engine_error is ENGINE_ERROR_SCRIPT while the last load
         # failed, and engine_message says what it raised.
@@ -128,6 +133,14 @@ class EngineAdapter:
         self._notify("patch", index, index)
         self._load_patch(index)
 
+    def note_channel(self, step):
+        """The MIDI Channel parameter has this step, from the host's
+        automation, a restored project or this panel's own echo."""
+        if step < 0 or step >= CHANNEL_STEPS or self.channel == step:
+            return
+        self.channel = step
+        self._notify("channel", 0, step)
+
     def _notify(self, kind, index, value):
         for listener in self._listeners:
             listener(kind, index, value)
@@ -157,6 +170,11 @@ class EngineAdapter:
                 continue
             self.macro_values[macro] = value
             self._notify("macro", macro, value)
+
+    def set_channel(self, step):
+        self.channel = step
+        # Like a patch, a channel is a choice, so it is one complete edit.
+        self._discrete(MIDI_CHANNEL, step / float(CHANNEL_STEPS - 1))
 
     def set_bypass(self, enabled):
         self.bypass = bool(enabled)

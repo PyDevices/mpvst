@@ -27,6 +27,8 @@ An output slot is a 64-byte header followed by `max_frames` left samples and `ma
 
 VST3 MIDI controller parameters are decoded before they enter the event ring: `channel` is the instance's selected MIDI channel, or 0 when it listens to all of them, `data0` the controller number, `value0` is normalized 0 to 1, and pitch bend also carries its bipolar value in `value1`.
 
+The `MIDI Channel` parameter is not a macro, so it travels as its own event type, `MPVST_EVENT_MIDI_CHANNEL` (10), with the step in `data0`: 0 for All, or 1 to 16. The processor sends it when the setting changes and again with the macro resync after a script loads, and the editor's panel follows it.
+
 ## Slots never block the audio thread
 
 Each fixed-capacity slot has an atomic sequence value. A producer owns a slot only when its expected sequence is free, writes the payload, then publishes the completed sequence with release ordering. A consumer acquires it, copies the bounded payload and releases it for the next wrap. Neither side waits for a slot on the audio thread: a full ring means a bounded drop, and late, stale or mismatched output means silence.

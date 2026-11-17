@@ -536,6 +536,17 @@ std::uint32_t Processor::applyMidiChannelChange (IParameterChanges* changes,
                                                     std::memory_order_relaxed);
         if (previous == next || frameCount <= 0)
             continue;
+        // The editor's panel shows the setting, so it is told about it
+        // whoever changed it, the host's automation or the panel itself.
+        if (count < events_.size ())
+        {
+            mpvst_event event {};
+            event.sample_position = 0;
+            event.type = MPVST_EVENT_MIDI_CHANNEL;
+            event.data0 = static_cast<std::int32_t> (next);
+            event.value0 = static_cast<float> (midiListenToNormalized (next));
+            events_[count++] = event;
+        }
         // Notes still held on the old channel would never hear their
         // note-off now, so they get All Notes Off (controller 123) instead:
         // on every channel when the old setting was All.
@@ -575,6 +586,19 @@ std::uint32_t Processor::emitMacroResync (int32 frameCount,
     // the only value in the system that anyone chose on purpose.
     if (frameCount <= 0)
         return count;
+
+    // The MIDI Channel is not a macro, but a script that has just loaded
+    // has not heard it either, and the panel it builds has to show it.
+    if (count < events_.size ())
+    {
+        const auto listen = midiListen_.load (std::memory_order_relaxed);
+        mpvst_event event {};
+        event.sample_position = 0;
+        event.type = MPVST_EVENT_MIDI_CHANNEL;
+        event.data0 = static_cast<std::int32_t> (listen);
+        event.value0 = static_cast<float> (midiListenToNormalized (listen));
+        events_[count++] = event;
+    }
 
     const auto known = macrosKnown_.load (std::memory_order_relaxed);
     for (std::size_t index = 0; index < macros_.size (); ++index)

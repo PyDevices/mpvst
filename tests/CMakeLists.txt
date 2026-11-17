@@ -97,6 +97,13 @@ if(TARGET mpvst-stage-micropython-engine)
         ${CMAKE_CURRENT_SOURCE_DIR}/panel_follow.py
         $<TARGET_FILE_DIR:MPVST>)
 
+    # The panel's MIDI Channel control: a click publishes the next step, and
+    # a channel from the host moves the control without publishing.
+    add_test(NAME mpvst_panel_channel COMMAND
+        $<TARGET_FILE_DIR:MPVST>/${mpvst_engine_name}
+        ${CMAKE_CURRENT_SOURCE_DIR}/panel_channel.py
+        $<TARGET_FILE_DIR:MPVST>)
+
     # The engine is prebuilt and every later build copies it in without asking
     # how old it is, so the suites below can certify a DSP core that is not the
     # one on disk. That is what mpvst#12 turned out to be: four days of drift
