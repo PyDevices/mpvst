@@ -49,17 +49,13 @@ log "creating .venv (omnipython-audiodsp, omnipython-audioinstruments," \
 if [[ ! -d "$repo_dir/.venv" ]]; then
     python3 -m venv "$repo_dir/.venv" || die "python3 -m venv failed"
 fi
-# The three OmniPython distributions publish pre-releases, so they install
-# with --pre, on their own: the tools after them stay on final releases. The
-# instruments and the effects are published from PyDevices/audioinstruments
-# and PyDevices/audioeffects.
-"$repo_dir/.venv/bin/pip" install -q --pre \
-    omnipython-audiodsp omnipython-audioinstruments omnipython-audioeffects \
-    || die "installing the OmniPython audio packages into .venv failed"
+# The instruments and the effects are published from
+# PyDevices/audioinstruments and PyDevices/audioeffects.
 "$repo_dir/.venv/bin/pip" install -q \
+    omnipython-audiodsp omnipython-audioinstruments omnipython-audioeffects \
     numpy flake8 \
     pyloudnorm soundfile scipy pyyaml \
-    || die "installing numpy/flake8 and the QC tools into .venv failed"
+    || die "installing the OmniPython audio packages/numpy/flake8 into .venv failed"
 # pyloudnorm/soundfile/scipy are only for tools/audio_qc.py, which measures a
 # rendered WAV's loudness and true peak. Nothing in the ctest suite needs them.
 log ".venv ready - this is what gates the mpvst_lint, mpvst_instruments_library" \

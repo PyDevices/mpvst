@@ -70,7 +70,7 @@ What each line is for:
 You can render the script offline, with no host and no plug-in, to check that it makes sound. From a checkout of this repository, in a virtual environment with the audio packages from PyPI:
 
 ```bash
-pip install --pre \
+pip install \
     omnipython-audiodsp omnipython-audioinstruments omnipython-audioeffects numpy
 ```
 

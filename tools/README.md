@@ -19,12 +19,11 @@ Both need the `audiodsp` wheel's venv - this repo's own `.venv` if you have set
 one up:
 
 ```bash
-pip install --pre \
+pip install \
   omnipython-audiodsp omnipython-audioinstruments omnipython-audioeffects numpy
 ```
 
-`--pre` takes the newest pre-releases of the three, which is what they
-publish. `preview.py` also needs mpvst installed, because
+`preview.py` also needs mpvst installed, because
 it loads instruments the way the sidecar does - through the bundle's
 `mpvst_instrument_adapter`. Point `MPVST_BUNDLE` at the install if it is
 somewhere unusual.
