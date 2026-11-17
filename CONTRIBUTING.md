@@ -61,7 +61,7 @@ How the pieces fit is in [How it works](docs/how-it-works/index.md). The canonic
   [`scripts/bootstrap.sh`](scripts/bootstrap.sh) creates a repo-local `.venv` with these.
 - The Steinberg VST3 SDK, fetched by [`scripts/fetch-vst3-sdk.sh`](scripts/fetch-vst3-sdk.sh) into the
   gitignored `.deps/vst3sdk` (see [License](#license) for its terms).
-- A `omnipython-builds` checkout beside this one. Its `build_mp.py`
+- A `omnipython-builds` checkout beside this one. Its `build.py`
   builds the MicroPython engine, fetching MicroPython and the modules it
   needs, and the plug-in build takes the engine from its `builds/`.
 - On WSL, building the Windows plug-in needs a reachable Windows host:
@@ -86,7 +86,7 @@ each step individually.
 ## Building and testing
 
 The MicroPython sidecar is a MicroPython build like any other:
-omnipython-builds' `build_mp.py` with the `vst3-engine` variant (no
+omnipython-builds' `build.py` with the `vst3-engine` variant (no
 sockets, SSL or FFI; see [What the shipped engine cannot do](docs/how-it-works/security.md)) and this repository
 among its modules, by path. It carries the `audioinstruments` and
 `audioeffects` packages frozen in, omnipython (the editor's `appdev` and `multimer`),
@@ -94,10 +94,10 @@ the editor's panel (`audioinstruments.panel_view`, on `controlkit`),
 audiodsp's DSP, audioif, LVGL and ulab:
 
 ```bash
-../omnipython-builds/build_mp.py --port windows --variant vst3-engine \
+../omnipython-builds/build.py --port windows --variant vst3-engine \
     --modules audioinstruments,audioeffects,audiodsp,audioif,lvgl,omnipython,ulab,$PWD/../apps,$PWD \
     ENGINE_ICON=$PWD/installer/art/mpvst.ico
-../omnipython-builds/build_mp.py --port unix --variant vst3-engine \
+../omnipython-builds/build.py --port unix --variant vst3-engine \
     --modules audioinstruments,audioeffects,audiodsp,audioif,lvgl,omnipython,ulab,$PWD/../apps,$PWD
 ```
 
@@ -105,7 +105,7 @@ It lands in `../omnipython-builds/builds/<port>/vst3-engine/`, and the
 plug-in build stages it from there (`MPVST_ENGINE_BUILDS` moves that). Rebuild
 it when `usermods/`, audiodsp's C or the audioinstruments and audioeffects packages change. CMake
 never notices a stale engine itself, but the `mpvst_engine_provenance` ctest
-refuses one, from the record `build_mp.py` writes beside it.
+refuses one, from the record `build.py` writes beside it.
 
 Linux:
 
@@ -251,7 +251,7 @@ SHA-256: the platforms agree exactly, not within a tolerance.
 
 The engine's modules are consumed read-only. No build or formatting command
 here writes into any of them, or into the MicroPython checkout, which
-`build_mp.py` prepares once and builds into its own `builds/`.
+`build.py` prepares once and builds into its own `builds/`.
 
 ## Testing layers
 

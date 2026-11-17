@@ -6,7 +6,7 @@ for that). Every script here is idempotent: safe to rerun.
 
 - **`bootstrap.sh`** - one-shot setup for a fresh clone: fetches the VST3
   SDK, builds the engine with the omnipython-builds checkout beside this
-  one (`build_mp.py`; the command is in
+  one (`build.py`; the command is in
   [`../CONTRIBUTING.md`](../CONTRIBUTING.md)), installs REAPER, then
   configures, builds, and runs the test suite as a final verification.
   Start here.
